@@ -32764,7 +32764,7 @@ body
 }
 
 body .sm-public-launches-page > .sm-marketing-header + main.sm-public-launches-main {
-  padding-top: clamp(96px, 10vw, 118px) !important;
+  padding-top: clamp(26px, 3vw, 48px) !important;
 }
 
 @media (max-width: 640px) {
@@ -53195,6 +53195,14 @@ a.lkt-coin-card.lkt-nft-card {
 
 .lkt-nft-gallery-page .sm-public-launch-action {
   border-radius: 15px !important;
+}
+
+.lkt-nft-gallery-page .lkt-nft-card--demo {
+  cursor: default !important;
+}
+
+.lkt-nft-gallery-page .lkt-nft-card--demo:hover {
+  transform: none !important;
 }
 
 .lkt-nft-detail-page .lkt-nft-detail-head {

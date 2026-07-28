@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { ExternalLink, Images, Sparkles, Twitter, X as XIcon } from "lucide-react";
+import { ExternalLink, Images, Rocket, Sparkles, Twitter, X as XIcon } from "lucide-react";
 import { MarketingHeader } from "@/components/linkr/MarketingHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { relativeTime, shortAddress } from "@/lib/linkr/format";
@@ -27,6 +27,31 @@ interface MintRow {
   collection_id: string;
   source_tweet_id?: string | null;
 }
+
+function placeholderCover(symbol: string, index: number): string {
+  const accents = ["#ccff00", "#9f8be7", "#70e0b0"];
+  const accent = accents[index % accents.length];
+  const initials = symbol.slice(0, 3).toUpperCase();
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#242424"/><stop offset="1" stop-color="#141414"/></linearGradient></defs><rect width="400" height="400" fill="url(#g)"/><circle cx="308" cy="86" r="150" fill="${accent}" fill-opacity="0.16"/><circle cx="86" cy="332" r="112" fill="${accent}" fill-opacity="0.1"/><text x="50%" y="53%" font-family="Funnel Display, Inter, sans-serif" font-size="122" font-weight="800" fill="${accent}" fill-opacity="0.92" text-anchor="middle" dominant-baseline="middle">${initials}</text></svg>`;
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+}
+
+const PLACEHOLDER_COLLECTIONS: CollectionRow[] = [
+  { symbol: "NOVA", name: "Nova Punks" },
+  { symbol: "GLYPH", name: "Glyph Society" },
+  { symbol: "AURA", name: "Aura Frames" },
+  { symbol: "PIXL", name: "Pixel Relics" },
+  { symbol: "ORBIT", name: "Orbit Wanderers" },
+  { symbol: "MONO", name: "Mono Editions" },
+].map((c, index) => ({
+  id: `placeholder-${c.symbol.toLowerCase()}`,
+  name: c.name,
+  symbol: c.symbol,
+  image_url: placeholderCover(c.symbol, index),
+  mint_address: null,
+  explorer_url: null,
+  created_at: "",
+}));
 
 function normalizeExternalUrl(url?: string | null): string | null {
   if (!url) return null;
@@ -115,6 +140,8 @@ function NftsGalleryPage() {
   }, [collections]);
 
   const isLoading = collectionsQuery.isLoading || mintsQuery.isLoading;
+  const showPlaceholders = !isLoading && collections.length === 0;
+  const displayCollections = showPlaceholders ? PLACEHOLDER_COLLECTIONS : collections;
   const [selectedMintId, setSelectedMintId] = useState<string | null>(null);
   const selectedMint = mints.find((m) => m.id === selectedMintId) ?? null;
   const selectedParent = selectedMint ? collectionsById.get(selectedMint.collection_id) : null;
@@ -131,10 +158,15 @@ function NftsGalleryPage() {
               <p>Tap a collection to browse its NFTs.</p>
             </div>
             <div className="sm-public-filter-toolbar">
-              <Link className="sm-public-launch-action" to="/app/nfts">
-                <Images aria-hidden="true" size={16} strokeWidth={2.4} />
-                <span>Your NFTs</span>
-              </Link>
+              <a
+                className="sm-public-launch-action"
+                href="https://x.com/linkrcash"
+                target="_blank"
+                rel="noreferrer"
+              >
+                <Rocket aria-hidden="true" size={16} strokeWidth={2.4} />
+                <span>Launch</span>
+              </a>
             </div>
           </section>
         </div>
@@ -144,23 +176,16 @@ function NftsGalleryPage() {
           aria-busy={isLoading || undefined}
           aria-label="NFT collections grid"
         >
-          {collections.length === 0 && !isLoading ? (
-            <EmptyState
-              title="No collections yet"
-              hint={
-                <>
-                  Reply <code>@linkrcash mint nft collection called "My Punks" symbol PUNK</code> on
-                  X to seed the gallery.
-                </>
-              }
-            />
-          ) : (
-            <div className="lkt-coin-grid">
-              {collections.map((c) => (
-                <CollectionCard collection={c} key={c.id} mintCount={countsById.get(c.id) ?? 0} />
-              ))}
-            </div>
-          )}
+          <div className="lkt-coin-grid">
+            {displayCollections.map((c) => (
+              <CollectionCard
+                collection={c}
+                demo={showPlaceholders}
+                key={c.id}
+                mintCount={countsById.get(c.id) ?? 0}
+              />
+            ))}
+          </div>
         </section>
 
         {mints.length > 0 && (
@@ -201,28 +226,17 @@ function NftsGalleryPage() {
   );
 }
 
-function EmptyState({ title, hint }: { title: string; hint: React.ReactNode }) {
-  return (
-    <div className="sm-coin-empty lkt-nft-state-empty">
-      <h1>{title}</h1>
-      <p>{hint}</p>
-    </div>
-  );
-}
-
 function CollectionCard({
   collection,
   mintCount,
+  demo,
 }: {
   collection: CollectionRow;
   mintCount: number;
+  demo?: boolean;
 }) {
-  return (
-    <Link
-      className="lkt-coin-card lkt-nft-card"
-      params={{ collectionId: collection.id }}
-      to="/nfts/$collectionId"
-    >
+  const inner = (
+    <>
       <div className="lkt-nft-cover">
         <img alt={collection.name} loading="lazy" src={collection.image_url} />
       </div>
@@ -232,7 +246,7 @@ function CollectionCard({
           <span className="lkt-coin-name">{collection.name}</span>
         </div>
         <span className="lkt-badge lkt-badge--nft-count">
-          {mintCount} NFT{mintCount === 1 ? "" : "s"}
+          {demo ? "Preview" : `${mintCount} NFT${mintCount === 1 ? "" : "s"}`}
         </span>
       </div>
       <div className="lkt-coin-market">
@@ -245,10 +259,28 @@ function CollectionCard({
         <div className="lkt-nft-meta-right">
           <span className="lkt-coin-mcap-label">Age</span>
           <span className="lkt-coin-mcap lkt-nft-meta-value">
-            {relativeTime(collection.created_at)}
+            {demo ? "Soon" : relativeTime(collection.created_at)}
           </span>
         </div>
       </div>
+    </>
+  );
+
+  if (demo) {
+    return (
+      <div aria-hidden="true" className="lkt-coin-card lkt-nft-card lkt-nft-card--demo">
+        {inner}
+      </div>
+    );
+  }
+
+  return (
+    <Link
+      className="lkt-coin-card lkt-nft-card"
+      params={{ collectionId: collection.id }}
+      to="/nfts/$collectionId"
+    >
+      {inner}
     </Link>
   );
 }
