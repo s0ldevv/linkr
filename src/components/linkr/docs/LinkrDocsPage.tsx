@@ -86,6 +86,7 @@ const tocGroups: TocGroup[] = [
       { id: "wallets", label: "Wallets and funding" },
       { id: "app-api", label: "App pages" },
       { id: "terminal", label: "Terminal" },
+      { id: "cli", label: "CLI" },
       { id: "telegram", label: "Telegram bot" },
       { id: "market-data", label: "Market data" },
       { id: "scheduler", label: "Scheduler" },
@@ -1017,7 +1018,7 @@ export function LinkrDocsPage() {
               Everything <span>@linkrcash</span> can do
             </h1>
             <p>
-              Learn what you can ask Linkr to do on X, Telegram, the private terminal, and the web
+              Learn what you can ask Linkr to do on X, Telegram, the private terminal, the CLI, and
               app—and what to expect before money or tokens move.
             </p>
           </div>
@@ -1068,6 +1069,11 @@ export function LinkrDocsPage() {
                   text="Authenticated users can use /app/terminal for a private natural-language Linkr chat with richer account context and confirmation cards."
                 />
                 <FeatureCard
+                  icon={<Command />}
+                  title="CLI chat"
+                  text="Install @linkrcash/cli, authorize through the browser, and use the same private Linkr chat from a local terminal."
+                />
+                <FeatureCard
                   icon={<ShieldCheck />}
                   title="Rules before execution"
                   text="The AI understands the user goal and relevant details. Validators check wallet state, balances, settings, token identity, and confirmation rules."
@@ -1106,7 +1112,7 @@ export function LinkrDocsPage() {
                   "Connect or log in with X from the app.",
                   "Fund the Linkr EVM wallet with ETH and the Solana wallet with SOL and native Solana USDC as needed.",
                   "Set slippage and max auto rules if needed.",
-                  "Mention @linkrcash, message @LinkrCashBot privately, open /app/terminal, or use a guided dashboard flow such as Launch or Scheduler.",
+                  "Mention @linkrcash, message @LinkrCashBot privately, open /app/terminal, run the Linkr CLI, or use a guided dashboard flow such as Launch or Scheduler.",
                   "Reply with the requested confirmation only after reviewing every detail. Token burns always require a later CONFIRM and cannot be recovered.",
                   "Check the X receipt or the app history after execution.",
                 ].map((step, index) => (
@@ -1138,6 +1144,7 @@ export function LinkrDocsPage() {
                   "@linkrcash what are people on X saying about $CASHCAT?",
                   "Message @LinkrCashBot: show my Solana portfolio",
                   "Open /app/terminal and ask: buy 0.1 SOL of <mint>",
+                  'Run linkr chat "show my portfolio"',
                   "Open /launch to launch from the website form",
                 ]}
               />
@@ -1293,6 +1300,7 @@ export function LinkrDocsPage() {
                       "Wallet: EVM and Solana addresses, ETH/SOL/USDC balances, deposits, primary-wallet selection, ETH/SOL/USDC sends, SOL/USDC swaps, and authenticated private-key export.",
                       "Settings: slippage, ETH/SOL buy caps, ETH/SOL/USDC transfer caps, Solana swap priority-fee cap, ETH/SOL launch dev-buy caps, confirm-all, profile, terms, and display preferences.",
                       "Terminal: private natural-language chat with Linkr, richer account context, streamed replies, and confirmation cards for supported actions.",
+                      "CLI: installable npm package for local terminal chat, browser-based X authorization, shared conversations, and revocable scoped credentials.",
                       "Launch: a guided website form for Robinhood Chain and Solana/Pump.fun launches with selected wallet, balances, metadata, image upload, dev buy, and creator rewards settings.",
                       "Scheduler: timed buys, sells, transfers, launches, creator-reward claims, liquidity actions, and market-cap-triggered buys and sells, separated by trigger type and status.",
                       "Earnings: view and claim eligible Robinhood Chain creator rewards and Solana Pump.fun fee-sharing rewards.",
@@ -1384,6 +1392,212 @@ export function LinkrDocsPage() {
                 The chat surface may feel more natural, but Linkr still uses wallet checks,
                 balances, limits, slippage, ownership, and confirmation requirements before any
                 value-moving action can run.
+              </Callout>
+            </DocsSection>
+
+            <DocsSection
+              id="cli"
+              icon={Command}
+              eyebrow="CLI"
+              title="Linkr from your terminal"
+              intro="The Linkr CLI is the public npm package for users who want the private /app/terminal experience in their own local shell. It installs the linkr command, uses browser-based X authorization, stores a scoped revocable CLI credential, and talks to the same Linkr runtime, wallet guardrails, conversation history, and pending-action confirmation system."
+            >
+              <div className="lkd-feature-grid">
+                <FeatureCard
+                  icon={<Command />}
+                  title="Local command"
+                  text="Install @linkrcash/cli globally with npm, then run linkr from PowerShell, Terminal, iTerm, Warp, Cursor, VS Code, or any shell with Node.js 20 or newer."
+                />
+                <FeatureCard
+                  icon={<ExternalLink />}
+                  title="Browser login"
+                  text="linkr login opens a Linkr authorization page. After X sign-in, the page shows a short one-time code that the user pastes back into the CLI."
+                />
+                <FeatureCard
+                  icon={<KeyRound />}
+                  title="Revocable credential"
+                  text="The CLI redeems the code for a scoped key stored on the user's machine. The browser never shows the API key, and the CLI does not store Supabase refresh tokens."
+                />
+                <FeatureCard
+                  icon={<Terminal />}
+                  title="Same chat runtime"
+                  text="CLI prompts stream through the same private terminal runtime, so users can ask natural follow-ups, continue conversations, attach images, and confirm supported actions."
+                />
+              </div>
+
+              <div className="lkd-split">
+                <InfoPanel title="Install and start">
+                  <CodeBlock
+                    id="cli-install"
+                    lines={[
+                      "npm install -g @linkrcash/cli",
+                      "linkr --help",
+                      "linkr login",
+                      "linkr chat",
+                    ]}
+                    compact
+                  />
+                  <CheckList
+                    items={[
+                      "Requires Node.js 20 or newer.",
+                      "Installs the global linkr command from the public npm package.",
+                      "linkr --help shows the installed command surface.",
+                      "Running linkr with no subcommand starts an interactive chat.",
+                    ]}
+                  />
+                </InfoPanel>
+                <InfoPanel title="Authorize this computer">
+                  <CodeBlock
+                    id="cli-login-flow"
+                    lines={[
+                      "linkr login",
+                      "linkr login --no-browser",
+                      "linkr login --read-only",
+                      "linkr login --full",
+                      "linkr login --api-url https://www.linkr.cash",
+                    ]}
+                    compact
+                  />
+                  <CheckList
+                    items={[
+                      "The CLI requests a temporary device login from Linkr.",
+                      "The browser opens a Linkr page where the user signs in with X.",
+                      "The page shows only a short one-time authorization code.",
+                      "The CLI redeems the code for a scoped, revocable CLI credential.",
+                    ]}
+                  />
+                </InfoPanel>
+              </div>
+
+              <div className="lkd-split">
+                <InfoPanel title="Login modes">
+                  <CheckList
+                    items={[
+                      "Default login is read/chat mode: profile, actions, coins, coin details, and chat access.",
+                      "--read-only explicitly requests the same read and chat scopes.",
+                      "--full requests additional write scopes for supported buys, sells, launches, schedules, rewards, liquidity, transfers, and burns.",
+                      "--full is still capped server-side: conservative buy, sell, launch, liquidity, request, and transaction limits are applied.",
+                      "Transfers currently have zero CLI transfer caps unless the server-side key policy changes.",
+                    ]}
+                  />
+                </InfoPanel>
+                <InfoPanel title="Local credential">
+                  <CheckList
+                    items={[
+                      "Credentials are stored locally at ~/.linkr/credentials.json.",
+                      "On macOS and Linux, the file is written with private permissions and rejected if it becomes world-readable.",
+                      "linkr logout removes the local credential file only.",
+                      "linkr revoke-current revokes the server-side CLI key and removes the local file.",
+                      "Users can also revoke CLI-created keys from /app/api-keys.",
+                    ]}
+                  />
+                </InfoPanel>
+              </div>
+
+              <CliCommandReference />
+
+              <div className="lkd-split">
+                <InfoPanel title="What users can ask">
+                  <CheckList
+                    items={[
+                      "Wallet balances, deposit addresses, portfolio holdings, and specific token holdings.",
+                      "Token research, market data, liquidity, price, volume, market cap, and public X or social context.",
+                      "Launch history, transaction history, receipts, pending actions, and recent Linkr activity.",
+                      "Supported buys, sells, SOL/USDC swaps, transfers, launches, schedules, liquidity actions, creator rewards, and burns.",
+                      "Conversation follow-ups like this token, that launch, the second one, confirm it, or cancel that when context is clear.",
+                    ]}
+                  />
+                </InfoPanel>
+                <InfoPanel title="Example prompts">
+                  <CodeBlock
+                    id="cli-prompt-examples"
+                    lines={[
+                      'linkr chat "What do I hold on Solana?"',
+                      'linkr chat "Show my wallet addresses"',
+                      'linkr chat "Check what people on X are saying about $CASHCAT"',
+                      'linkr chat "Buy 0.05 SOL of <full Solana mint>"',
+                      'linkr chat "Sell 25% of <full token address or mint>"',
+                      'linkr chat "Prepare a Solana launch for a coin called Moon ticker MOON"',
+                      'linkr chat "Show my active LP positions"',
+                      'linkr chat "Do I have any pending actions?"',
+                    ]}
+                    compact
+                  />
+                </InfoPanel>
+              </div>
+
+              <div className="lkd-split">
+                <InfoPanel title="Images and launch media">
+                  <CodeBlock
+                    id="cli-images"
+                    lines={[
+                      'linkr chat --image ./logo.png "Use this image for a Solana launch called Cash Cat ticker CASH"',
+                      'linkr chat --image-url https://example.com/logo.png "Use this image for the launch"',
+                    ]}
+                    compact
+                  />
+                  <CheckList
+                    items={[
+                      "A chat turn can include up to four images.",
+                      "Local uploads support PNG, JPG, GIF, and WEBP.",
+                      "Local image files must be larger than 0 bytes and no larger than 4MB.",
+                      "Image URLs are passed as trusted remote image references.",
+                    ]}
+                  />
+                </InfoPanel>
+                <InfoPanel title="Conversations">
+                  <CodeBlock
+                    id="cli-conversations"
+                    lines={[
+                      "linkr conversations",
+                      "linkr continue <conversation_id>",
+                      'linkr chat -c <conversation_id> "continue from where we left off"',
+                    ]}
+                    compact
+                  />
+                  <CheckList
+                    items={[
+                      "CLI and web terminal conversations share the same private conversation system.",
+                      "linkr conversations lists conversation IDs, titles, and previews.",
+                      "linkr continue opens an interactive session for a saved conversation.",
+                      "linkr chat -c sends a single prompt into an existing conversation.",
+                    ]}
+                  />
+                </InfoPanel>
+              </div>
+
+              <div className="lkd-split">
+                <InfoPanel title="Action confirmation">
+                  <CheckList
+                    items={[
+                      "Value-moving actions still prepare a pending action first when confirmation is required.",
+                      "The CLI prints the pending action summary and exact confirmation phrase.",
+                      "The user must type the phrase exactly before Linkr submits the action.",
+                      "Leaving the confirmation blank cancels the pending action.",
+                      "Server-side scopes, spending caps, wallet checks, slippage, idempotency, and expiry still apply.",
+                    ]}
+                  />
+                </InfoPanel>
+                <InfoPanel title="Troubleshooting">
+                  <CheckList
+                    items={[
+                      "Package not found: confirm @linkrcash/cli has been published publicly on npm.",
+                      "Expired code: run linkr login again.",
+                      "Revoked key: run linkr login again or create a new CLI credential.",
+                      "Missing scope: revoke and re-login with the capability needed for that action.",
+                      "Stale clock: fix the computer clock so signed requests are accepted.",
+                      "Browser did not open: run linkr login --no-browser and paste the URL manually.",
+                    ]}
+                  />
+                </InfoPanel>
+              </div>
+
+              <Callout tone="safety" title="Same safeguards, different surface">
+                CLI chat is private, but it does not bypass Linkr rules. Wallet private keys stay on
+                the server, CLI credentials are scoped and revocable, and duplicate submissions are
+                blocked by signed requests and idempotency keys. For executable swaps, use a full
+                Robinhood Chain contract address or full Solana mint; cashtags, symbols, and fuzzy
+                names are research inputs, not safe execution inputs.
               </Callout>
             </DocsSection>
 
@@ -2365,6 +2579,86 @@ function CommandMatrix() {
               <td>{command.title}</td>
               <td>{command.tag}</td>
               <td>{command.confirmation}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function CliCommandReference() {
+  const commands = [
+    {
+      command: "linkr",
+      use: "Start an interactive private Linkr chat.",
+      notes: "Same behavior as linkr chat with no message.",
+    },
+    {
+      command: "linkr login",
+      use: "Authorize this computer through the browser/X code flow.",
+      notes: "Supports --no-browser, --read-only, --full, and --api-url.",
+    },
+    {
+      command: "linkr whoami",
+      use: "Show the active CLI key prefix, wallet, and scopes.",
+      notes: "Requires a valid local credential.",
+    },
+    {
+      command: 'linkr chat "message"',
+      use: "Send one prompt and stream Linkr's response.",
+      notes: "Use for account questions, market research, or one-off action requests.",
+    },
+    {
+      command: "linkr chat",
+      use: "Open an interactive chat loop.",
+      notes: "Type exit, quit, /exit, or /quit to leave.",
+    },
+    {
+      command: "linkr chat -c <id>",
+      use: "Continue a saved conversation.",
+      notes: "Also supports --image and --image-url attachments.",
+    },
+    {
+      command: "linkr conversations",
+      use: "List CLI and web terminal conversations.",
+      notes: "Prints the conversation ID, title, and last-message preview.",
+    },
+    {
+      command: "linkr continue <conversation_id>",
+      use: "Open an interactive session for one conversation.",
+      notes: "Useful for natural follow-ups after a previous chat.",
+    },
+    {
+      command: "linkr logout",
+      use: "Remove the local credential file.",
+      notes: "Does not revoke the server-side key by itself.",
+    },
+    {
+      command: "linkr revoke-current",
+      use: "Revoke the current server-side CLI key and remove local credentials.",
+      notes: "Best option when retiring a device or replacing a key.",
+    },
+  ];
+
+  return (
+    <div className="lkd-table-wrap" aria-label="CLI command reference">
+      <table>
+        <thead>
+          <tr>
+            <th>Command</th>
+            <th>What it does</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {commands.map((item) => (
+            <tr key={item.command}>
+              <td>
+                <code>{item.command}</code>
+              </td>
+              <td>{item.use}</td>
+              <td>{item.notes}</td>
             </tr>
           ))}
         </tbody>
