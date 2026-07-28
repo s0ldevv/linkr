@@ -1,14 +1,9 @@
 // deno-lint-ignore-file no-import-prefix
-import {
-  assertEquals,
-  assertRejects,
-} from "https://deno.land/std@0.224.0/assert/mod.ts";
-import {
-  verifyXPostingCredentials,
-  XPostingVerificationError,
-} from "./x_posting_verifier.ts";
+import { assertEquals, assertRejects } from "https://deno.land/std@0.224.0/assert/mod.ts";
+import { verifyXPostingCredentials, XPostingVerificationError } from "./x_posting_verifier.ts";
 
 const env = {
+  X_BOT_POST_AUTH_MODE: "oauth1",
   X_OAUTH1_CONSUMER_KEY: "consumer",
   X_OAUTH1_CONSUMER_SECRET: "consumer-secret",
   X_OAUTH1_ACCESS_TOKEN: "access",
@@ -17,9 +12,9 @@ const env = {
   X_BOT_HANDLE: "linkrcash",
 };
 
-async function withEnv(run: () => Promise<void>) {
+async function withEnv(run: () => Promise<void>, values: Record<string, string> = env) {
   const previous = new Map<string, string | undefined>();
-  for (const [key, value] of Object.entries(env)) {
+  for (const [key, value] of Object.entries(values)) {
     previous.set(key, Deno.env.get(key));
     Deno.env.set(key, value);
   }
@@ -36,8 +31,7 @@ async function withEnv(run: () => Promise<void>) {
 Deno.test("X posting verifier accepts the exact configured identity", async () => {
   await withEnv(async () => {
     const result = await verifyXPostingCredentials((_input, init) => {
-      const authorization = new Headers(init?.headers).get("Authorization") ??
-        "";
+      const authorization = new Headers(init?.headers).get("Authorization") ?? "";
       assertEquals(authorization.startsWith("OAuth "), true);
       return Promise.resolve(
         Response.json({
@@ -50,14 +44,39 @@ Deno.test("X posting verifier accepts the exact configured identity", async () =
   });
 });
 
+Deno.test("X posting verifier accepts OAuth 2.0 bot token mode", async () => {
+  await withEnv(
+    async () => {
+      const result = await verifyXPostingCredentials({
+        admin: { marker: "admin" },
+        oauth2TokenLoader: (admin) => {
+          assertEquals(admin.marker, "admin");
+          return Promise.resolve({ accessToken: "oauth2-access-token" });
+        },
+        fetchImpl: (_input, init) => {
+          const authorization = new Headers(init?.headers).get("Authorization") ?? "";
+          assertEquals(authorization, "Bearer oauth2-access-token");
+          return Promise.resolve(
+            Response.json({
+              data: { id: env.X_BOT_USER_ID, username: "LinkrCash" },
+            }),
+          );
+        },
+      });
+      assertEquals(result.authMode, "oauth2");
+      assertEquals(result.xUserId, env.X_BOT_USER_ID);
+      assertEquals(result.botHandle, "linkrcash");
+    },
+    { ...env, X_BOT_POST_AUTH_MODE: "oauth2" },
+  );
+});
+
 Deno.test("X posting verifier rejects a different X identity", async () => {
   await withEnv(async () => {
     await assertRejects(
       () =>
         verifyXPostingCredentials(() =>
-          Promise.resolve(
-            Response.json({ data: { id: "123", username: "wrong" } }),
-          )
+          Promise.resolve(Response.json({ data: { id: "123", username: "wrong" } })),
         ),
       XPostingVerificationError,
       "not the configured bot",
@@ -70,9 +89,7 @@ Deno.test("X posting verifier sanitizes X auth rejection", async () => {
     await assertRejects(
       () =>
         verifyXPostingCredentials(() =>
-          Promise.resolve(
-            Response.json({ title: "Unauthorized" }, { status: 401 }),
-          )
+          Promise.resolve(Response.json({ title: "Unauthorized" }, { status: 401 })),
         ),
       XPostingVerificationError,
       "X auth check 401",

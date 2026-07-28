@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
     { name: "x-verify-posting-auth", ttlSeconds: 60, allowWithoutRpc: true },
     async () => {
       try {
-        const result = await verifyXPostingCredentials();
+        const result = await verifyXPostingCredentials({ admin });
         const details = {
           auth_mode: result.authMode,
           x_user_id: result.xUserId,

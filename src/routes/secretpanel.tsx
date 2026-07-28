@@ -368,18 +368,29 @@ function SecretPanelPage() {
                     @{status.posting_auth.expected_handle ?? "linkrcash"}
                   </h2>
                 </div>
-                <Button
-                  type="button"
-                  onClick={() => verifyPostingMutation.mutate()}
-                  disabled={verifyPostingMutation.isPending}
-                >
-                  {verifyPostingMutation.isPending ? (
-                    <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Twitter aria-hidden="true" className="h-4 w-4" />
-                  )}
-                  Verify credentials
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  {status.oauth_login_url ? (
+                    <Button asChild>
+                      <a href={status.oauth_login_url} target="_blank" rel="noreferrer">
+                        <Twitter aria-hidden="true" className="h-4 w-4" />
+                        Connect @{status.posting_auth.expected_handle ?? "linkrcash"}
+                      </a>
+                    </Button>
+                  ) : null}
+                  <Button
+                    type="button"
+                    variant={status.oauth_login_url ? "outline" : "default"}
+                    onClick={() => verifyPostingMutation.mutate()}
+                    disabled={verifyPostingMutation.isPending}
+                  >
+                    {verifyPostingMutation.isPending ? (
+                      <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Twitter aria-hidden="true" className="h-4 w-4" />
+                    )}
+                    Verify credentials
+                  </Button>
+                </div>
               </div>
 
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -412,8 +423,8 @@ function SecretPanelPage() {
 
               {status.posting_auth.mode === "oauth2" && status.oauth_login_url ? (
                 <p className="mt-4 text-xs text-[#66706b]">
-                  OAuth 2.0 rollback remains available during migration. Posting will not switch to
-                  OAuth 1.0a until the new credentials pass identity verification.
+                  OAuth 2.0 bot login is available for posting. After connecting, refresh this panel
+                  and verify the active token.
                 </p>
               ) : null}
             </section>
