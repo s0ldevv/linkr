@@ -23,7 +23,7 @@ export interface XUserGatingPolicy {
 
 export interface MetadataTestingPolicy {
   enabled: boolean;
-  test_website_url: string;
+  test_website_url: string | null;
   test_twitter_url: string | null;
   test_telegram_url: string | null;
 }
@@ -59,9 +59,9 @@ export const DEFAULT_X_USER_GATING_POLICY: XUserGatingPolicy = {
 
 export const DEFAULT_METADATA_TESTING_POLICY: MetadataTestingPolicy = {
   enabled: false,
-  test_website_url: "https://google.com",
-  test_twitter_url: "https://x.com",
-  test_telegram_url: "https://t.me/",
+  test_website_url: null,
+  test_twitter_url: null,
+  test_telegram_url: null,
 };
 
 export async function readLaunchFundingPolicy(
@@ -221,12 +221,9 @@ export function normalizeMetadataTestingPolicy(
   const enabled = row.enabled === true;
   return {
     enabled,
-    test_website_url: normalizeHttpsUrl(row.test_website_url) ??
-      DEFAULT_METADATA_TESTING_POLICY.test_website_url,
-    test_twitter_url: normalizeHttpsUrl(row.test_twitter_url) ??
-      DEFAULT_METADATA_TESTING_POLICY.test_twitter_url,
-    test_telegram_url: normalizeHttpsUrl(row.test_telegram_url) ??
-      DEFAULT_METADATA_TESTING_POLICY.test_telegram_url,
+    test_website_url: normalizeHttpsUrl(row.test_website_url),
+    test_twitter_url: normalizeHttpsUrl(row.test_twitter_url),
+    test_telegram_url: normalizeHttpsUrl(row.test_telegram_url),
   };
 }
 

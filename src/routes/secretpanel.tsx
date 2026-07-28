@@ -97,7 +97,7 @@ type XUserGatingPolicy = {
 
 type MetadataTestingPolicy = {
   enabled: boolean;
-  test_website_url: string;
+  test_website_url: string | null;
   test_twitter_url: string | null;
   test_telegram_url: string | null;
 };
@@ -759,11 +759,11 @@ function PolicyControls({
             <PolicyTextInput
               label="Website"
               disabled={!metadata.enabled}
-              value={metadata.test_website_url}
+              value={metadata.test_website_url ?? ""}
               onChange={(value) =>
                 setMetadata((current) => ({
                   ...current,
-                  test_website_url: value,
+                  test_website_url: value || null,
                 }))
               }
             />

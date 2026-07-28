@@ -17,12 +17,7 @@ import {
   readLaunchFundingPolicy,
   readMetadataTestingPolicy,
 } from "../_shared/admin_settings.ts";
-import {
-  defaultCoinWebsiteUrl,
-  normalizeMetadataTelegramUrl,
-  normalizeMetadataTwitterUrl,
-  normalizeMetadataWebsiteUrl,
-} from "../_shared/launch_metadata.ts";
+import { resolvePumpFunLaunchMetadata } from "../_shared/launch_metadata.ts";
 
 const VERSION = "worker-launch-robinhood-v1";
 const STAGE = "launch_robinhood" as const;
@@ -141,17 +136,16 @@ Deno.serve((req) =>
         let currentLaunch = launch;
         const metadataPolicy = await readMetadataTestingPolicy(admin);
         if (!String(currentLaunch.metadata_uri ?? "").trim()) {
-          const provisionalWebsite = metadataPolicy.enabled
-            ? metadataPolicy.test_website_url
-            : normalizeMetadataWebsiteUrl(currentLaunch.metadata_website_url) ??
-              "https://linkr.cash/coin";
-          const provisionalTwitter = metadataPolicy.enabled
-            ? normalizeMetadataTwitterUrl(metadataPolicy.test_twitter_url)
-            : normalizeMetadataTwitterUrl(launch.metadata_twitter_url) ??
-              normalizeMetadataTwitterUrl(launch.source_tweet_url);
-          const provisionalTelegram = metadataPolicy.enabled
-            ? normalizeMetadataTelegramUrl(metadataPolicy.test_telegram_url)
-            : normalizeMetadataTelegramUrl(launch.metadata_telegram_url);
+          const provisionalMetadata = resolvePumpFunLaunchMetadata(
+            currentLaunch,
+            {
+              testingMode: metadataPolicy.enabled,
+              testingWebsiteUrl: metadataPolicy.test_website_url,
+              testingTwitterUrl: metadataPolicy.test_twitter_url,
+              testingTelegramUrl: metadataPolicy.test_telegram_url,
+              mintAddress: null,
+            },
+          );
           const assets = await assetsModule
             .prepareLaunchSupabaseAssetsAtStablePath(admin, {
               launchId: launch.id,
@@ -159,10 +153,10 @@ Deno.serve((req) =>
               symbol: launch.symbol,
               description: launch.description,
               imageUrl: launch.stable_logo_url ?? launch.image_url,
-              website: provisionalWebsite,
-              twitter: provisionalTwitter,
-              telegram: provisionalTelegram,
-              externalUrl: provisionalWebsite,
+              website: provisionalMetadata.websiteUrl,
+              twitter: provisionalMetadata.twitterUrl,
+              telegram: provisionalMetadata.telegramUrl,
+              externalUrl: provisionalMetadata.websiteUrl,
             });
           const updated = await admin.from("coin_launches").update({
             image_url: assets.imageUrl,
@@ -215,20 +209,13 @@ Deno.serve((req) =>
           String(currentLaunch.token_metadata_storage_path ?? "").trim() &&
           String(currentLaunch.metadata_storage_provider ?? "") === "supabase"
         ) {
-          const website = metadataPolicy.enabled
-            ? metadataPolicy.test_website_url
-            : normalizeMetadataWebsiteUrl(currentLaunch.metadata_website_url) ??
-              defaultCoinWebsiteUrl(preflight.predictedToken);
-          const twitter = metadataPolicy.enabled
-            ? normalizeMetadataTwitterUrl(metadataPolicy.test_twitter_url)
-            : normalizeMetadataTwitterUrl(
-              currentLaunch.metadata_twitter_url,
-            ) ?? normalizeMetadataTwitterUrl(currentLaunch.source_tweet_url);
-          const telegram = metadataPolicy.enabled
-            ? normalizeMetadataTelegramUrl(metadataPolicy.test_telegram_url)
-            : normalizeMetadataTelegramUrl(
-              currentLaunch.metadata_telegram_url,
-            );
+          const metadata = resolvePumpFunLaunchMetadata(currentLaunch, {
+            testingMode: metadataPolicy.enabled,
+            testingWebsiteUrl: metadataPolicy.test_website_url,
+            testingTwitterUrl: metadataPolicy.test_twitter_url,
+            testingTelegramUrl: metadataPolicy.test_telegram_url,
+            mintAddress: preflight.predictedToken,
+          });
           const refreshedMetadata = await assetsModule
             .refreshLaunchMetadataAtPath(
               admin,
@@ -243,10 +230,10 @@ Deno.serve((req) =>
                   currentLaunch.image_url,
                 tokenMetadataStoragePath:
                   currentLaunch.token_metadata_storage_path,
-                website,
-                twitter,
-                telegram,
-                externalUrl: website,
+                website: metadata.websiteUrl,
+                twitter: metadata.twitterUrl,
+                telegram: metadata.telegramUrl,
+                externalUrl: metadata.websiteUrl,
               },
             );
           if (
@@ -259,7 +246,7 @@ Deno.serve((req) =>
               launch_metadata: {
                 ...(currentLaunch.launch_metadata ?? {}),
                 robinhood_metadata_token_address: preflight.predictedToken,
-                robinhood_metadata_website: website,
+                robinhood_metadata_website: metadata.websiteUrl,
               },
             }).eq("id", currentLaunch.id).select("*").single();
             if (metadataUpdated.error) throw metadataUpdated.error;

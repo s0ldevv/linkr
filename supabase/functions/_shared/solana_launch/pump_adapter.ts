@@ -416,8 +416,7 @@ async function uploadPumpMetadata(
     formData.append("description", String(input.description ?? ""));
     formData.append(
       "website",
-      (input.websiteUrl ?? "").trim() ||
-        defaultCoinWebsiteUrl(input.mintAddress),
+      resolvedWebsiteUrl(input.websiteUrl, input.mintAddress),
     );
     if (input.twitterUrl) formData.append("twitter", input.twitterUrl);
     if (input.telegramUrl) formData.append("telegram", input.telegramUrl);
@@ -445,6 +444,19 @@ async function uploadPumpMetadata(
     }
   }
   throw new Error(`pump_fun_metadata_upload_failed:${lastError}`.slice(0, 500));
+}
+
+function resolvedWebsiteUrl(value: unknown, mintAddress: string): string {
+  const website = String(value ?? "").trim();
+  if (!website || unresolvedDefaultWebsite(website)) {
+    return defaultCoinWebsiteUrl(mintAddress);
+  }
+  return website;
+}
+
+function unresolvedDefaultWebsite(value: string): boolean {
+  return value.replace(/\/+$/, "") ===
+    defaultCoinWebsiteUrl("").replace(/\/+$/, "");
 }
 
 async function fetchWithTimeout(

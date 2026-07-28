@@ -48,19 +48,19 @@ Deno.test("X gating policy clamps unsafe threshold values", () => {
   );
 });
 
-Deno.test("metadata testing policy disables invalid URLs", () => {
+Deno.test("metadata testing policy treats invalid or blank testing fields as unset", () => {
   assertEquals(
     normalizeMetadataTestingPolicy({
       enabled: true,
       test_website_url: "http://not-secure.example",
       test_twitter_url: "javascript:alert(1)",
-      test_telegram_url: "https://t.me/linkr",
+      test_telegram_url: "",
     }),
     {
       enabled: true,
-      test_website_url: "https://google.com",
-      test_twitter_url: "https://x.com",
-      test_telegram_url: "https://t.me/linkr",
+      test_website_url: null,
+      test_twitter_url: null,
+      test_telegram_url: null,
     },
   );
 });

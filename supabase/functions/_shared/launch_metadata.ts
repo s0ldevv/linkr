@@ -10,12 +10,6 @@ export function defaultCoinWebsiteUrl(tokenMint: unknown): string {
   return `https://linkr.cash/coin/${encodeURIComponent(token)}`;
 }
 
-// Testing-mode placeholders. They are only used when the database-backed
-// metadata_testing_policy setting is explicitly enabled.
-export const PUMP_FUN_METADATA_TEST_WEBSITE = "https://google.com";
-export const PUMP_FUN_METADATA_TEST_TWITTER = "https://x.com";
-export const PUMP_FUN_METADATA_TEST_TELEGRAM = "https://t.me/";
-
 export type ResolvedLaunchMetadataUrls = {
   websiteUrl: string;
   twitterUrl: string | null;
@@ -43,8 +37,9 @@ export type LaunchMetadataTestingOptions = {
  * Resolve the website/twitter/telegram URLs sent to pump.fun's metadata
  * uploader.
  *
- * While database testing mode is true we send an explicit placeholder trio so
- * launches keep working against pump.fun's validation during QA. When disabled:
+ * While database testing mode is true, each configured testing value overrides
+ * the launch request for every launch. Blank testing values ignore user
+ * metadata and fall back to the normal default for that field. When disabled:
  *   - website: user-provided override, else https://linkr.cash/coin/<mint>
  *   - twitter: user-provided override, else the original X post URL
  *   - telegram: user-provided override only (never auto-filled)
@@ -53,20 +48,17 @@ export function resolvePumpFunLaunchMetadata(
   launch: LaunchMetadataSource,
   options: LaunchMetadataTestingOptions,
 ): ResolvedLaunchMetadataUrls {
+  const mint = String(options.mintAddress ?? launch.mint_address ?? "").trim();
   if (options.testingMode) {
     return {
       websiteUrl: normalizeMetadataWebsiteUrl(options.testingWebsiteUrl) ??
-        PUMP_FUN_METADATA_TEST_WEBSITE,
+        defaultCoinWebsiteUrl(mint),
       twitterUrl: normalizeMetadataTwitterUrl(options.testingTwitterUrl) ??
-        PUMP_FUN_METADATA_TEST_TWITTER,
-      telegramUrl: normalizeMetadataTelegramUrl(options.testingTelegramUrl) ??
-        PUMP_FUN_METADATA_TEST_TELEGRAM,
+        normalizeMetadataTwitterUrl(launch.source_tweet_url),
+      telegramUrl: normalizeMetadataTelegramUrl(options.testingTelegramUrl),
       testingMode: true,
     };
   }
-  const mint = String(
-    options.mintAddress ?? launch.mint_address ?? "",
-  ).trim();
   const website = normalizeMetadataWebsiteUrl(launch.metadata_website_url) ??
     defaultCoinWebsiteUrl(mint);
   const twitter = normalizeMetadataTwitterUrl(launch.metadata_twitter_url) ??
