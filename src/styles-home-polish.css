@@ -47375,12 +47375,33 @@ body .sm-app-shell .sm-app-content .terminal-composer textarea {
   color: var(--app-ink) !important;
   -webkit-text-fill-color: var(--app-ink) !important;
   font: inherit !important;
-  line-height: 1.4 !important;
+  line-height: 20px !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  scrollbar-color: color-mix(in srgb, var(--app-ink) 24%, transparent) transparent !important;
+  scrollbar-gutter: auto !important;
+  scrollbar-width: thin !important;
 }
 
 body .sm-app-shell .sm-app-content .terminal-composer textarea:focus {
   border: 0 !important;
   box-shadow: none !important;
+}
+
+body .sm-app-shell .sm-app-content .terminal-composer textarea::-webkit-scrollbar {
+  width: 8px !important;
+  height: 8px !important;
+}
+
+body .sm-app-shell .sm-app-content .terminal-composer textarea::-webkit-scrollbar-track,
+body .sm-app-shell .sm-app-content .terminal-composer textarea::-webkit-scrollbar-corner {
+  background: transparent !important;
+}
+
+body .sm-app-shell .sm-app-content .terminal-composer textarea::-webkit-scrollbar-thumb {
+  border: 2px solid var(--app-bg) !important;
+  border-radius: 999px !important;
+  background: color-mix(in srgb, var(--app-ink) 24%, transparent) !important;
 }
 
 body .sm-app-shell .sm-app-content .terminal-composer .terminal-composer-upload {

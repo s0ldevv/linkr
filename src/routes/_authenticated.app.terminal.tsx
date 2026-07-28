@@ -19,7 +19,6 @@ import {
   ImagePlus,
   Loader2,
   MessageSquarePlus,
-  PanelRight,
   Search,
   Send,
   Sparkles,
@@ -129,7 +128,6 @@ function TerminalPage() {
   const [search, setSearch] = useState("");
   const [streaming, setStreaming] = useState<StreamMessage | null>(null);
   const [sending, setSending] = useState(false);
-  const [contextOpen, setContextOpen] = useState(false);
   const [pendingLocalUser, setPendingLocalUser] = useState<TerminalMessage | null>(null);
   const [activeTurnOrder, setActiveTurnOrder] = useState<ActiveTurnOrder | null>(null);
   const [attachments, setAttachments] = useState<TerminalChatAttachment[]>([]);
@@ -704,13 +702,6 @@ function TerminalPage() {
                   </button>
                 </>
               )}
-              <button
-                type="button"
-                aria-label="Toggle context"
-                onClick={() => setContextOpen((open) => !open)}
-              >
-                <PanelRight aria-hidden="true" size={16} />
-              </button>
             </div>
           </div>
 
@@ -828,7 +819,7 @@ function TerminalPage() {
           </form>
         </main>
 
-        <aside className="terminal-context" data-open={contextOpen}>
+        <aside className="terminal-context">
           <section className="sm-card app-dashboard-card">
             <div className="terminal-panel-head">
               <strong>Pending</strong>

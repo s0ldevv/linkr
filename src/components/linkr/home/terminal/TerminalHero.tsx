@@ -24,7 +24,6 @@ import {
   WalletCards,
 } from "lucide-react";
 import { RobinhoodLogo, SolanaLogo } from "@/components/linkr/ChainLogos";
-import { xIntent } from "@/lib/linkr/home-data";
 
 function XLogo(props: ComponentProps<"svg">) {
   return (
@@ -757,6 +756,65 @@ function WorkflowMovie() {
   );
 }
 
+const HERO_PLATFORMS = [
+  "X",
+  "Telegram",
+  "Terminal",
+  "OpenClaw",
+  "Hermes",
+  "Codex",
+  "Cursor",
+  "Claude",
+  "MCP",
+  "Discord",
+] as const;
+
+const PLATFORM_HOLD_MS = 2100;
+const PLATFORM_LEAVE_MS = 520;
+const PLATFORM_ENTER_MS = 40;
+
+type PlatformFlipPhase = "entering" | "visible" | "leaving";
+
+function HeroPlatformFlip() {
+  const [wordIndex, setWordIndex] = useState(0);
+  const [phase, setPhase] = useState<PlatformFlipPhase>("visible");
+  const word = HERO_PLATFORMS[wordIndex];
+
+  useEffect(() => {
+    const delay =
+      phase === "visible"
+        ? PLATFORM_HOLD_MS
+        : phase === "leaving"
+          ? PLATFORM_LEAVE_MS
+          : PLATFORM_ENTER_MS;
+    const timeoutId = window.setTimeout(() => {
+      if (phase === "visible") {
+        setPhase("leaving");
+        return;
+      }
+      if (phase === "leaving") {
+        setWordIndex((index) => (index + 1) % HERO_PLATFORMS.length);
+        setPhase("entering");
+        return;
+      }
+      setPhase("visible");
+    }, delay);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [phase]);
+
+  return (
+    <mark className="lkx-hero-flip">
+      <span className="lkx-hero-flip-track" aria-hidden="true">
+        <span key={word} data-phase={phase}>
+          {word}
+        </span>
+      </span>
+      <span className="lkx-sr-only">{HERO_PLATFORMS.join(", ")}</span>
+    </mark>
+  );
+}
+
 export function TerminalHero() {
   const showcaseRef = useRef<HTMLDivElement>(null);
   const activeScreenRef = useRef(0);
@@ -844,30 +902,15 @@ export function TerminalHero() {
       <div className="lkx-hero-copy">
         <h1>
           <span>The AI wallet</span>
-          <span>
-            agent <mark>for X.</mark>
+          <span>agent for</span>
+          <span className="lkx-hero-flip-line">
+            <HeroPlatformFlip />
           </span>
         </h1>
         <p className="lkx-hero-lede">
           Launch tokens, send payments, swap, and manage wallets across Solana and Robinhood
           Chain&mdash;right from X&nbsp;/ <strong>@linkrcash</strong>.
         </p>
-
-        <div className="lkx-hero-actions">
-          <a
-            className="lkx-btn lkx-btn--lime"
-            href={xIntent("@linkrcash help")}
-            target="_blank"
-            rel="noreferrer"
-          >
-            Try @linkrcash on X
-            <ArrowUpRight aria-hidden="true" size={17} strokeWidth={2.7} />
-          </a>
-          <a className="lkx-btn lkx-btn--dark" href="#workflow">
-            Explore features
-            <ArrowUpRight aria-hidden="true" size={17} strokeWidth={2.7} />
-          </a>
-        </div>
 
         <ul className="lkx-hero-chips">
           {FEATURE_CHIPS.map(({ icon: Icon, label }) => (

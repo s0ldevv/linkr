@@ -397,6 +397,68 @@
   padding: 0;
 }
 
+.lkx-hero-flip-line {
+  min-height: 1.03em;
+}
+
+.lkx-hero-flip {
+  display: inline-block;
+  perspective: 720px;
+  position: relative;
+  vertical-align: baseline;
+  white-space: nowrap;
+}
+
+.lkx-hero-flip-track {
+  display: inline-block;
+  transform-style: preserve-3d;
+}
+
+.lkx-hero-flip-track > span {
+  display: inline-block;
+  transform-origin: 50% 50%;
+  transition:
+    transform 0.52s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.44s ease,
+    filter 0.44s ease,
+    text-shadow 0.44s ease;
+  will-change: transform, opacity, filter;
+}
+
+.lkx-hero-flip-track > span[data-phase="visible"] {
+  filter: blur(0);
+  opacity: 1;
+  text-shadow: 0 0 26px rgb(204 255 0 / 28%);
+  transform: translateY(0) rotateX(0deg);
+}
+
+.lkx-hero-flip-track > span[data-phase="entering"] {
+  filter: blur(7px);
+  opacity: 0;
+  text-shadow: none;
+  transform: translateY(0.4em) rotateX(-58deg);
+}
+
+.lkx-hero-flip-track > span[data-phase="leaving"] {
+  filter: blur(7px);
+  opacity: 0;
+  text-shadow: none;
+  transform: translateY(-0.4em) rotateX(58deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lkx-hero-flip-track > span {
+    transition: opacity 0.3s ease;
+  }
+
+  .lkx-hero-flip-track > span[data-phase="entering"],
+  .lkx-hero-flip-track > span[data-phase="leaving"] {
+    filter: none;
+    text-shadow: none;
+    transform: none;
+  }
+}
+
 .lkx-hero-lede {
   color: rgb(255 255 255 / 70%);
   font-size: clamp(1.05rem, 1.13vw, 1.28rem);
