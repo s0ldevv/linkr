@@ -3,6 +3,8 @@ import { type AgentScope, normalizeScopes } from "./agent_api_core.ts";
 
 const BASE32_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
 const DEFAULT_APP_ORIGIN = "https://www.linkr.cash";
+export const CLI_AUTH_RECENT_X_AUTH_MAX_AGE_MS = 5 * 60 * 1000;
+const CLI_AUTH_REQUEST_CLOCK_SKEW_MS = 30 * 1000;
 
 export const CLI_DEFAULT_SCOPES: AgentScope[] = [
   "profile:read",
@@ -171,6 +173,26 @@ export async function hashedRequestValue(value: unknown): Promise<string> {
     Deno.env.get("AGENT_API_KEY_PEPPER") ??
     "linkr-cli-auth";
   return sha256Hex(`${pepper}:${String(value ?? "").slice(0, 500)}`);
+}
+
+export function isRecentCliXAuthenticationForRequest(
+  authenticatedAt: Date | null,
+  requestCreatedAt: unknown,
+  nowMs = Date.now(),
+): boolean {
+  if (!authenticatedAt || !Number.isFinite(authenticatedAt.getTime())) {
+    return false;
+  }
+  const requestCreatedAtMs = new Date(String(requestCreatedAt ?? "")).getTime();
+  if (!Number.isFinite(requestCreatedAtMs)) return false;
+
+  const authenticatedAtMs = authenticatedAt.getTime();
+  const ageMs = nowMs - authenticatedAtMs;
+  if (ageMs < 0 || ageMs > CLI_AUTH_RECENT_X_AUTH_MAX_AGE_MS) {
+    return false;
+  }
+  return authenticatedAtMs >=
+    requestCreatedAtMs - CLI_AUTH_REQUEST_CLOCK_SKEW_MS;
 }
 
 export function noStoreHeaders(

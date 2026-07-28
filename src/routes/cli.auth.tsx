@@ -1,10 +1,16 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { AlertCircle, Check, CheckCircle2, Copy, Loader2 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { createFileRoute } from "@tanstack/react-router";
+import { AlertCircle, Check, CheckCircle2, Copy, Loader2, ShieldCheck } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { authSearchFor } from "@/lib/linkr/auth-return";
-import { useAuth } from "@/hooks/use-auth";
+import { XLogo } from "@/components/linkr/XLogo";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  beginAuthPopupFlow,
+  clearAuthPopupFlow,
+  createAuthFlowId,
+  subscribeToAuthPopupResults,
+  type AuthPopupResult,
+} from "@/lib/linkr/auth-popup";
 
 export const Route = createFileRoute("/cli/auth")({
   ssr: false,
@@ -24,20 +30,25 @@ export const Route = createFileRoute("/cli/auth")({
   component: CliAuthPage,
 });
 
+type CliAuthState = "idle" | "waiting" | "approving" | "approved" | "blocked" | "error";
+
+const CLI_REQUEST_PATTERN = /^[A-Za-z0-9_-]{32,256}$/;
+const SESSION_INSTALL_RETRIES = 20;
+const SESSION_INSTALL_RETRY_MS = 150;
+
 function CliAuthPage() {
-  const navigate = useNavigate();
   const { request } = Route.useSearch();
-  const { user, loading } = useAuth();
-  const [state, setState] = useState<"loading" | "approved" | "error">("loading");
+  const requestValid = Boolean(request && CLI_REQUEST_PATTERN.test(request));
+  const [state, setState] = useState<CliAuthState>(requestValid ? "idle" : "error");
   const [code, setCode] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState<string | null>(null);
   const copyResetRef = useRef<number | undefined>(undefined);
-  const returnPath = useMemo(
-    () => `/cli/auth${request ? `?request=${encodeURIComponent(request)}` : ""}`,
-    [request],
-  );
+  const popupRef = useRef<Window | null>(null);
+  const popupCheckRef = useRef<number | undefined>(undefined);
+  const activeFlowRef = useRef<string | null>(null);
+  const handledFlowRef = useRef<string | null>(null);
   const codeGroups = useMemo(
     () =>
       code
@@ -49,29 +60,28 @@ function CliAuthPage() {
     [code],
   );
 
-  useEffect(() => {
-    return () => window.clearTimeout(copyResetRef.current);
+  const resetXAuthPopup = useCallback((flowId?: string | null) => {
+    window.clearInterval(popupCheckRef.current);
+    popupCheckRef.current = undefined;
+    popupRef.current?.close();
+    popupRef.current = null;
+    const resolvedFlowId = flowId ?? activeFlowRef.current;
+    if (resolvedFlowId) clearAuthPopupFlow(resolvedFlowId);
+    activeFlowRef.current = null;
   }, []);
 
-  useEffect(() => {
-    if (!request || !/^[A-Za-z0-9_-]{32,256}$/.test(request)) {
-      setState("error");
-      setMessage("This CLI authorization link is invalid.");
-      return;
-    }
-    if (loading) return;
-    if (!user) {
-      navigate({ to: "/auth", search: authSearchFor(returnPath), replace: true });
-      return;
-    }
+  const approveCliAuth = useCallback(
+    async (expectedUserId?: string | null) => {
+      if (!request || !requestValid) {
+        setState("error");
+        setMessage("This CLI authorization link is invalid.");
+        return;
+      }
 
-    let cancelled = false;
-    (async () => {
       try {
-        setState("loading");
-        const { data } = await supabase.auth.getSession();
-        const token = data.session?.access_token;
-        if (!token) throw new Error("Sign in again to authorize the CLI.");
+        setState("approving");
+        setMessage(null);
+        const token = await waitForBrowserSessionToken(expectedUserId);
         const response = await fetch("/api/cli/auth/approve", {
           method: "POST",
           headers: {
@@ -85,22 +95,126 @@ function CliAuthPage() {
           const errorCode = payload?.error?.code ?? payload?.error ?? "cli_auth_failed";
           throw new Error(readableCliAuthError(errorCode));
         }
-        if (cancelled) return;
         setCode(String(payload.user_code));
         setState("approved");
         setMessage(null);
         setCopyError(null);
       } catch (error) {
-        if (cancelled) return;
+        setCode(null);
         setState("error");
         setMessage(error instanceof Error ? error.message : "CLI authorization failed.");
       }
-    })();
+    },
+    [request, requestValid],
+  );
 
-    return () => {
-      cancelled = true;
+  useEffect(() => {
+    resetXAuthPopup();
+    window.clearTimeout(copyResetRef.current);
+    setCopied(false);
+    setCopyError(null);
+    setCode(null);
+    handledFlowRef.current = null;
+    if (!requestValid) {
+      setState("error");
+      setMessage("This CLI authorization link is invalid.");
+      return;
+    }
+    setState("idle");
+    setMessage(null);
+  }, [request, requestValid, resetXAuthPopup]);
+
+  useEffect(() => {
+    const onResult = (data: AuthPopupResult) => {
+      const activeFlowId = activeFlowRef.current;
+      if (!activeFlowId) return;
+      if (data.flowId && data.flowId !== activeFlowId) return;
+      if (handledFlowRef.current === activeFlowId) return;
+      handledFlowRef.current = activeFlowId;
+      resetXAuthPopup(activeFlowId);
+
+      if (data.status === "ok") {
+        void approveCliAuth(data.userId);
+        return;
+      }
+      setCode(null);
+      setState("error");
+      setMessage(
+        data.status === "banned"
+          ? readableCliAuthError("banned_x_user")
+          : readableXAuthError(data.message),
+      );
     };
-  }, [loading, navigate, request, returnPath, user]);
+
+    const unsubscribe = subscribeToAuthPopupResults(onResult);
+    return () => {
+      unsubscribe();
+      resetXAuthPopup();
+    };
+  }, [approveCliAuth, resetXAuthPopup]);
+
+  useEffect(() => {
+    return () => window.clearTimeout(copyResetRef.current);
+  }, []);
+
+  function startXAuth() {
+    try {
+      if (!requestValid) throw new Error("This CLI authorization link is invalid.");
+      resetXAuthPopup();
+      handledFlowRef.current = null;
+
+      const supabaseUrl =
+        import.meta.env.VITE_SUPABASE_URL ||
+        (typeof process !== "undefined" ? process.env.SUPABASE_URL : undefined);
+      if (!supabaseUrl) throw new Error("Supabase URL is not configured.");
+
+      const flowId = createAuthFlowId();
+      const redirectTo = new URL("/auth/callback", window.location.origin);
+      redirectTo.searchParams.set("auth_popup", "1");
+      redirectTo.searchParams.set("auth_flow", flowId);
+      redirectTo.searchParams.set("cli_auth", "1");
+
+      const loginUrl = new URL(`${supabaseUrl.replace(/\/+$/, "")}/functions/v1/x-oauth/user`);
+      loginUrl.searchParams.set("auth_popup", "1");
+      loginUrl.searchParams.set("auth_flow", flowId);
+      loginUrl.searchParams.set("redirect_to", redirectTo.toString());
+
+      beginAuthPopupFlow(flowId);
+      const popup = openCenteredPopup(loginUrl.toString());
+      if (!popup) {
+        clearAuthPopupFlow(flowId);
+        setCode(null);
+        setState("blocked");
+        setMessage("Popups are blocked. Allow popups for Linkr, then try again.");
+        return;
+      }
+
+      activeFlowRef.current = flowId;
+      popupRef.current = popup;
+      popup.focus();
+      setCode(null);
+      setCopyError(null);
+      setState("waiting");
+      setMessage(null);
+      window.clearInterval(popupCheckRef.current);
+      popupCheckRef.current = window.setInterval(() => {
+        if (!popup.closed) return;
+        window.clearInterval(popupCheckRef.current);
+        popupCheckRef.current = undefined;
+        popupRef.current = null;
+        if (activeFlowRef.current !== flowId) return;
+        clearAuthPopupFlow(flowId);
+        activeFlowRef.current = null;
+        setState((current) => (current === "waiting" ? "idle" : current));
+        setMessage("X login window closed before authorization finished.");
+      }, 700);
+    } catch (error) {
+      resetXAuthPopup();
+      setCode(null);
+      setState("error");
+      setMessage(readableXAuthError(error));
+    }
+  }
 
   async function copyCode() {
     if (!code) return;
@@ -116,29 +230,89 @@ function CliAuthPage() {
     }
   }
 
+  const verifying = state === "waiting" || state === "approving";
+  const canRetry = requestValid && state === "error";
+
   return (
     <div className="sm-auth-page app-rayo-launches-page app-rayo-login-page cli-auth-page min-h-screen bg-background text-foreground">
       <main className="app-login-shell">
         <section className="app-login-copy cli-auth-copy" aria-labelledby="cli-auth-title">
           <h1 id="cli-auth-title">
             Linkr CLI.
-            <span>Browser verified.</span>
+            <span>X verified.</span>
           </h1>
           <p>
-            Approve this login in your browser, then paste the one-time code back into your
-            terminal.
+            Authenticate with the X account that should own this CLI session. Linkr only shows the
+            terminal code after X verifies the browser.
           </p>
         </section>
 
         <section className="app-login-panel cli-auth-panel" aria-label="Linkr CLI authorization">
-          {state === "loading" && (
-            <div className="app-login-panel-top cli-auth-panel-top">
-              <span className="cli-auth-state-icon" data-state="loading">
-                <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
-              </span>
-              <strong>Authorizing CLI</strong>
-              <p>Keep this tab open while Linkr verifies the terminal request.</p>
-            </div>
+          {(state === "idle" ||
+            state === "waiting" ||
+            state === "approving" ||
+            state === "blocked") && (
+            <>
+              <div className="app-login-panel-top cli-auth-panel-top">
+                <span
+                  className="cli-auth-state-icon"
+                  data-state={verifying ? "loading" : state === "blocked" ? "error" : "idle"}
+                >
+                  {verifying ? (
+                    <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
+                  ) : state === "blocked" ? (
+                    <AlertCircle className="h-5 w-5" aria-hidden="true" />
+                  ) : (
+                    <ShieldCheck className="h-5 w-5" aria-hidden="true" />
+                  )}
+                </span>
+                <strong>
+                  {state === "approving"
+                    ? "Preparing CLI code"
+                    : state === "waiting"
+                      ? "Waiting for X"
+                      : "Verify with X"}
+                </strong>
+                <p>
+                  {state === "approving"
+                    ? "Linkr is finalizing the terminal authorization."
+                    : state === "waiting"
+                      ? "Finish X login in the popup, then return here."
+                      : "Continue with X before Linkr gives you a one-time CLI code."}
+                </p>
+              </div>
+
+              <Button
+                type="button"
+                onClick={startXAuth}
+                disabled={verifying || !requestValid}
+                size="lg"
+                className="app-login-x-button cli-auth-copy-button"
+              >
+                {verifying ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <XLogo className="h-5 w-5" />
+                )}
+                {state === "approving"
+                  ? "Preparing code..."
+                  : state === "waiting"
+                    ? "Waiting for X..."
+                    : state === "blocked"
+                      ? "Try X again"
+                      : "Continue with X"}
+              </Button>
+
+              {message ? (
+                <p
+                  className="app-login-status cli-auth-status"
+                  data-state={state === "blocked" ? "error" : "waiting"}
+                  role={state === "blocked" ? "alert" : "status"}
+                >
+                  {message}
+                </p>
+              ) : null}
+            </>
           )}
 
           {state === "approved" && code && (
@@ -189,18 +363,53 @@ function CliAuthPage() {
           )}
 
           {state === "error" && (
-            <div className="app-login-panel-top cli-auth-panel-top" role="alert">
-              <span className="cli-auth-state-icon" data-state="error">
-                <AlertCircle className="h-5 w-5" aria-hidden="true" />
-              </span>
-              <strong>CLI authorization failed</strong>
-              <p>{message ?? "Start login again from your terminal."}</p>
-            </div>
+            <>
+              <div className="app-login-panel-top cli-auth-panel-top" role="alert">
+                <span className="cli-auth-state-icon" data-state="error">
+                  <AlertCircle className="h-5 w-5" aria-hidden="true" />
+                </span>
+                <strong>CLI authorization failed</strong>
+                <p>{message ?? "Start login again from your terminal."}</p>
+              </div>
+
+              {canRetry ? (
+                <Button
+                  type="button"
+                  onClick={startXAuth}
+                  size="lg"
+                  className="app-login-x-button cli-auth-copy-button"
+                >
+                  <XLogo className="h-5 w-5" />
+                  Try X again
+                </Button>
+              ) : null}
+            </>
           )}
         </section>
       </main>
     </div>
   );
+}
+
+async function waitForBrowserSessionToken(expectedUserId?: string | null): Promise<string> {
+  for (let attempt = 0; attempt < SESSION_INSTALL_RETRIES; attempt += 1) {
+    const { data, error } = await supabase.auth.getSession();
+    if (error) throw error;
+    const session = data.session;
+    if (session?.access_token && (!expectedUserId || session.user.id === expectedUserId)) {
+      return session.access_token;
+    }
+    await delay(SESSION_INSTALL_RETRY_MS);
+  }
+  throw new Error(
+    expectedUserId
+      ? "X login finished, but Linkr could not install the matching browser session."
+      : "X login finished, but Linkr could not install the browser session.",
+  );
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
 
 async function writeClipboard(value: string): Promise<void> {
@@ -224,8 +433,47 @@ async function writeClipboard(value: string): Promise<void> {
 
 function readableCliAuthError(code: unknown): string {
   const value = String(code ?? "");
+  if (/cli_x_authentication_required/.test(value)) {
+    return "Authenticate your X account before Linkr shows this CLI code.";
+  }
   if (/expired/.test(value)) return "This CLI login expired. Run linkr login again.";
   if (/banned/.test(value)) return "This X account is not permitted to use Linkr.";
   if (/rate_limit/.test(value)) return "Too many attempts. Wait a moment and try again.";
   return "Start login again from your terminal.";
+}
+
+function readableXAuthError(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error ?? "");
+  if (/access_denied/i.test(message)) return "X login cancelled. You can try again anytime.";
+  if (/banned|not permitted/i.test(message)) {
+    return "This X account is not permitted to use Linkr.";
+  }
+  if (/requirements/i.test(message)) {
+    return "This X account does not currently meet Linkr access requirements.";
+  }
+  return message || "X login did not finish. You can try again anytime.";
+}
+
+function openCenteredPopup(url: string): Window | null {
+  const width = 480;
+  const height = 720;
+  const left = Math.max(0, window.screenX + (window.outerWidth - width) / 2);
+  const top = Math.max(0, window.screenY + (window.outerHeight - height) / 2);
+  return window.open(
+    url,
+    "linkr_x_cli_auth",
+    [
+      "popup=yes",
+      `width=${width}`,
+      `height=${height}`,
+      `left=${Math.round(left)}`,
+      `top=${Math.round(top)}`,
+      "menubar=no",
+      "toolbar=no",
+      "location=no",
+      "status=no",
+      "resizable=yes",
+      "scrollbars=yes",
+    ].join(","),
+  );
 }

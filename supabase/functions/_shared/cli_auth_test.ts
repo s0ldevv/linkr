@@ -1,5 +1,6 @@
 import {
   createCliUserCode,
+  isRecentCliXAuthenticationForRequest,
   normalizeCliLimits,
   normalizeCliOpaqueCode,
   normalizeCliScopes,
@@ -87,5 +88,55 @@ Deno.test("CLI limits clamp oversized client requested caps", () => {
   }
   if (limits.daily_tx_limit !== 25) {
     throw new Error("daily tx cap was not clamped");
+  }
+});
+
+Deno.test("CLI approval requires recent X auth after the browser request", () => {
+  const requestCreatedAt = "2026-07-28T20:00:00.000Z";
+  const now = Date.parse("2026-07-28T20:01:00.000Z");
+  if (
+    !isRecentCliXAuthenticationForRequest(
+      new Date("2026-07-28T20:00:05.000Z"),
+      requestCreatedAt,
+      now,
+    )
+  ) {
+    throw new Error("fresh post-request X auth was rejected");
+  }
+  if (
+    !isRecentCliXAuthenticationForRequest(
+      new Date("2026-07-28T19:59:45.000Z"),
+      requestCreatedAt,
+      now,
+    )
+  ) {
+    throw new Error("minor auth/request clock skew was rejected");
+  }
+  if (
+    isRecentCliXAuthenticationForRequest(
+      new Date("2026-07-28T19:58:00.000Z"),
+      requestCreatedAt,
+      now,
+    )
+  ) {
+    throw new Error("pre-request X auth was accepted");
+  }
+  if (
+    isRecentCliXAuthenticationForRequest(
+      new Date("2026-07-28T19:54:59.000Z"),
+      requestCreatedAt,
+      now,
+    )
+  ) {
+    throw new Error("stale X auth was accepted");
+  }
+  if (
+    isRecentCliXAuthenticationForRequest(
+      null,
+      requestCreatedAt,
+      now,
+    )
+  ) {
+    throw new Error("missing X auth timestamp was accepted");
   }
 });
