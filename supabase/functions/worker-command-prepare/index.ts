@@ -22,6 +22,7 @@ import {
   classifyNftCommandWithAi,
   parseXNftCommand,
 } from "../_shared/x_nft_command.ts";
+import { executeXTradeCommand } from "../_shared/x_trade_execute.ts";
 
 const VERSION = "worker-command-prepare-v2";
 
@@ -160,15 +161,29 @@ Deno.serve((req) =>
       // the user has caps configured for the target chain and action.
       const tradeCommand = parseXTradeCommand(tweet.text);
       if (tradeCommand) {
-        const { executeXTradeCommand } = await import(
-          "../_shared/x_trade_execute.ts"
-        );
-        const outcome = await executeXTradeCommand({
-          admin,
-          userId,
-          tweetId,
-          command: tradeCommand,
-        });
+        let outcome;
+        try {
+          outcome = await executeXTradeCommand({
+            admin,
+            userId,
+            tweetId,
+            command: tradeCommand,
+          });
+        } catch (error) {
+          console.error(
+            JSON.stringify({
+              event: "x_trade_retryable_error",
+              tweet_id: tweetId,
+              message: String(error instanceof Error ? error.message : error)
+                .slice(0, 300),
+            }),
+          );
+          return {
+            kind: "retry",
+            errorCode: "x_trade_infra_retry",
+            delaySeconds: 60,
+          };
+        }
         await queueReply(
           admin,
           claim.work_item.id,

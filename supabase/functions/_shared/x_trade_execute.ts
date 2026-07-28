@@ -125,10 +125,20 @@ export async function executeXTradeCommand(
     const balance = insufficientNativeBalanceReplyFromError(error);
     if (balance) return reject("insufficient_balance", balance);
     const message = String((error as any)?.message ?? error);
-    // Retryable network / RPC blips bubble up so the worker can requeue.
-    if (/rpc|timeout|network|fetch|502|503|504/i.test(message)) throw error;
+    // Retryable infrastructure blips bubble up so the queue worker can requeue.
+    // Configuration problems (missing/placeholder RPC URLs, invalid keys, etc.)
+    // should produce a user-facing reply instead of tripping the whole stage.
+    if (isRetryableInfrastructureError(message)) throw error;
     return reject("trade_failed", `Couldn't complete that command: ${sanitize(message)}`);
   }
+}
+
+function isRetryableInfrastructureError(message: string): boolean {
+  if (/\b(?:missing|must be|invalid|unsupported|disabled)\b/i.test(message)) {
+    return false;
+  }
+  return /timeout|network|fetch|abort|provider_http_(?:408|425|429|500|502|503|504)|(?:^|[_\s-])(?:408|425|429|500|502|503|504)(?:$|[_\s-])|rate\s*limit|temporarily\s+unavailable/i
+    .test(message);
 }
 
 function sanitize(message: string): string {
