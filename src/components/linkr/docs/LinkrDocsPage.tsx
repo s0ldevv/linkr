@@ -1,23 +1,38 @@
 import { Link } from "@tanstack/react-router";
 import {
   AlertTriangle,
+  BadgeDollarSign,
+  Bot,
   BookOpen,
   CalendarClock,
+  ChartCandlestick,
   Check,
   ChevronRight,
+  CircleAlert,
+  CircleHelp,
   Clipboard,
   Code2,
+  Command,
+  Droplets,
   ExternalLink,
   FileText,
+  History,
+  Image,
   KeyRound,
   Layers3,
+  LayoutDashboard,
+  LifeBuoy,
   Lock,
   MessageCircle,
+  PlayCircle,
+  Rocket,
   ShieldCheck,
   Sparkles,
   Terminal,
   Wallet,
+  Workflow,
   Zap,
+  type LucideIcon,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
@@ -1031,6 +1046,7 @@ export function LinkrDocsPage() {
           <article className="lkd-content">
             <DocsSection
               id="overview"
+              icon={Bot}
               eyebrow="Start here"
               title="What Linkr is"
               intro="Linkr is a Robinhood Chain and Solana wallet agent available through X, Telegram, a private terminal, and guided web flows. It answers questions, researches tokens and posts, manages wallets, and prepares or executes supported actions with clear checks and confirmations."
@@ -1080,6 +1096,7 @@ export function LinkrDocsPage() {
 
             <DocsSection
               id="quick-start"
+              icon={PlayCircle}
               eyebrow="Quick start"
               title="How to use Linkr"
               intro="Most users only need a connected account, a funded wallet, a clear request on X, Telegram, the terminal, or a guided app page, and a confirmation when Linkr asks for one."
@@ -1147,6 +1164,7 @@ export function LinkrDocsPage() {
 
             <DocsSection
               id="bot-flow"
+              icon={Workflow}
               eyebrow="Pipeline"
               title="How Linkr handles a request"
               intro="Whether the request arrives from X, Telegram, the private terminal, or a guided app flow, Linkr follows the same understandable path from the user's words to an answer or receipt."
@@ -1164,6 +1182,7 @@ export function LinkrDocsPage() {
 
             <DocsSection
               id="commands"
+              icon={Command}
               eyebrow="Reference"
               title="Command reference"
               intro="Every command category below maps to the current platform behavior, including confirmations, validation, supported actions, and edge cases."
@@ -1181,6 +1200,7 @@ export function LinkrDocsPage() {
 
             <DocsSection
               id="safety"
+              icon={ShieldCheck}
               eyebrow="Safety"
               title="Confirmations and rules"
               intro="Linkr's model can understand natural language, but execution is gated by deterministic settings and validators."
@@ -1230,6 +1250,7 @@ export function LinkrDocsPage() {
 
             <DocsSection
               id="wallets"
+              icon={Wallet}
               eyebrow="Wallets"
               title="Wallets, funding, and private keys"
               intro="Linkr manages separate encrypted EVM and Solana wallet sets. A new account receives both wallet types automatically, while the app can add wallets, set one primary wallet per chain, configure ETH, SOL, and USDC rule caps, send native currency and Solana USDC, swap SOL and USDC, show balances, and export private keys through a protected flow."
@@ -1259,6 +1280,7 @@ export function LinkrDocsPage() {
 
             <DocsSection
               id="app-api"
+              icon={LayoutDashboard}
               eyebrow="App"
               title="Dashboard and public pages"
               intro="X and Telegram are only two ways to use Linkr. The app provides authenticated wallet controls, guided launches and scheduling, terminal chat, rewards, agents, Explore discovery, public activity, and coin pages."
@@ -1307,6 +1329,7 @@ export function LinkrDocsPage() {
 
             <DocsSection
               id="terminal"
+              icon={Terminal}
               eyebrow="Terminal"
               title="Private Linkr chat"
               intro="The /app/terminal page is the authenticated chat version of Linkr. Users can ask naturally, keep context across a conversation, and confirm supported actions without exposing private account context in a public X reply."
@@ -1366,6 +1389,7 @@ export function LinkrDocsPage() {
 
             <DocsSection
               id="telegram"
+              icon={MessageCircle}
               eyebrow="Telegram"
               title="@LinkrCashBot"
               intro="Linkr works as a private account assistant in Telegram DMs and as a privacy-aware helper in Telegram groups. Private wallet details and value-moving actions stay out of group chat."
@@ -1429,6 +1453,7 @@ export function LinkrDocsPage() {
 
             <DocsSection
               id="market-data"
+              icon={ChartCandlestick}
               eyebrow="Research"
               title="Token research and market data"
               intro="Coin inquiries use deterministic token resolution, market data providers, and public X search when requested to answer token, chart, liquidity, volume, search, trending, boosted, sentiment, and analytics questions."
@@ -1497,6 +1522,7 @@ export function LinkrDocsPage() {
 
             <DocsSection
               id="scheduler"
+              icon={CalendarClock}
               eyebrow="Automation"
               title="Scheduler"
               intro="Scheduler lets users ask Linkr on X or use the dashboard to run a wallet action later or when a token crosses a market-cap threshold. It supports Robinhood Chain and Solana while keeping the same confirmation, wallet, slippage, balance, and limit checks as normal actions."
@@ -1596,6 +1622,7 @@ export function LinkrDocsPage() {
 
             <DocsSection
               id="launches"
+              icon={Rocket}
               eyebrow="Launches"
               title="Launches"
               intro="X launch requests need a token name and one explicit chain. Linkr can generate a ticker, description, and image when they are omitted, defaults the dev buy to zero, and then deploys through the supported Robinhood Chain or Solana/Pump.fun launch flow."
@@ -1724,6 +1751,7 @@ export function LinkrDocsPage() {
 
             <DocsSection
               id="nfts"
+              icon={Image}
               eyebrow="NFTs"
               title="Solana NFT collections and mints"
               intro="Users can mint Solana NFT collections and individual NFTs from X, then review their own mints in the app and browse confirmed public collections in the NFT gallery."
@@ -1778,6 +1806,7 @@ export function LinkrDocsPage() {
 
             <DocsSection
               id="creator-rewards"
+              icon={BadgeDollarSign}
               eyebrow="Earnings"
               title="Creator rewards"
               intro="Eligible token creators can inspect and claim rewards from Robinhood Chain Linkr launches and Solana Pump.fun fee-sharing launches. Claims always show what will be collected before a transaction is submitted."
@@ -1836,6 +1865,7 @@ export function LinkrDocsPage() {
 
             <DocsSection
               id="liquidity-pools"
+              icon={Droplets}
               eyebrow="Liquidity Pools"
               title="Liquidity pools"
               intro="Users can manage optional Robinhood Chain ETH LP positions and Pump.fun PumpSwap token/SOL LP positions from either the app dashboard or X commands."
@@ -1963,6 +1993,7 @@ export function LinkrDocsPage() {
 
             <DocsSection
               id="history"
+              icon={History}
               eyebrow="Memory"
               title="History, memory, and receipts"
               intro="Users can ask for transactions, launches, settings history, agent activity, recent activity, and thread context. Linkr retrieves only the scopes needed for the question."
@@ -2008,6 +2039,7 @@ export function LinkrDocsPage() {
 
             <DocsSection
               id="edge-cases"
+              icon={CircleAlert}
               eyebrow="Support"
               title="Edge cases and failure modes"
               intro="The most important support paths are documented here so users know what Linkr does when a command is incomplete, unsafe, ambiguous, or temporarily blocked."
@@ -2017,6 +2049,7 @@ export function LinkrDocsPage() {
 
             <DocsSection
               id="security"
+              icon={Lock}
               eyebrow="Security"
               title="Security and privacy"
               intro="The bot is public-facing, but wallet secrets, account data, and private keys are protected behind authenticated app flows."
@@ -2047,6 +2080,7 @@ export function LinkrDocsPage() {
 
             <DocsSection
               id="known-gaps"
+              icon={CircleHelp}
               eyebrow="Availability"
               title="Current availability"
               intro="A clear view of where Linkr is strict today across X, Telegram, the website launcher, terminal, and app pages."
@@ -2114,6 +2148,7 @@ export function LinkrDocsPage() {
 
             <DocsSection
               id="troubleshooting"
+              icon={LifeBuoy}
               eyebrow="Troubleshooting"
               title="What to do when Linkr does not act"
               intro="Most failed commands are caused by missing information, insufficient balance, expired confirmations, ambiguity, or provider outages."
@@ -2225,12 +2260,14 @@ function SidebarNav({
 
 function DocsSection({
   id,
+  icon: Icon,
   eyebrow,
   title,
   intro,
   children,
 }: {
   id: string;
+  icon: LucideIcon;
   eyebrow: string;
   title: string;
   intro: string;
@@ -2240,7 +2277,7 @@ function DocsSection({
     <section id={id} className="lkd-section" data-doc-section>
       <div className="lkd-section-head">
         <span>
-          <Sparkles aria-hidden="true" size={16} />
+          <Icon aria-hidden="true" size={16} />
           {eyebrow}
         </span>
         <h2>{title}</h2>
