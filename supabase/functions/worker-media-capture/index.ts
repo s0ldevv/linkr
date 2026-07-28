@@ -8,6 +8,10 @@ import {
   captureBoundedXImage,
   storeCapturedImage,
 } from "../_shared/bounded_media.ts";
+import {
+  LaunchIntentMismatchError,
+  launchVerificationReply,
+} from "../_shared/launch_semantic_verifier.ts";
 import { runStageWorker } from "../_shared/queue_worker_versioned.ts";
 
 const VERSION = "worker-media-capture-v3";
@@ -87,6 +91,26 @@ Deno.serve((req) =>
             : `pending_action:${authorized.pendingActionId}`,
         };
       } catch (error) {
+        if (error instanceof LaunchIntentMismatchError) {
+          await pauseLaunchPreparation(
+            admin,
+            draft.id,
+            "launch_payload_intent_mismatch",
+          );
+          const reply = await admin.rpc("enqueue_linkr_x_reply_v1", {
+            p_parent_work_item_id: claim.work_item.id,
+            p_reply_text: launchVerificationReply(error.verification),
+            p_kind: "launch_intent_clarification",
+            p_version: 1,
+            p_priority: 60,
+          });
+          if (reply.error) throw reply.error;
+          return {
+            kind: "complete",
+            state: "succeeded",
+            resultRef: "paused:launch_payload_intent_mismatch",
+          };
+        }
         const code = errorCode(error);
         if (/wallet|initial_buy|profile_cap|launch_payload_fields/.test(code)) {
           await pauseLaunchPreparation(admin, draft.id, code);
@@ -152,7 +176,9 @@ async function processPendingActionLaunch(claim: any, admin: any) {
   } catch (error) {
     const code = errorCode(error);
     if (
-      /fetch_failed_(?:408|429|5\d\d)|abort|network|fetch|redirect/.test(code) &&
+      /fetch_failed_(?:408|429|5\d\d)|abort|network|fetch|redirect/.test(
+        code,
+      ) &&
       claim.work_item.attempt_count < 4
     ) {
       return {
@@ -185,11 +211,10 @@ async function processPendingActionLaunch(claim: any, admin: any) {
       ? payload.dev_buy_sol ?? payload.initial_buy_sol
       : payload.dev_buy_eth ?? payload.initial_buy_eth) ?? 0,
   );
-  const rewardsConfig =
-    payload.creator_rewards_config &&
+  const rewardsConfig = payload.creator_rewards_config &&
       typeof payload.creator_rewards_config === "object"
-      ? payload.creator_rewards_config
-      : null;
+    ? payload.creator_rewards_config
+    : null;
   const patch = await admin.from("coin_launches").update({
     source_surface: String(pending.source_surface ?? "dashboard"),
     idempotency_key: `queue-launch:${claim.work_item.id}`,

@@ -6,6 +6,10 @@ import {
 } from "../_shared/autonomous_launch.ts";
 import { storeCapturedImage } from "../_shared/bounded_media.ts";
 import { generateLaunchImage } from "../_shared/launch_image_generation.ts";
+import {
+  LaunchIntentMismatchError,
+  launchVerificationReply,
+} from "../_shared/launch_semantic_verifier.ts";
 import { runStageWorker } from "../_shared/queue_worker_versioned.ts";
 
 const VERSION = "worker-image-generate-v1";
@@ -95,6 +99,26 @@ async function handlePreparationError(
   draftId: string,
   error: unknown,
 ) {
+  if (error instanceof LaunchIntentMismatchError) {
+    await pauseLaunchPreparation(
+      admin,
+      draftId,
+      "launch_payload_intent_mismatch",
+    );
+    const reply = await admin.rpc("enqueue_linkr_x_reply_v1", {
+      p_parent_work_item_id: workItemId,
+      p_reply_text: launchVerificationReply(error.verification),
+      p_kind: "launch_intent_clarification",
+      p_version: 1,
+      p_priority: 60,
+    });
+    if (reply.error) throw reply.error;
+    return {
+      kind: "complete" as const,
+      state: "succeeded",
+      resultRef: "paused:launch_payload_intent_mismatch",
+    };
+  }
   const code = errorCode(error);
   const message = code.includes("wallet")
     ? "I couldn't find the primary wallet for that chain. Create or import it, then reply in this thread to continue."

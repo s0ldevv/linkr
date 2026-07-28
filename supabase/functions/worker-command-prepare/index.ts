@@ -4,7 +4,6 @@ import {
   clarificationReply,
   detectLaunchIntentWithAi,
   extractLaunchFields,
-  extractLaunchFieldsWithAi,
   isLaunchCancellation,
   isLaunchCommand,
   isLaunchConfirmation,
@@ -17,6 +16,11 @@ import {
   checkXLaunchNativeBalance,
   resolveGuardedLaunchChain,
 } from "../_shared/x_launch_balance_guard.ts";
+import {
+  buildLaunchDraftSlotPatch,
+  mergeSlotProvenanceContext,
+  reconcileLaunchDraftWithAi,
+} from "../_shared/launch_slot_reconciler.ts";
 import { parseXTradeCommand } from "../_shared/x_trade_command.ts";
 import {
   classifyNftCommandWithAi,
@@ -234,6 +238,8 @@ Deno.serve((req) =>
       const existingDraft = resolved.data;
       const existingFields =
         (existingDraft?.filled_fields ?? {}) as LaunchFields;
+      const existingProvenance =
+        (existingDraft?.field_provenance ?? {}) as Record<string, unknown>;
       const deterministicFields = extractLaunchFields(
         tweet.text,
         tweet.media_url,
@@ -297,42 +303,91 @@ Deno.serve((req) =>
         };
       }
 
-      const incoming = await extractLaunchFieldsWithAi(
-        tweet.text,
-        tweet.media_url,
+      const threadContext = await loadLaunchThreadContext(
+        admin,
+        existingDraft,
+        tweet,
       );
-      const merged = mergeLaunchFields(existingFields, incoming);
-      const fields: Record<string, unknown> = { ...merged };
-      const existingProvenance =
-        (existingDraft?.field_provenance ?? {}) as Record<string, string>;
-      const provenance: Record<string, string> = { ...existingProvenance };
-      for (
-        const key of [
-          "name",
-          "symbol",
-          "description",
-          "dev_buy_amount",
-        ] as const
+      let reconciliation;
+      try {
+        reconciliation = await reconcileLaunchDraftWithAi({
+          existingFields,
+          existingProvenance,
+          originalLaunchText: threadContext.originalTweetText,
+          latestUserText: tweet.text,
+          latestTweetId: tweetId,
+          originalTweetId: threadContext.originalTweetId,
+          previousAssistantReplyText: threadContext.previousAssistantReplyText,
+          currentMissingFields: missingLaunchFields(existingFields),
+          latestMediaUrl: tweet.media_url,
+          sourceRefs: existingDraft?.source_refs ?? null,
+          botHandle: Deno.env.get("X_BOT_HANDLE") ?? "linkrcash",
+        });
+      } catch (error) {
+        console.error(
+          JSON.stringify({
+            event: "x_launch_slot_reconciler_error",
+            tweet_id: tweetId,
+            message: String(error instanceof Error ? error.message : error)
+              .slice(0, 300),
+          }),
+        );
+        return {
+          kind: "retry",
+          errorCode: "launch_slot_reconciler_retryable",
+          delaySeconds: 60,
+        };
+      }
+
+      if (
+        !launchReconcilerIntentCanMutate(reconciliation.intent, {
+          existingDraft: Boolean(existingDraft),
+          launchCommand,
+        })
       ) {
-        if (incoming[key]) provenance[key] = "user_text";
+        await queueReply(
+          admin,
+          claim.work_item.id,
+          "launch_clarification",
+          1,
+          existingDraft
+            ? savedLaunchClarification(existingFields)
+            : 'I couldn\'t match that to an active launch. Start with "launch a coin called ..." and include Solana or Robinhood.',
+        );
+        await markTweetCompleted(admin, tweetId);
+        return {
+          kind: "complete",
+          state: existingDraft ? "waiting_user_input" : "rejected",
+          resultRef: existingDraft
+            ? `draft:${existingDraft.id}`
+            : "unsupported-command",
+        };
       }
-      if (incoming.image_url) provenance.image_url = "user_media";
-      if (incoming.chain) provenance.chain = "user_text";
-      else if (existingFields.chain && !incoming.chain_ambiguous) {
-        provenance.chain = "thread_context";
-      }
-      if (incoming.chain_ambiguous) {
-        fields.chain = null;
-        provenance.chain = "user_text";
-      }
-      delete fields.chain_ambiguous;
+
+      const slotPatch = buildLaunchDraftSlotPatch({
+        existingFields,
+        existingProvenance,
+        originalLaunchText: threadContext.originalTweetText,
+        latestUserText: tweet.text,
+        latestTweetId: tweetId,
+        originalTweetId: threadContext.originalTweetId,
+        previousAssistantReplyText: threadContext.previousAssistantReplyText,
+        currentMissingFields: missingLaunchFields(existingFields),
+        latestMediaUrl: tweet.media_url,
+        sourceRefs: existingDraft?.source_refs ?? null,
+        botHandle: Deno.env.get("X_BOT_HANDLE") ?? "linkrcash",
+      }, reconciliation);
+      const fields = slotPatch.filledFields;
+      const provenance = slotPatch.fieldProvenance;
 
       const generationContext = {
-        ...(existingDraft?.generation_context ?? {}),
+        ...mergeSlotProvenanceContext(
+          (existingDraft?.generation_context ?? {}) as Record<string, unknown>,
+          slotPatch,
+        ),
         explicit_launch_intent: launchCommand ||
           existingDraft?.generation_context?.explicit_launch_intent === true,
         last_input_tweet_id: tweetId,
-        extraction_version: "launch-command-v2",
       };
       const draftResult = await admin.rpc("upsert_linkr_launch_draft_v2", {
         p_input_work_item_id: claim.work_item.id,
@@ -344,6 +399,30 @@ Deno.serve((req) =>
       if (draftResult.error) throw draftResult.error;
       const draft = draftResult.data;
       const missing = missingLaunchFields(draft.filled_fields as LaunchFields);
+
+      if (slotPatch.needsClarification) {
+        if (missing.length === 0) {
+          const paused = await admin.rpc("pause_linkr_launch_preparation_v1", {
+            p_draft_id: draft.id,
+            p_reason_code: "launch_slot_clarification_required",
+          });
+          if (paused.error) throw paused.error;
+        }
+        await queueReply(
+          admin,
+          claim.work_item.id,
+          "launch_clarification",
+          Number(draft.version),
+          slotPatch.clarificationQuestion ??
+            clarificationReply(missing.length > 0 ? missing : ["name"]),
+        );
+        await markTweetCompleted(admin, tweetId);
+        return {
+          kind: "complete",
+          state: "waiting_user_input",
+          resultRef: `draft:${draft.id}`,
+        };
+      }
 
       if (missing.length > 0) {
         await queueReply(
@@ -388,6 +467,87 @@ Deno.serve((req) =>
     },
   })
 );
+
+function launchReconcilerIntentCanMutate(
+  intent: string,
+  context: { existingDraft: boolean; launchCommand: boolean },
+): boolean {
+  return (context.existingDraft || context.launchCommand) &&
+    (intent === "continue_launch" || intent === "edit_launch");
+}
+
+function savedLaunchClarification(fields: LaunchFields): string {
+  const missing = missingLaunchFields(fields);
+  if (missing.length > 0) return clarificationReply(missing);
+  return 'Your launch is still saved. Reply with the launch change you want, or "cancel launch".';
+}
+
+async function loadLaunchThreadContext(
+  admin: any,
+  existingDraft: any,
+  tweet: any,
+): Promise<{
+  originalTweetId: string;
+  originalTweetText: string;
+  previousAssistantReplyText: string | null;
+}> {
+  const originalTweetId = firstText([
+    existingDraft?.source_tweet_id,
+    firstSourceRefTweetId(existingDraft?.source_refs),
+    tweet.parent_tweet_id,
+    tweet.root_tweet_id,
+    tweet.referenced_tweet_id,
+    tweet.tweet_id,
+  ]);
+  let originalTweetText = String(tweet.text ?? "");
+  if (originalTweetId && originalTweetId !== String(tweet.tweet_id ?? "")) {
+    const originalResult = await admin.from("tweets_inbox").select("text")
+      .eq("tweet_id", originalTweetId).order("created_at", {
+        ascending: true,
+      }).limit(1).maybeSingle();
+    if (!originalResult.error && originalResult.data?.text) {
+      originalTweetText = String(originalResult.data.text);
+    }
+  }
+
+  let previousAssistantReplyText: string | null = null;
+  if (originalTweetId) {
+    const replyResult = await admin.from("twitter_replies").select("reply_text")
+      .eq("tweet_id", originalTweetId).order("created_at", {
+        ascending: false,
+      }).limit(1).maybeSingle();
+    if (!replyResult.error && replyResult.data?.reply_text) {
+      previousAssistantReplyText = String(replyResult.data.reply_text);
+    }
+  }
+
+  return {
+    originalTweetId: originalTweetId || String(tweet.tweet_id ?? ""),
+    originalTweetText,
+    previousAssistantReplyText,
+  };
+}
+
+function firstSourceRefTweetId(value: unknown): string {
+  if (!Array.isArray(value)) return "";
+  for (const item of value) {
+    if (item && typeof item === "object") {
+      const tweetId = (item as Record<string, unknown>).tweet_id;
+      if (typeof tweetId === "string" && tweetId.trim()) {
+        return tweetId.trim();
+      }
+    }
+  }
+  return "";
+}
+
+function firstText(values: unknown[]): string {
+  for (const value of values) {
+    const text = String(value ?? "").trim();
+    if (text) return text;
+  }
+  return "";
+}
 
 async function queueReply(
   admin: any,
