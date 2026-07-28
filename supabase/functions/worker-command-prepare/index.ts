@@ -288,18 +288,41 @@ Deno.serve((req) =>
         launchCommand = await detectLaunchIntentWithAi(tweet.text);
       }
       if (!existingDraft && !launchCommand) {
-        await queueReply(
+        if (alreadyEscapedToConversation(claim.work_item.payload)) {
+          await queueReply(
+            admin,
+            claim.work_item.id,
+            "safe_refusal",
+            1,
+            "I cannot turn that into a safe Linkr action from a public reply. Say it as a normal question or give the exact supported action you want.",
+          );
+          await markTweetCompleted(admin, tweetId);
+          return {
+            kind: "complete",
+            state: "rejected",
+            resultRef: "unsupported-command-loop-guard",
+          };
+        }
+        await markConversationEscape(
           admin,
           claim.work_item.id,
-          "unsupported_command",
-          1,
-          'I couldn\'t match that to an active launch. Start with "launch a coin called ..." and include Solana or Robinhood.',
+          tweetId,
+          claim.work_item.payload,
         );
-        await markTweetCompleted(admin, tweetId);
+        const routed = await admin.from("tweets_inbox").update({
+          status: "processing",
+          ai_processing_lane: "reply",
+          ai_route_kind: "conversation",
+          ai_route_reason: "command_prepare_no_exact_match_conversation_escape",
+          ai_routed_at: new Date().toISOString(),
+          error: null,
+        }).eq("tweet_id", tweetId);
+        if (routed.error) throw routed.error;
         return {
           kind: "complete",
-          state: "rejected",
-          resultRef: "unsupported-command",
+          state: "queued",
+          nextRoute: "conversation.turn",
+          resultRef: "command-prepare-conversation-escape",
         };
       }
 
@@ -352,7 +375,7 @@ Deno.serve((req) =>
           1,
           existingDraft
             ? savedLaunchClarification(existingFields)
-            : 'I couldn\'t match that to an active launch. Start with "launch a coin called ..." and include Solana or Robinhood.',
+            : 'To start a launch, say "launch a coin called ..." and include Solana or Robinhood.',
         );
         await markTweetCompleted(admin, tweetId);
         return {
@@ -563,6 +586,32 @@ async function queueReply(
     p_version: Math.max(1, version),
     p_priority: 50,
   });
+  if (result.error) throw result.error;
+}
+
+function alreadyEscapedToConversation(payload: unknown): boolean {
+  return !!(payload && typeof payload === "object" &&
+    (payload as Record<string, unknown>).command_prepare_conversation_escape ===
+      true);
+}
+
+async function markConversationEscape(
+  admin: any,
+  workItemId: string,
+  tweetId: string,
+  existingPayload: unknown,
+) {
+  const payload = existingPayload && typeof existingPayload === "object" &&
+      !Array.isArray(existingPayload)
+    ? { ...(existingPayload as Record<string, unknown>) }
+    : {};
+  const result = await admin.from("linkr_work_items").update({
+    payload: {
+      ...payload,
+      command_prepare_conversation_escape: true,
+      command_prepare_conversation_escape_tweet_id: tweetId,
+    },
+  }).eq("id", workItemId);
   if (result.error) throw result.error;
 }
 

@@ -93,3 +93,32 @@ Deno.test("exact reported X prompt is represented in AI routing and reply instru
     "advice cannot execute",
   );
 });
+
+Deno.test("X router treats social or impossible value asks as conversation", () => {
+  const routePrompt = buildRoutePrompt("@linkrcash can you spare some SOL?");
+  assert(
+    routePrompt.includes("rhetorical asks"),
+    "router should mention rhetorical asks",
+  );
+  assert(
+    routePrompt.includes("not command execution"),
+    "router should distinguish public banter from executable commands",
+  );
+});
+
+Deno.test("X reply prompt grounds persona and permits normal conversation", () => {
+  const prompt = buildReplyPrompt({
+    text: "@linkrcash who made you?",
+    route: parseXAiRoute({ lane: "reply", reply_kind: "conversation" }),
+  });
+  assert(prompt.includes("@S0Ldev"), "reply prompt should include builder");
+  assert(prompt.includes("LNKR-1"), "reply prompt should include engine");
+  assert(
+    prompt.includes("normal public conversation"),
+    "reply prompt should authorize conversation",
+  );
+  assert(
+    !prompt.includes("180-230 characters"),
+    "reply prompt should not force padded replies",
+  );
+});
