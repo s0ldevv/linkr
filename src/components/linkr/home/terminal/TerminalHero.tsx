@@ -909,7 +909,7 @@ export function TerminalHero() {
         </h1>
         <p className="lkx-hero-lede">
           Launch tokens, send payments, swap, and manage wallets across Solana and Robinhood
-          Chain&mdash;right from X&nbsp;/ <strong>@linkrcash</strong>.
+          Chain / <strong>@linkrcash</strong>.
         </p>
 
         <ul className="lkx-hero-chips">
