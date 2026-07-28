@@ -17,7 +17,10 @@ Deno.test("lintPublicReply blocks internal language", () => {
   for (const text of blocked) {
     const result = lintPublicReply(text, "conversation");
     assert(!result.ok, text + " should fail lint");
-    assert(result.blocked_phrases.length > 0, text + " should report blocked phrases");
+    assert(
+      result.blocked_phrases.length > 0,
+      text + " should report blocked phrases",
+    );
   }
 });
 
@@ -34,20 +37,16 @@ Deno.test("lintPublicReply allows clean market read language", () => {
   }
 });
 
-Deno.test("lintPublicReply blocks legacy chain language in coin replies", () => {
-  const blocked = [
-    "This looks active on Solana. DYOR.",
-    "Open Solscan for more details.",
-    "Raydium liquidity looks strong here.",
+Deno.test("lintPublicReply allows supported Solana market language in coin replies", () => {
+  const clean = [
+    "This looks active on Solana, but liquidity is still thin. DYOR.",
+    "Raydium liquidity looks active here, but volume can turn fast. DYOR.",
+    "Pump activity is noisy; watch liquidity and holder concentration. DYOR.",
   ];
 
-  for (const text of blocked) {
+  for (const text of clean) {
     const result = lintPublicReply(text, "coin_inquiry");
-    assert(!result.ok, text + " should fail lint");
-    assert(
-      result.blocked_phrases.includes("legacy-chain-language"),
-      text + " should flag legacy chain language",
-    );
+    assert(result.ok, text + " should pass lint");
   }
 });
 
@@ -74,7 +73,10 @@ Deno.test("lintPublicReply allows clean conversation and coin inquiry fallbacks"
   const clean = [
     ["Hi! How can I help?", "conversation"],
     ["Hi! I'm good, thanks for asking. How can I help?", "conversation"],
-    ["I need the token contract address, ticker, or chart to answer that cleanly.", "coin_inquiry"],
+    [
+      "I need the token contract address, ticker, or chart to answer that cleanly.",
+      "coin_inquiry",
+    ],
   ] as const;
 
   for (const [text, mode] of clean) {
@@ -84,7 +86,9 @@ Deno.test("lintPublicReply allows clean conversation and coin inquiry fallbacks"
 });
 
 Deno.test("sanitizePublicReply removes links and trims length", () => {
-  const text = sanitizePublicReply("Check this https://example.com please " + "x".repeat(400));
+  const text = sanitizePublicReply(
+    "Check this https://example.com please " + "x".repeat(400),
+  );
   assert(!text.includes("https://example.com"), "link should be removed");
   assert(text.length <= 260, "text should be capped at 260 chars");
 });

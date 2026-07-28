@@ -1,5 +1,13 @@
 import { composeXAiReply, type XAiRoute } from "../_shared/x_ai_intake.ts";
 import {
+  extractMarketAddresses,
+  type NormalizedMarketAddress,
+} from "../_shared/market_data/chains.ts";
+import {
+  buildPublicMarketFacts,
+  getMarketDataBundle,
+} from "../_shared/market_data/index.ts";
+import {
   LINKR_STAGE_WORKER_FUNCTIONS,
   linkrQueueForRoute,
 } from "../_shared/queue_contracts.ts";
@@ -32,17 +40,21 @@ Deno.serve((req) =>
       if (!tweet) {
         return { kind: "dead_letter", reasonCode: "x_tweet_not_found" };
       }
+      const text = String(tweet.text ?? "");
 
       const kind = tweet.ai_route_kind === "coin_inquiry" ||
           tweet.ai_route_kind === "trade_advice"
         ? tweet.ai_route_kind
         : "conversation";
+      const marketTarget = kind === "coin_inquiry" || kind === "trade_advice"
+        ? extractMarketAddresses(text)[0] ?? null
+        : null;
       const route: XAiRoute = {
         lane: "reply",
         reply_kind: kind,
-        token_address: null,
+        token_address: marketTarget?.address ?? null,
         token_symbol: null,
-        token_chain: null,
+        token_chain: marketTarget?.chain ?? null,
         reason: String(tweet.ai_route_reason ?? "conversation"),
       };
       const { data: contextRows } = await admin.from("tweets_inbox")
@@ -57,11 +69,14 @@ Deno.serve((req) =>
 
       let reply;
       try {
+        const marketFacts = marketTarget
+          ? await resolveMarketFacts(admin, marketTarget)
+          : null;
         reply = await composeXAiReply({
           text: tweet.text,
           route,
           conversation,
-          marketFacts: null,
+          marketFacts,
         });
       } catch {
         return {
@@ -111,5 +126,31 @@ Deno.serve((req) =>
         resultRef: `reply-work-item:${queued.data.reply_work_item_id}`,
       };
     },
-  }),
+  })
 );
+
+async function resolveMarketFacts(
+  admin: any,
+  target: NormalizedMarketAddress,
+): Promise<Record<string, unknown>> {
+  try {
+    const bundle = await getMarketDataBundle(admin, {
+      mint: target.address,
+      chain: target.chain,
+      includeDexscreener: true,
+      includeBlockscout: target.chain === "robinhood",
+      includeMoralis: target.chain === "robinhood",
+      includeAnalytics: true,
+    });
+    const facts = buildPublicMarketFacts(bundle);
+    delete facts.sources;
+    delete facts.freshness;
+    return facts;
+  } catch {
+    return {
+      chain: target.chain === "solana" ? "Solana" : "Robinhood Chain",
+      token_address: target.address,
+      warnings: ["market_data_unavailable"],
+    };
+  }
+}

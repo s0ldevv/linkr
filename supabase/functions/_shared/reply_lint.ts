@@ -55,19 +55,6 @@ const COIN_SOURCE_NOISE_PATTERNS = [
   /\bBuys\/Sells\b/i,
 ];
 
-const COIN_LEGACY_CHAIN_PATTERNS = [
-  /\bSolana\b/i,
-  /\bSOL\b/i,
-  /\bSolscan\b/i,
-  /\bSPL\b/,
-  /\bJupiter\b/i,
-  /\bpump\.fun\b/i,
-  /\bPump\b/i,
-  /\bRaydium\b/i,
-  /\bMeteora\b/i,
-  /\bOrca\b/i,
-];
-
 export function sanitizePublicReply(text: string): string {
   const cleaned = String(text ?? "")
     .replace(/https?:\/\/\S+/gi, "")
@@ -91,7 +78,9 @@ export function lintPublicReply(text: string, mode: string): ReplyLintResult {
   if (mode !== "coin_inquiry") {
     for (const pattern of TOKEN_MISSING_PATTERNS) {
       if (pattern.test(text)) {
-        if (!blocked.includes("token-missing-language")) blocked.push("token-missing-language");
+        if (!blocked.includes("token-missing-language")) {
+          blocked.push("token-missing-language");
+        }
       }
     }
   }
@@ -107,12 +96,9 @@ export function lintPublicReply(text: string, mode: string): ReplyLintResult {
   if (mode === "coin_inquiry") {
     for (const pattern of COIN_SOURCE_NOISE_PATTERNS) {
       if (pattern.test(text)) {
-        if (!blocked.includes("coin-source-noise")) blocked.push("coin-source-noise");
-      }
-    }
-    for (const pattern of COIN_LEGACY_CHAIN_PATTERNS) {
-      if (pattern.test(text)) {
-        if (!blocked.includes("legacy-chain-language")) blocked.push("legacy-chain-language");
+        if (!blocked.includes("coin-source-noise")) {
+          blocked.push("coin-source-noise");
+        }
       }
     }
   }
@@ -120,7 +106,8 @@ export function lintPublicReply(text: string, mode: string): ReplyLintResult {
   return {
     ok: blocked.length === 0,
     blocked_phrases: blocked,
-    reason:
-      blocked.length > 0 ? "public reply contains internal or mode-inappropriate language" : null,
+    reason: blocked.length > 0
+      ? "public reply contains internal or mode-inappropriate language"
+      : null,
   };
 }
