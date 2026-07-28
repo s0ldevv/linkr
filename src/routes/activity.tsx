@@ -46,11 +46,6 @@ type PublicActivity = {
   linkr_response_tweet_id?: string | null;
   linkr_response_status?: string | null;
 };
-type BoardStat = {
-  label: string;
-  value: string;
-  detail: string;
-};
 type PublicActivityProfile = {
   handle_key: string;
   handle: string;
@@ -238,52 +233,10 @@ function PublicActivityPage() {
   const realItems = activityQuery.data ?? [];
   const items = realItems.length > 0 ? realItems : DEMO_ACTIVITY;
   const visibleItems = useMemo(() => filterByChain(items, chainFilter), [chainFilter, items]);
-  const stats = useMemo<BoardStat[]>(() => {
-    const launches = visibleItems.filter((item) => item.kind === "launch").length;
-    const buys = visibleItems.filter((item) => item.kind === "buy").length;
-    const confirmed = visibleItems.filter((item) =>
-      ["confirmed", "completed", "success"].includes((item.status ?? "").toLowerCase()),
-    ).length;
-    const volumeUsd = visibleItems.reduce((sum, item) => sum + (item.amount_usd ?? 0), 0);
-    const latest = visibleItems[0];
-
-    return [
-      {
-        label: "events",
-        value: String(visibleItems.length),
-        detail: realItems.length > 0 ? "live public records" : "demo public records",
-      },
-      {
-        label: "launches",
-        value: String(launches),
-        detail: buys + " buy events in stream",
-      },
-      {
-        label: "cleared",
-        value: String(confirmed),
-        detail: "confirmed or completed events",
-      },
-      {
-        label: "volume",
-        value: volumeUsd > 0 ? formatUsd(volumeUsd) : "none",
-        detail: latest ? "latest " + relativeTime(latest.created_at) : "waiting for activity",
-      },
-    ];
-  }, [realItems.length, visibleItems]);
-
   return (
     <div className="min-h-screen sm-public-board-page sm-public-activity-page">
       <MarketingHeader />
       <main className="sm-public-board-shell">
-        <section
-          className="sm-public-metrics sm-public-activity-metrics"
-          aria-label="Activity stats"
-        >
-          {stats.map((stat) => (
-            <BoardStatCard key={stat.label} stat={stat} />
-          ))}
-        </section>
-
         <section
           className="sm-public-panel sm-public-activity-panel"
           aria-labelledby="activity-stream-title"
@@ -355,16 +308,6 @@ async function enrichActivityProfiles(activity: PublicActivity[]) {
       user_post_avatar_url: profile.avatar_url,
     };
   });
-}
-
-function BoardStatCard({ stat }: { stat: BoardStat }) {
-  return (
-    <div className="sm-public-metric">
-      <span>{stat.label}</span>
-      <strong>{stat.value}</strong>
-      <p>{stat.detail}</p>
-    </div>
-  );
 }
 
 function ActivityRow({ item }: { item: PublicActivity }) {

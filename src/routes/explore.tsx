@@ -12,7 +12,6 @@ import {
 import { useHomeDashboardData } from "@/hooks/use-home-dashboard-data";
 import { supabase } from "@/integrations/supabase/client";
 import { isSolanaRecord } from "@/lib/linkr/chain-presentation";
-import { relativeTime, formatEth } from "@/lib/linkr/format";
 import type { PublicTokenRank } from "@/lib/linkr/home-data";
 import type { Tables } from "@/integrations/supabase/types";
 import "@/components/linkr/home/terminal/terminal-home.css";
@@ -38,11 +37,6 @@ type LaunchPreview = Pick<
   | "token_address"
   | "tx_signature"
 >;
-type BoardStat = {
-  label: string;
-  value: string;
-  detail: string;
-};
 type ChainFilter = PublicChainFilterValue;
 type LaunchCardRow = {
   isDemo: boolean;
@@ -129,57 +123,11 @@ function PublicExplorePage() {
     () => filterRowsByChain(launchRows, chainFilter),
     [chainFilter, launchRows],
   );
-  const stats = useMemo<BoardStat[]>(() => {
-    const confirmed = visibleRows.filter(({ token }) =>
-      ["confirmed", "completed", "success", "live"].includes((token.status ?? "").toLowerCase()),
-    ).length;
-    const queued = visibleRows.filter(({ token }) =>
-      ["pending", "processing", "queued", "new"].includes((token.status ?? "").toLowerCase()),
-    ).length;
-    const devBuyEth = visibleRows.reduce((sum, { token }) => sum + (token.devBuyEth ?? 0), 0);
-    const devBuySol = visibleRows.reduce((sum, { token }) => sum + (token.devBuySol ?? 0), 0);
-    const latest = visibleRows[0]?.token;
-
-    return [
-      {
-        label: "recorded",
-        value: String(visibleRows.length),
-        detail: visibleRows.some((row) => !row.isDemo)
-          ? "live token launches"
-          : "homepage placeholders",
-      },
-      {
-        label: "confirmed",
-        value: String(confirmed),
-        detail: queued > 0 ? queued + " still settling" : "receipts cleared",
-      },
-      {
-        label: "starter flow",
-        value:
-          devBuySol > 0
-            ? `${formatEth(devBuyEth, 2)} ETH / ${devBuySol.toFixed(2)} SOL`
-            : formatEth(devBuyEth, 2),
-        detail: "native dev buys by chain",
-      },
-      {
-        label: "latest",
-        value: latest ? "$" + latest.symbol : "none",
-        detail: latest ? relativeTime(latest.createdAt) : "waiting for first launch",
-      },
-    ];
-  }, [visibleRows]);
-
   return (
     <div className="lkt-home min-h-screen sm-public-board-page sm-public-launches-page">
       <MarketingHeader />
       <main className="sm-public-launches-main">
         <div className="sm-public-board-shell sm-public-launches-summary">
-          <section className="sm-public-metrics" aria-label="Launch stats">
-            {stats.map((stat) => (
-              <BoardStatCard key={stat.label} stat={stat} />
-            ))}
-          </section>
-
           <section className="sm-public-section-head" aria-labelledby="explore-gallery-title">
             <div>
               <span>Coin gallery</span>
@@ -222,16 +170,6 @@ function PublicExplorePage() {
           </div>
         </section>
       </main>
-    </div>
-  );
-}
-
-function BoardStatCard({ stat }: { stat: BoardStat }) {
-  return (
-    <div className="sm-public-metric">
-      <span>{stat.label}</span>
-      <strong>{stat.value}</strong>
-      <p>{stat.detail}</p>
     </div>
   );
 }

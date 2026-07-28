@@ -114,21 +114,6 @@ function NftsGalleryPage() {
     return map;
   }, [collections]);
 
-  const stats = [
-    { label: "collections", value: String(collections.length), detail: "minted on Solana" },
-    { label: "recent mints", value: String(mints.length), detail: "latest drop window" },
-    {
-      label: "with mints",
-      value: String(new Set(mints.map((m) => m.collection_id)).size),
-      detail: "active collections",
-    },
-    {
-      label: "latest",
-      value: collections[0] ? "$" + collections[0].symbol : "—",
-      detail: collections[0] ? relativeTime(collections[0].created_at) : "waiting for first drop",
-    },
-  ];
-
   const isLoading = collectionsQuery.isLoading || mintsQuery.isLoading;
   const [selectedMintId, setSelectedMintId] = useState<string | null>(null);
   const selectedMint = mints.find((m) => m.id === selectedMintId) ?? null;
@@ -139,16 +124,6 @@ function NftsGalleryPage() {
       <MarketingHeader />
       <main className="sm-public-launches-main">
         <div className="sm-public-board-shell sm-public-launches-summary">
-          <section className="sm-public-metrics" aria-label="NFT stats">
-            {stats.map((s) => (
-              <div className="sm-public-metric" key={s.label}>
-                <span>{s.label}</span>
-                <strong>{s.value}</strong>
-                <p>{s.detail}</p>
-              </div>
-            ))}
-          </section>
-
           <section className="sm-public-section-head" aria-labelledby="nfts-collections-title">
             <div>
               <span>Solana NFTs</span>
