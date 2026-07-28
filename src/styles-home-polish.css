@@ -39635,6 +39635,278 @@ body .sm-app-content .app-history-error {
   color: var(--app-warning-ink) !important;
 }
 
+body .sm-app-shell .sm-app-content .app-nfts-page {
+  align-content: start !important;
+}
+
+body .sm-app-shell .sm-app-content .app-nfts-section {
+  display: grid !important;
+  min-width: 0 !important;
+  gap: clamp(14px, 1.8vw, 20px) !important;
+  padding-top: clamp(4px, 0.8vw, 10px) !important;
+}
+
+body .sm-app-shell .sm-app-content .app-nfts-section + .app-nfts-section {
+  border-top: 1px solid var(--app-line) !important;
+  padding-top: clamp(22px, 2.6vw, 30px) !important;
+}
+
+body .sm-app-shell .sm-app-content .app-nfts-section-head {
+  display: flex !important;
+  align-items: flex-end !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  min-width: 0 !important;
+}
+
+body .sm-app-shell .sm-app-content .app-nfts-section-head > div {
+  display: grid !important;
+  min-width: 0 !important;
+  gap: 5px !important;
+}
+
+body .sm-app-shell .sm-app-content .app-nfts-section-head span:first-child {
+  color: var(--app-muted) !important;
+  -webkit-text-fill-color: var(--app-muted) !important;
+  font-size: 0.74rem !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.05em !important;
+  text-transform: uppercase !important;
+}
+
+body .sm-app-shell .sm-app-content .app-nfts-section-head h2 {
+  margin: 0 !important;
+  color: var(--app-ink) !important;
+  -webkit-text-fill-color: var(--app-ink) !important;
+  font-family: var(--rayo-display, var(--rayo-font, var(--font-sans))) !important;
+  font-size: clamp(1.35rem, 2.4vw, 2rem) !important;
+  font-weight: 850 !important;
+  letter-spacing: 0 !important;
+  line-height: 1.06 !important;
+  text-transform: none !important;
+}
+
+body .sm-app-shell .sm-app-content .app-nfts-count {
+  display: inline-grid !important;
+  flex: 0 0 auto !important;
+  min-width: 36px !important;
+  height: 36px !important;
+  place-items: center !important;
+  border-radius: 999px !important;
+  background: color-mix(in srgb, var(--app-lime) 42%, var(--app-bg)) !important;
+  color: #111111 !important;
+  -webkit-text-fill-color: #111111 !important;
+  font-size: 0.82rem !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+}
+
+body .sm-app-shell .sm-app-content .app-nfts-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important;
+  gap: clamp(12px, 1.7vw, 18px) !important;
+  min-width: 0 !important;
+}
+
+body .sm-app-shell .sm-app-content .app-nfts-empty {
+  display: grid !important;
+  min-height: 156px !important;
+  place-items: center !important;
+  border: 1px dashed var(--app-line) !important;
+  border-radius: 22px !important;
+  background: color-mix(in srgb, var(--app-panel) 72%, var(--app-bg)) !important;
+  padding: clamp(18px, 2.4vw, 26px) !important;
+  color: var(--app-muted) !important;
+  -webkit-text-fill-color: var(--app-muted) !important;
+  font-size: 0.92rem !important;
+  font-weight: 650 !important;
+  text-align: center !important;
+}
+
+body .sm-app-shell .sm-app-content .app-nft-card {
+  display: flex !important;
+  min-width: 0 !important;
+  min-height: 100% !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  border: 1px solid var(--app-line) !important;
+  border-radius: 24px !important;
+  background: var(--app-panel) !important;
+  color: var(--app-ink) !important;
+  -webkit-text-fill-color: var(--app-ink) !important;
+  box-shadow: none !important;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease !important;
+}
+
+body .sm-app-shell .sm-app-content .app-nft-card:hover {
+  border-color: color-mix(in srgb, var(--app-ink) 18%, var(--app-line)) !important;
+  background: color-mix(in srgb, var(--app-ink) 3%, var(--app-panel)) !important;
+  transform: translateY(-2px) !important;
+}
+
+body .sm-app-shell .sm-app-content .app-nft-card[data-has-error="true"] {
+  border-color: color-mix(in srgb, var(--app-warning, #a16207) 38%, var(--app-line)) !important;
+}
+
+body .sm-app-shell .sm-app-content .app-nft-card-media {
+  position: relative !important;
+  aspect-ratio: 1 / 1 !important;
+  overflow: hidden !important;
+  background: var(--app-bg) !important;
+}
+
+body .sm-app-shell .sm-app-content .app-nft-card-media img {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  transition: transform 220ms ease !important;
+}
+
+body .sm-app-shell .sm-app-content .app-nft-card:hover .app-nft-card-media img {
+  transform: scale(1.025) !important;
+}
+
+body .sm-app-shell .sm-app-content .app-nft-status {
+  position: absolute !important;
+  top: 10px !important;
+  right: 10px !important;
+  display: inline-flex !important;
+  max-width: calc(100% - 20px) !important;
+  min-height: 26px !important;
+  align-items: center !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  background: rgb(0 0 0 / 68%) !important;
+  padding: 0 10px !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  font-size: 0.66rem !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.04em !important;
+  line-height: 1 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+}
+
+body .sm-app-shell .sm-app-content .app-nft-card-head {
+  display: grid !important;
+  gap: 8px !important;
+  padding: 15px 16px 0 !important;
+}
+
+body .sm-app-shell .sm-app-content .app-nft-card-title {
+  display: grid !important;
+  min-width: 0 !important;
+  gap: 4px !important;
+}
+
+body .sm-app-shell .sm-app-content .app-nft-card-name,
+body .sm-app-shell .sm-app-content .app-nft-card-subtitle {
+  display: block !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+body .sm-app-shell .sm-app-content .app-nft-card-name {
+  color: var(--app-ink) !important;
+  -webkit-text-fill-color: var(--app-ink) !important;
+  font-size: 0.98rem !important;
+  font-weight: 900 !important;
+}
+
+body .sm-app-shell .sm-app-content .app-nft-card-subtitle {
+  color: var(--app-muted) !important;
+  -webkit-text-fill-color: var(--app-muted) !important;
+  font-size: 0.78rem !important;
+  font-weight: 700 !important;
+}
+
+body .sm-app-shell .sm-app-content .app-nft-card-meta {
+  margin: 14px 16px 0 !important;
+  border-radius: 16px !important;
+  background: var(--app-bg) !important;
+  padding: 11px 12px !important;
+}
+
+body .sm-app-shell .sm-app-content .app-nft-card-meta > div {
+  display: grid !important;
+  min-width: 0 !important;
+  gap: 3px !important;
+}
+
+body .sm-app-shell .sm-app-content .app-nft-card-meta-label {
+  color: var(--app-muted) !important;
+  -webkit-text-fill-color: var(--app-muted) !important;
+  font-size: 0.68rem !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.05em !important;
+  text-transform: uppercase !important;
+}
+
+body .sm-app-shell .sm-app-content .app-nft-card-meta-value {
+  min-width: 0 !important;
+  color: var(--app-ink) !important;
+  -webkit-text-fill-color: var(--app-ink) !important;
+  font-family: var(--font-mono) !important;
+  font-size: 0.84rem !important;
+  font-weight: 750 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+body .sm-app-shell .sm-app-content .app-nft-card-error {
+  margin: 12px 16px 0 !important;
+  border-radius: 14px !important;
+  background: var(--app-warning-soft) !important;
+  padding: 10px 12px !important;
+  color: var(--app-warning-ink, var(--app-warning, #a16207)) !important;
+  -webkit-text-fill-color: var(--app-warning-ink, var(--app-warning, #a16207)) !important;
+  font-size: 0.76rem !important;
+  font-weight: 700 !important;
+  line-height: 1.35 !important;
+}
+
+body .sm-app-shell .sm-app-content .app-nft-card-actions {
+  margin-top: auto !important;
+  padding: 14px 16px 16px !important;
+}
+
+body .sm-app-shell .sm-app-content .app-nft-card-link {
+  display: inline-flex !important;
+  min-height: 38px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 7px !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  background: var(--app-soft) !important;
+  padding: 0 14px !important;
+  color: var(--app-ink) !important;
+  -webkit-text-fill-color: var(--app-ink) !important;
+  font-size: 0.78rem !important;
+  font-weight: 900 !important;
+  text-decoration: none !important;
+}
+
+body .sm-app-shell .sm-app-content .app-nft-card-link:is(:hover, :focus-visible) {
+  background: var(--app-lime) !important;
+  color: #111111 !important;
+  -webkit-text-fill-color: #111111 !important;
+}
+
+body .sm-app-shell .sm-app-content .app-nft-card-link svg {
+  flex: 0 0 auto !important;
+}
+
 @media (max-width: 1100px) {
   body .app-dashboard-grid-primary,
   body .app-dashboard-grid-secondary {

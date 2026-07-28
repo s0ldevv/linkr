@@ -76,7 +76,7 @@ function NftsPage() {
   const mints = mintsQuery.data ?? [];
 
   return (
-    <div className="app-dashboard-page lkt-home">
+    <div className="app-dashboard-page app-nfts-page">
       <header className="app-live-hero app-dashboard-hero">
         <div className="app-dashboard-hero-copy">
           <p className="app-live-kicker">Solana NFTs</p>
@@ -93,27 +93,22 @@ function NftsPage() {
         </div>
       </header>
 
-      <section
-        className="sm-public-board-shell"
-        style={{ marginTop: 24, padding: "clamp(26px, 3vw, 48px) 0" }}
-      >
-        <div className="sm-public-section-head" style={{ marginBottom: 0 }}>
+      <section className="app-nfts-section" aria-labelledby="app-nfts-collections-title">
+        <div className="app-nfts-section-head">
           <div>
             <span>Solana NFTs</span>
-            <h2>Collections</h2>
+            <h2 id="app-nfts-collections-title">Collections</h2>
           </div>
-          <span className="lkt-badge--demo">{collections.length}</span>
+          <span className="app-nfts-count">{collections.length}</span>
         </div>
         {collectionsQuery.isLoading ? (
-          <p className="lkt-muted" style={{ padding: "1rem" }}>
-            Loading…
-          </p>
+          <p className="app-nfts-empty">Loading…</p>
         ) : collections.length === 0 ? (
-          <p className="lkt-muted" style={{ padding: "1rem" }}>
+          <p className="app-nfts-empty">
             No collections yet. Tag @linkrcash on X and ask it to mint one.
           </p>
         ) : (
-          <div className="lkt-coin-grid">
+          <div className="app-nfts-grid">
             {collections.map((c) => (
               <NftTile
                 key={c.id}
@@ -130,27 +125,20 @@ function NftsPage() {
         )}
       </section>
 
-      <section
-        className="sm-public-board-shell"
-        style={{ marginTop: 0, padding: "clamp(26px, 3vw, 48px) 0" }}
-      >
-        <div className="sm-public-section-head" style={{ marginBottom: 0 }}>
+      <section className="app-nfts-section" aria-labelledby="app-nfts-mints-title">
+        <div className="app-nfts-section-head">
           <div>
             <span>Your NFTs</span>
-            <h2>Minted NFTs</h2>
+            <h2 id="app-nfts-mints-title">Minted NFTs</h2>
           </div>
-          <span className="lkt-badge--demo">{mints.length}</span>
+          <span className="app-nfts-count">{mints.length}</span>
         </div>
         {mintsQuery.isLoading ? (
-          <p className="lkt-muted" style={{ padding: "1rem" }}>
-            Loading…
-          </p>
+          <p className="app-nfts-empty">Loading…</p>
         ) : mints.length === 0 ? (
-          <p className="lkt-muted" style={{ padding: "1rem" }}>
-            No NFTs minted yet.
-          </p>
+          <p className="app-nfts-empty">No NFTs minted yet.</p>
         ) : (
-          <div className="lkt-coin-grid">
+          <div className="app-nfts-grid">
             {mints.map((m) => {
               const parent = collections.find((c) => c.id === m.collection_id);
               return (
@@ -191,51 +179,36 @@ function NftTile({
   error: string | null;
 }) {
   return (
-    <article className="lkt-coin-card lkt-nft-card">
-      <div className="lkt-nft-cover">
+    <article className="app-nft-card" data-status={status} data-has-error={Boolean(error)}>
+      <div className="app-nft-card-media">
         <img src={image} alt={name} loading="lazy" />
-        <span
-          className={`app-nft-status app-nft-status-${status}`}
-          style={{
-            position: "absolute",
-            top: "10px",
-            right: "10px",
-            padding: "4px 10px",
-            background: "rgb(0 0 0 / 62%)",
-            borderRadius: "999px",
-            fontSize: "0.66rem",
-            fontWeight: "900",
-            textTransform: "uppercase",
-            border: "0",
-          }}
-        >
-          {status}
-        </span>
+        <span className="app-nft-status">{status}</span>
       </div>
-      <div className="lkt-coin-top">
-        <div className="lkt-coin-id">
-          <span className="lkt-coin-symbol">{name}</span>
-          <span className="lkt-coin-name">{subtitle}</span>
+      <div className="app-nft-card-head">
+        <div className="app-nft-card-title">
+          <span className="app-nft-card-name">{name}</span>
+          <span className="app-nft-card-subtitle">{subtitle}</span>
         </div>
       </div>
       {mintAddress ? (
-        <div className="lkt-coin-market">
+        <div className="app-nft-card-meta">
           <div>
-            <span className="lkt-coin-mcap-label">Mint</span>
-            <span className="lkt-coin-mcap" style={{ fontSize: "0.9rem" }}>
+            <span className="app-nft-card-meta-label">Mint</span>
+            <span className="app-nft-card-meta-value">
               {mintAddress.slice(0, 6)}…{mintAddress.slice(-4)}
             </span>
           </div>
         </div>
       ) : null}
-      {error ? (
-        <p className="lkt-muted" style={{ fontSize: "0.75rem", marginTop: "0.25rem" }}>
-          {error}
-        </p>
-      ) : null}
+      {error ? <p className="app-nft-card-error">{error}</p> : null}
       {explorerUrl ? (
-        <div className="lkt-coin-actions" style={{ marginTop: "0.5rem" }}>
-          <a href={explorerUrl} target="_blank" rel="noopener noreferrer">
+        <div className="app-nft-card-actions">
+          <a
+            className="app-nft-card-link"
+            href={explorerUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             View <ExternalLink size={12} aria-hidden="true" />
           </a>
         </div>
