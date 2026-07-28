@@ -113,7 +113,7 @@ export function normalizeMetadataTelegramUrl(value: unknown): string | null {
     const host = stripWww(url.hostname.toLowerCase());
     if (host !== "t.me" && host !== "telegram.me") return null;
     const path = normalizeTelegramPath(url.pathname);
-    if (!path) return null;
+    if (!path) return "https://t.me/";
     return `https://t.me/${path}`;
   }
 

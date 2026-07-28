@@ -42,6 +42,29 @@ Deno.test("pump metadata testing mode requires explicit policy enablement", () =
   assertEquals(resolved.testingMode, true);
 });
 
+Deno.test("pump metadata testing mode preserves base Telegram override", () => {
+  const resolved = resolvePumpFunLaunchMetadata(
+    {
+      metadata_website_url: "https://user.example",
+      metadata_twitter_url: "https://x.com/user/status/999",
+      metadata_telegram_url: "https://t.me/usergroup",
+      mint_address: "Mint111",
+      source_tweet_url: "https://x.com/linkrcash/status/123",
+    },
+    {
+      testingMode: true,
+      testingWebsiteUrl: "https://example.com/test",
+      testingTwitterUrl: "https://x.com/linkrcash/status/123",
+      testingTelegramUrl: "https://t.me/",
+    },
+  );
+
+  assertEquals(resolved.websiteUrl, "https://example.com/test");
+  assertEquals(resolved.twitterUrl, "https://x.com/linkrcash/status/123");
+  assertEquals(resolved.telegramUrl, "https://t.me/");
+  assertEquals(resolved.testingMode, true);
+});
+
 Deno.test("metadata testing blank fields use launch defaults and ignore user metadata", () => {
   const resolved = resolvePumpFunLaunchMetadata(
     {
