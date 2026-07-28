@@ -113,11 +113,11 @@ function buildCommandParts() {
   return parts;
 }
 
-function CliMovie() {
+function CliMovie({ active }: { active: boolean }) {
   return (
     <>
-      <div className="lkx-cli-movie" aria-hidden="true">
-        <div className="lkx-cli-window">
+      <div className="lkx-cli-movie">
+        <div className="lkx-cli-window" aria-hidden="true">
           <div className="lkx-cli-titlebar">
             <span className="lkx-cli-lights">
               <i />
@@ -172,29 +172,44 @@ function CliMovie() {
           </div>
         </div>
 
-        <div className="lkx-cli-result">
-          <span className="lkx-cli-result-run">
-            <i className="lkx-cli-spinner" />
-            Deploying MOON on Solana
-          </span>
-          <span className="lkx-cli-result-live">
-            <span className="lkx-cli-result-check">
-              <Check aria-hidden="true" size={13} strokeWidth={3} />
+        <div className="lkx-cli-footer">
+          <div className="lkx-cli-result" aria-hidden="true">
+            <span className="lkx-cli-result-run">
+              <i className="lkx-cli-spinner" />
+              Deploying MOON on Solana
             </span>
-            <span className="lkx-cli-result-copy">
-              <strong>MOON is live</strong>
-              <small>linkr · Solana launch</small>
+            <span className="lkx-cli-result-live">
+              <span className="lkx-cli-result-check">
+                <Check aria-hidden="true" size={13} strokeWidth={3} />
+              </span>
+              <span className="lkx-cli-result-copy">
+                <strong>MOON is live</strong>
+                <small>linkr · Solana launch</small>
+              </span>
+              <span className="lkx-cli-result-tx">
+                <SolanaLogo />
+                <code>7xQ4…9Pk2</code>
+              </span>
             </span>
-            <span className="lkx-cli-result-tx">
-              <SolanaLogo />
-              <code>7xQ4…9Pk2</code>
-            </span>
-          </span>
+          </div>
+
+          <a
+            className="lkx-cli-npm"
+            href="https://www.npmjs.com/package/@linkrcash/cli"
+            target="_blank"
+            rel="noreferrer"
+            tabIndex={active ? 0 : -1}
+            aria-label="View the @linkrcash/cli package on npm (opens in a new tab)"
+          >
+            View on npm
+            <ArrowUpRight aria-hidden="true" size={15} strokeWidth={2.5} />
+          </a>
         </div>
       </div>
       <span className="lkx-sr-only">
         Install the Linkr CLI with npm, sign in with one command, then launch a coin called MOON on
-        Solana straight from your terminal. Linkr confirms the launch onchain.
+        Solana straight from your terminal. Linkr confirms the launch onchain. The package is
+        available on npm as @linkrcash/cli.
       </span>
     </>
   );
@@ -1088,7 +1103,7 @@ export function TerminalHero() {
                 <i className="lkt-dot" />
                 Linkr CLI
               </header>
-              <CliMovie />
+              <CliMovie active={activeScreen === 0} />
             </article>
 
             <article

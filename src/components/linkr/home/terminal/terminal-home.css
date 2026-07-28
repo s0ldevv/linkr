@@ -1293,16 +1293,61 @@
   padding: 2px 7px;
 }
 
+.lkx-cli-footer {
+  align-items: stretch;
+  display: flex;
+  gap: 10px;
+  min-height: 0;
+  min-width: 0;
+}
+
 .lkx-cli-result {
   align-items: center;
   background: #202020;
   border-radius: 999px;
   display: flex;
+  flex: 1;
   min-height: 46px;
+  min-width: 0;
   opacity: 0;
   overflow: hidden;
   padding: 0 8px 0 16px;
   position: relative;
+}
+
+.lkx-cli-npm {
+  align-items: center;
+  background: var(--lkt-lime);
+  border-radius: 999px;
+  color: var(--lkt-ink);
+  display: inline-flex;
+  flex: none;
+  font-family: var(--lkt-font);
+  font-size: 0.8rem;
+  font-weight: 800;
+  gap: 7px;
+  justify-content: center;
+  padding: 0 18px;
+  text-decoration: none;
+  transition:
+    background 0.18s ease,
+    transform 0.18s ease;
+  white-space: nowrap;
+}
+
+.lkx-cli-npm svg {
+  height: 15px;
+  width: 15px;
+}
+
+.lkx-cli-npm:hover {
+  background: #dcff54;
+  transform: translateY(-1px);
+}
+
+.lkx-cli-npm:focus-visible {
+  outline: 2px solid var(--lkt-lime);
+  outline-offset: 2px;
 }
 
 .lkx-cli-result-run,
@@ -5928,6 +5973,12 @@
   .lkx-cli-result-copy small,
   .lkx-cli-result-tx code {
     display: none;
+  }
+
+  .lkx-cli-npm {
+    font-size: 0.72rem;
+    gap: 5px;
+    padding: 0 13px;
   }
 
   .lkx-cmd-console {
