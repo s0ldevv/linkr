@@ -30,6 +30,7 @@ function Callback() {
           Boolean(pendingPopup));
       const authFlowId = url.searchParams.get("auth_flow") ?? pendingPopup?.flowId ?? null;
       const isWalletExportAuth = isPopupAuth && url.searchParams.get("wallet_export") === "1";
+      const isCliAuth = isPopupAuth && url.searchParams.get("cli_auth") === "1";
       if (isPopupAuth && url.searchParams.get("auth_status") === "banned") {
         notifyAuthOpener("banned", undefined, authFlowId);
         closeAuthPopup();
@@ -55,16 +56,16 @@ function Callback() {
         return;
       }
 
-      // Let the dashboard redeem the one-time handoff itself. Installing the
+      // Let the opener redeem the one-time handoff itself. Installing the
       // session in the popup and waiting for cross-tab auth synchronization is
       // racy in some browsers. The code expires in 60 seconds, is single-use,
       // and is sent only to the same-origin opener (never persisted).
-      const walletExportHandoffCode = url.searchParams.get("handoff_code");
-      if (isWalletExportAuth && walletExportHandoffCode) {
+      const popupHandoffCode = url.searchParams.get("handoff_code");
+      if ((isWalletExportAuth || isCliAuth) && popupHandoffCode) {
         const handoffRedirect = new URL(url.toString());
         handoffRedirect.searchParams.delete("handoff_code");
         notifyAuthOpener("ok", undefined, authFlowId, undefined, {
-          code: walletExportHandoffCode,
+          code: popupHandoffCode,
           redirectTo: handoffRedirect.toString(),
         });
         // Give BroadcastChannel delivery a brief window when X navigation has

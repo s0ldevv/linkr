@@ -8,6 +8,7 @@ import {
   beginAuthPopupFlow,
   clearAuthPopupFlow,
   createAuthFlowId,
+  readAuthPopupResultForFlow,
   subscribeToAuthPopupResults,
   type AuthPopupResult,
 } from "@/lib/linkr/auth-popup";
@@ -35,6 +36,9 @@ type CliAuthState = "idle" | "waiting" | "approving" | "approved" | "blocked" | 
 const CLI_REQUEST_PATTERN = /^[A-Za-z0-9_-]{32,256}$/;
 const SESSION_INSTALL_RETRIES = 20;
 const SESSION_INSTALL_RETRY_MS = 150;
+const AUTH_POPUP_CHECK_MS = 700;
+const AUTH_POPUP_DETACHED_GRACE_MS = 2_500;
+const AUTH_POPUP_TIMEOUT_MS = 10 * 60 * 1000;
 
 function CliAuthPage() {
   const { request } = Route.useSearch();
@@ -44,6 +48,7 @@ function CliAuthPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState<string | null>(null);
+  const [popupMayBeDetached, setPopupMayBeDetached] = useState(false);
   const copyResetRef = useRef<number | undefined>(undefined);
   const popupRef = useRef<Window | null>(null);
   const popupCheckRef = useRef<number | undefined>(undefined);
@@ -71,7 +76,7 @@ function CliAuthPage() {
   }, []);
 
   const approveCliAuth = useCallback(
-    async (expectedUserId?: string | null) => {
+    async (authResult?: Pick<AuthPopupResult, "handoffCode" | "handoffRedirectTo" | "userId">) => {
       if (!request || !requestValid) {
         setState("error");
         setMessage("This CLI authorization link is invalid.");
@@ -81,11 +86,24 @@ function CliAuthPage() {
       try {
         setState("approving");
         setMessage(null);
-        const token = await waitForBrowserSessionToken(expectedUserId);
+        const installedSession =
+          authResult?.handoffCode && authResult.handoffRedirectTo
+            ? await installCliAuthSession(authResult.handoffCode, authResult.handoffRedirectTo)
+            : {
+                accessToken: await waitForBrowserSessionToken(authResult?.userId),
+                userId: authResult?.userId ?? null,
+              };
+        if (
+          authResult?.userId &&
+          installedSession.userId &&
+          authResult.userId !== installedSession.userId
+        ) {
+          throw new Error("X login finished, but the browser session belongs to another account.");
+        }
         const response = await fetch("/api/cli/auth/approve", {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${installedSession.accessToken}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ request_code: request }),
@@ -99,13 +117,40 @@ function CliAuthPage() {
         setState("approved");
         setMessage(null);
         setCopyError(null);
+        setPopupMayBeDetached(false);
       } catch (error) {
         setCode(null);
         setState("error");
         setMessage(error instanceof Error ? error.message : "CLI authorization failed.");
+        setPopupMayBeDetached(false);
       }
     },
     [request, requestValid],
+  );
+
+  const handleAuthPopupResult = useCallback(
+    (data: AuthPopupResult) => {
+      const activeFlowId = activeFlowRef.current;
+      if (!activeFlowId) return;
+      if (data.flowId && data.flowId !== activeFlowId) return;
+      if (handledFlowRef.current === activeFlowId) return;
+      handledFlowRef.current = activeFlowId;
+      setPopupMayBeDetached(false);
+      resetXAuthPopup(activeFlowId);
+
+      if (data.status === "ok") {
+        void approveCliAuth(data);
+        return;
+      }
+      setCode(null);
+      setState("error");
+      setMessage(
+        data.status === "banned"
+          ? readableCliAuthError("banned_x_user")
+          : readableXAuthError(data.message),
+      );
+    },
+    [approveCliAuth, resetXAuthPopup],
   );
 
   useEffect(() => {
@@ -114,6 +159,7 @@ function CliAuthPage() {
     setCopied(false);
     setCopyError(null);
     setCode(null);
+    setPopupMayBeDetached(false);
     handledFlowRef.current = null;
     if (!requestValid) {
       setState("error");
@@ -125,33 +171,12 @@ function CliAuthPage() {
   }, [request, requestValid, resetXAuthPopup]);
 
   useEffect(() => {
-    const onResult = (data: AuthPopupResult) => {
-      const activeFlowId = activeFlowRef.current;
-      if (!activeFlowId) return;
-      if (data.flowId && data.flowId !== activeFlowId) return;
-      if (handledFlowRef.current === activeFlowId) return;
-      handledFlowRef.current = activeFlowId;
-      resetXAuthPopup(activeFlowId);
-
-      if (data.status === "ok") {
-        void approveCliAuth(data.userId);
-        return;
-      }
-      setCode(null);
-      setState("error");
-      setMessage(
-        data.status === "banned"
-          ? readableCliAuthError("banned_x_user")
-          : readableXAuthError(data.message),
-      );
-    };
-
-    const unsubscribe = subscribeToAuthPopupResults(onResult);
+    const unsubscribe = subscribeToAuthPopupResults(handleAuthPopupResult);
     return () => {
       unsubscribe();
       resetXAuthPopup();
     };
-  }, [approveCliAuth, resetXAuthPopup]);
+  }, [handleAuthPopupResult, resetXAuthPopup]);
 
   useEffect(() => {
     return () => window.clearTimeout(copyResetRef.current);
@@ -194,25 +219,49 @@ function CliAuthPage() {
       popup.focus();
       setCode(null);
       setCopyError(null);
+      setPopupMayBeDetached(false);
       setState("waiting");
       setMessage(null);
       window.clearInterval(popupCheckRef.current);
+      const startedAt = Date.now();
+      let detachedMessageShown = false;
       popupCheckRef.current = window.setInterval(() => {
-        if (!popup.closed) return;
-        window.clearInterval(popupCheckRef.current);
-        popupCheckRef.current = undefined;
+        const storedResult = readAuthPopupResultForFlow(flowId);
+        if (storedResult) {
+          handleAuthPopupResult(storedResult);
+          return;
+        }
+        if (activeFlowRef.current !== flowId) {
+          window.clearInterval(popupCheckRef.current);
+          popupCheckRef.current = undefined;
+          return;
+        }
+        const elapsed = Date.now() - startedAt;
+        if (elapsed >= AUTH_POPUP_TIMEOUT_MS) {
+          window.clearInterval(popupCheckRef.current);
+          popupCheckRef.current = undefined;
+          popupRef.current = null;
+          clearAuthPopupFlow(flowId);
+          activeFlowRef.current = null;
+          setPopupMayBeDetached(false);
+          setState((current) => (current === "waiting" ? "idle" : current));
+          setMessage("X login did not finish. Open X again to retry this CLI login.");
+          return;
+        }
+        if (!popup.closed || elapsed < AUTH_POPUP_DETACHED_GRACE_MS || detachedMessageShown) {
+          return;
+        }
+        detachedMessageShown = true;
         popupRef.current = null;
-        if (activeFlowRef.current !== flowId) return;
-        clearAuthPopupFlow(flowId);
-        activeFlowRef.current = null;
-        setState((current) => (current === "waiting" ? "idle" : current));
-        setMessage("X login window closed before authorization finished.");
-      }, 700);
+        setPopupMayBeDetached(true);
+        setMessage("Still waiting for X. If the login window is gone, open X again.");
+      }, AUTH_POPUP_CHECK_MS);
     } catch (error) {
       resetXAuthPopup();
       setCode(null);
       setState("error");
       setMessage(readableXAuthError(error));
+      setPopupMayBeDetached(false);
     }
   }
 
@@ -231,6 +280,9 @@ function CliAuthPage() {
   }
 
   const verifying = state === "waiting" || state === "approving";
+  const xButtonBusy = state === "approving" || (state === "waiting" && !popupMayBeDetached);
+  const xButtonDisabled =
+    state === "approving" || (state === "waiting" && !popupMayBeDetached) || !requestValid;
   const canRetry = requestValid && state === "error";
 
   return (
@@ -285,11 +337,11 @@ function CliAuthPage() {
               <Button
                 type="button"
                 onClick={startXAuth}
-                disabled={verifying || !requestValid}
+                disabled={xButtonDisabled}
                 size="lg"
                 className="app-login-x-button cli-auth-copy-button"
               >
-                {verifying ? (
+                {xButtonBusy ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
                 ) : (
                   <XLogo className="h-5 w-5" />
@@ -297,7 +349,9 @@ function CliAuthPage() {
                 {state === "approving"
                   ? "Preparing code..."
                   : state === "waiting"
-                    ? "Waiting for X..."
+                    ? popupMayBeDetached
+                      ? "Open X again"
+                      : "Waiting for X..."
                     : state === "blocked"
                       ? "Try X again"
                       : "Continue with X"}
@@ -406,6 +460,47 @@ async function waitForBrowserSessionToken(expectedUserId?: string | null): Promi
       ? "X login finished, but Linkr could not install the matching browser session."
       : "X login finished, but Linkr could not install the browser session.",
   );
+}
+
+async function installCliAuthSession(
+  handoffCode: string,
+  redirectTo: string,
+): Promise<{ accessToken: string; userId: string | null }> {
+  const supabaseUrl =
+    import.meta.env.VITE_SUPABASE_URL ||
+    (typeof process !== "undefined" ? process.env.SUPABASE_URL : undefined);
+  if (!supabaseUrl) {
+    throw new Error("Supabase URL is not configured.");
+  }
+  const redirectUrl = new URL(redirectTo);
+  if (
+    redirectUrl.origin !== window.location.origin ||
+    redirectUrl.pathname !== "/auth/callback" ||
+    redirectUrl.searchParams.get("cli_auth") !== "1"
+  ) {
+    throw new Error("X login returned an invalid CLI session handoff.");
+  }
+  const response = await fetch(`${supabaseUrl.replace(/\/+$/, "")}/functions/v1/x-oauth/handoff`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      handoff_code: handoffCode,
+      redirect_to: redirectUrl.toString(),
+    }),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok || !payload?.access_token || !payload?.refresh_token) {
+    throw new Error("X login finished, but Linkr could not install the CLI browser session.");
+  }
+  const { data, error } = await supabase.auth.setSession({
+    access_token: payload.access_token,
+    refresh_token: payload.refresh_token,
+  });
+  const accessToken = data.session?.access_token;
+  if (error || !accessToken) {
+    throw new Error("X login finished, but Linkr could not install the CLI browser session.");
+  }
+  return { accessToken, userId: data.session?.user.id ?? null };
 }
 
 function delay(ms: number): Promise<void> {

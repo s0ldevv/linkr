@@ -82,6 +82,11 @@ export function publishAuthPopupResult(result: AuthPopupResult): void {
   }
 }
 
+export function readAuthPopupResultForFlow(flowId: string): AuthPopupResult | null {
+  const result = readAuthPopupResult(readLocalValue(AUTH_POPUP_RESULT_KEY));
+  return result?.flowId === flowId ? result : null;
+}
+
 export function subscribeToAuthPopupResults(
   onResult: (result: AuthPopupResult) => void,
 ): () => void {
