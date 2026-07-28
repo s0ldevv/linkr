@@ -1,5 +1,6 @@
 import {
   parseTelegramVerificationHandoffPayload,
+  telegramLogoutKeyboard,
   telegramVerificationHandoffPayload,
 } from "./telegram.ts";
 
@@ -32,4 +33,15 @@ Deno.test("Telegram verification handoff refuses a non-UUID challenge id", () =>
     threw = true;
   }
   if (!threw) throw new Error("Invalid challenge id was accepted");
+});
+
+Deno.test("Telegram logout keyboard uses stable callback payloads", () => {
+  const keyboard = telegramLogoutKeyboard();
+  const buttons = keyboard.inline_keyboard[0];
+  if (buttons[0].callback_data !== "logout:confirm") {
+    throw new Error("Logout confirm callback changed");
+  }
+  if (buttons[1].callback_data !== "logout:cancel") {
+    throw new Error("Logout cancel callback changed");
+  }
 });

@@ -34,11 +34,13 @@ import {
   type TelegramChatJoinRequest,
   telegramId,
   telegramLoginKeyboard,
+  telegramLogoutKeyboard,
   type TelegramMessage,
   telegramPendingActionKeyboard,
   type TelegramUpdate,
   type TelegramUser,
   telegramVerificationKeyboard,
+  unlinkTelegramAccount,
   uploadTelegramPhotoForLaunch,
   upsertTelegramAccount,
   upsertTelegramChat,
@@ -222,6 +224,11 @@ async function handleUpdate(
   }
 
   const linked = await getLinkedTelegramAccount(admin, telegramUserId);
+  if (command === "logout") {
+    await sendLogoutPrompt(message, linked);
+    return true;
+  }
+
   if (command === "status") {
     const activeBan = linked?.user_id
       ? (await getActiveBanForAuthUser(admin, linked.user_id)).ban
@@ -232,10 +239,10 @@ async function handleUpdate(
         ? activeBan
           ? `Connected${
             linked.username ? ` as @${linked.username}` : ""
-          }, but this X account is currently banned from Linkr.`
+          }, but this X account is currently banned from Linkr. Use /logout to disconnect Telegram.`
           : `Connected${
             linked.username ? ` as @${linked.username}` : ""
-          }. You can chat with Linkr here.`
+          }. You can chat with Linkr here. Use /logout to disconnect Telegram.`
         : "Not connected yet. Use /login to connect your X account.",
     });
     return true;
@@ -643,6 +650,32 @@ async function sendLoginPrompt(
   });
 }
 
+async function sendLogoutPrompt(
+  message: TelegramMessage,
+  linked: { user_id?: string | null; username?: string | null } | null,
+) {
+  const chatId = telegramId(message.chat?.id);
+  if (!chatId) return;
+  if (!linked?.user_id) {
+    await sendTelegramMessage({
+      chat_id: chatId,
+      text:
+        "Telegram is not connected to a Linkr account right now. Use /login to connect.",
+    });
+    return;
+  }
+
+  await sendTelegramMessage({
+    chat_id: chatId,
+    text: [
+      "Log out of Linkr on Telegram?",
+      "This disconnects this Telegram chat from your Linkr account. Your Linkr account, wallets, history, and settings stay intact.",
+      "You can reconnect later with /login.",
+    ].join("\n\n"),
+    reply_markup: telegramLogoutKeyboard(),
+  });
+}
+
 async function runPrivateTelegramTurn(
   admin: any,
   message: TelegramMessage,
@@ -720,13 +753,25 @@ async function handleCallbackQuery(
   admin: any,
   callback: TelegramCallbackQuery,
 ) {
-  const action = String(callback.data ?? "")
-    .split(":")[0]
-    ?.toLowerCase();
-  const pendingActionId = String(callback.data ?? "").split(":")[1] ?? "";
+  const callbackData = String(callback.data ?? "");
+  const [rawAction, rawArgument] = callbackData.split(":");
+  const action = rawAction?.toLowerCase() ?? "";
+  const argument = rawArgument ?? "";
   const chat = callback.message?.chat;
   const chatId = telegramId(chat?.id);
   const telegramUserId = telegramId(callback.from.id);
+  if (action === "logout") {
+    await handleLogoutCallback(
+      admin,
+      callback,
+      argument,
+      chatId,
+      telegramUserId,
+    );
+    return;
+  }
+
+  const pendingActionId = argument;
   if (
     !chatId || !telegramUserId || !["confirm", "cancel"].includes(action) ||
     !pendingActionId
@@ -878,6 +923,85 @@ async function handleCallbackQuery(
       null
     );
   }
+}
+
+async function handleLogoutCallback(
+  admin: any,
+  callback: TelegramCallbackQuery,
+  action: string,
+  chatId: string,
+  telegramUserId: string,
+) {
+  if (
+    !chatId || !telegramUserId || !["confirm", "cancel"].includes(action) ||
+    normalizeChatType(callback.message?.chat) !== "private"
+  ) {
+    await answerTelegramCallbackQuery({
+      callback_query_id: callback.id,
+      text: "That logout button is invalid.",
+      show_alert: true,
+    }).catch(() => null);
+    return;
+  }
+
+  await upsertTelegramAccount(admin, callback.from);
+  if (callback.message?.chat) {
+    await upsertTelegramChat(admin, callback.message.chat);
+  }
+
+  const linked = await getLinkedTelegramAccount(admin, telegramUserId);
+  if (action === "cancel") {
+    await answerTelegramCallbackQuery({
+      callback_query_id: callback.id,
+      text: linked?.user_id ? "Still connected." : "Already disconnected.",
+    }).catch(() => null);
+    await removeCallbackButtons(callback, chatId);
+    await sendTelegramMessage({
+      chat_id: chatId,
+      text: linked?.user_id
+        ? "Kept connected. You can keep using Linkr here."
+        : "Telegram is already disconnected. Use /login to connect again.",
+    }).catch(() => null);
+    return;
+  }
+
+  if (!linked?.user_id) {
+    await answerTelegramCallbackQuery({
+      callback_query_id: callback.id,
+      text: "Already disconnected.",
+    }).catch(() => null);
+    await removeCallbackButtons(callback, chatId);
+    await sendTelegramMessage({
+      chat_id: chatId,
+      text: "Telegram is already disconnected. Use /login to connect again.",
+    }).catch(() => null);
+    return;
+  }
+
+  const result = await unlinkTelegramAccount(admin, telegramUserId);
+  await answerTelegramCallbackQuery({
+    callback_query_id: callback.id,
+    text: result.unlinked ? "Logged out." : "Already disconnected.",
+  }).catch(() => null);
+  await removeCallbackButtons(callback, chatId);
+  await sendTelegramMessage({
+    chat_id: chatId,
+    text: result.unlinked
+      ? "Logged out of Linkr on Telegram. Use /login to connect again."
+      : "Telegram is already disconnected. Use /login to connect again.",
+  }).catch(() => null);
+}
+
+async function removeCallbackButtons(
+  callback: TelegramCallbackQuery,
+  chatId: string,
+) {
+  if (!callback.message?.message_id) return;
+  await editTelegramMessageReplyMarkup({
+    chat_id: chatId,
+    message_id: callback.message.message_id,
+    reply_markup: null,
+  }).catch(() => null);
 }
 
 type PreparedTurn = {
@@ -1619,6 +1743,7 @@ function helpText(chatType: string): string {
   return [
     "Linkr Telegram commands:",
     "/login - connect your X account",
+    "/logout - disconnect Telegram from your Linkr account",
     "/status - show connection status",
     "/help - show this help",
     "",

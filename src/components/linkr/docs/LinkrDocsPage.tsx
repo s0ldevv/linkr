@@ -1612,7 +1612,7 @@ export function LinkrDocsPage() {
                 <FeatureCard
                   icon={<MessageCircle />}
                   title="Private Linkr chat"
-                  text="Start @LinkrCashBot, connect the same X identity used by Linkr, then ask account questions or send natural-language commands in a private conversation."
+                  text="Start @LinkrCashBot, connect the same X identity used by Linkr, ask account questions, send commands, or disconnect later with a confirmed /logout."
                 />
                 <FeatureCard
                   icon={<ShieldCheck />}
@@ -1637,6 +1637,7 @@ export function LinkrDocsPage() {
                     items={[
                       "/start opens the bot and starts a private Linkr conversation.",
                       "/login connects the Telegram user to the correct Linkr account through a protected sign-in flow.",
+                      "/logout asks for button confirmation, then disconnects Telegram from the Linkr account without changing wallets, history, or settings.",
                       "/status shows whether the account connection is ready.",
                       "/help summarizes the available private-chat commands and account setup.",
                       "After connection, the DM can answer wallet, portfolio, token, post, launch, liquidity, rewards, history, and action questions with the same private context as the terminal.",

@@ -87,6 +87,11 @@ export type TelegramLinkedAccount = {
   linked_at?: string | null;
 };
 
+export type TelegramUnlinkResult = {
+  unlinked: boolean;
+  account: Record<string, unknown> | null;
+};
+
 export function telegramId(value: unknown): string {
   return String(value ?? "").trim();
 }
@@ -272,6 +277,7 @@ export async function setTelegramBotCommands() {
     commands: [
       { command: "start", description: "Start Linkr on Telegram" },
       { command: "login", description: "Connect your X account" },
+      { command: "logout", description: "Disconnect your X account" },
       { command: "status", description: "Show connection status" },
       { command: "help", description: "Show what Linkr can do" },
     ],
@@ -339,6 +345,51 @@ export async function getLinkedTelegramAccount(
   if (error) throw error;
   if (!data?.user_id) return null;
   return data;
+}
+
+export async function unlinkTelegramAccount(
+  admin: any,
+  telegramUserId: string,
+): Promise<TelegramUnlinkResult> {
+  const { data: account, error: accountError } = await admin
+    .from("telegram_accounts")
+    .select("id,telegram_user_id,user_id,metadata")
+    .eq("telegram_user_id", telegramUserId)
+    .maybeSingle();
+  if (accountError) throw accountError;
+  if (!account?.user_id) return { unlinked: false, account: account ?? null };
+
+  const now = new Date().toISOString();
+  const metadata =
+    account.metadata && typeof account.metadata === "object" &&
+      !Array.isArray(account.metadata)
+      ? account.metadata
+      : {};
+
+  const expiredTokens = await admin
+    .from("telegram_link_tokens")
+    .update({ status: "expired" })
+    .eq("telegram_user_id", telegramUserId)
+    .eq("status", "pending");
+  if (expiredTokens.error) throw expiredTokens.error;
+
+  const { data, error } = await admin
+    .from("telegram_accounts")
+    .update({
+      user_id: null,
+      unlinked_at: now,
+      metadata: {
+        ...metadata,
+        last_unlinked_at: now,
+        last_unlink_source: "telegram_logout",
+      },
+    })
+    .eq("telegram_user_id", telegramUserId)
+    .eq("user_id", account.user_id)
+    .select("*")
+    .maybeSingle();
+  if (error) throw error;
+  return { unlinked: Boolean(data), account: data ?? account };
 }
 
 export async function createTelegramLoginLink(
@@ -562,6 +613,17 @@ export function bestTelegramPhoto(
 export function telegramLoginKeyboard(url: string) {
   return {
     inline_keyboard: [[{ text: "Connect X account", url }]],
+  };
+}
+
+export function telegramLogoutKeyboard() {
+  return {
+    inline_keyboard: [
+      [
+        { text: "Confirm logout", callback_data: "logout:confirm" },
+        { text: "Keep connected", callback_data: "logout:cancel" },
+      ],
+    ],
   };
 }
 
