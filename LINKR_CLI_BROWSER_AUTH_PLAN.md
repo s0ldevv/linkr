@@ -18,6 +18,7 @@ Use the current system instead of creating a separate CLI backend:
 - Existing one-time auth handoff table: `supabase/migrations/20260722032000_auth_handoff_codes.sql`
 - Existing signed Agent API auth: `supabase/functions/_shared/agent_api_auth.ts`
 - Existing API key creation: `supabase/functions/agent-api-keys/index.ts`, `supabase/functions/_shared/agent_onboarding.ts`
+- Public docs route: `src/routes/docs.tsx`, `src/components/linkr/docs/LinkrDocsPage.tsx`
 
 Key observation: `/app/terminal` currently authenticates with a Supabase user JWT. Existing external Agent API endpoints authenticate with scoped HMAC-signed API keys. The CLI should use the browser only to prove the user identity and then store a dedicated CLI API key locally. It should not store Supabase refresh tokens.
 
@@ -553,7 +554,42 @@ Operational:
 - Add version headers so the backend can block dangerously old CLI versions.
 - Add tests for replay, expired code, wrong code, wrong device code, double redemption, revoked key, missing scope, stale timestamp, and nonce reuse.
 
-## 14. Build order
+## 14. Docs page update
+
+Add the CLI to the existing public `/docs` route as part of the feature launch.
+
+Files:
+
+- `src/routes/docs.tsx`
+- `src/components/linkr/docs/LinkrDocsPage.tsx`
+- `src/components/linkr/docs/linkr-docs.css` only if the existing docs components need small layout support
+
+Required docs content:
+
+- Add a dedicated `CLI` entry to the docs navigation/table of contents near the existing `Terminal` and `Agent API` sections.
+- Add a new CLI section that explains what the npm package is for, how it relates to `/app/terminal`, and that it uses the same Linkr agent runtime, wallet guardrails, conversation history, and pending-action confirmation model.
+- Include install and first-run commands:
+
+```text
+npm install -g @linkr/cli
+linkr login
+linkr chat
+```
+
+- Explain the browser login flow exactly as implemented: `linkr login` opens a browser URL, the user authenticates with X, the page shows only a short one-time authorization code, and the CLI redeems that code for a local revocable Linkr CLI credential.
+- State that the browser never shows an API key, the CLI never stores Supabase refresh tokens, and CLI-created keys can be revoked from `/app/api-keys`.
+- Document common commands: `linkr login`, `linkr logout`, `linkr whoami`, `linkr chat`, `linkr conversations`, `linkr continue <conversation_id>`, and `linkr revoke-current`.
+- Document action confirmation behavior: value-moving actions show a pending action, require the exact confirmation phrase, are bounded by server-side scopes/caps, and are idempotent.
+- Add a short troubleshooting block for expired codes, revoked keys, missing scopes, stale clocks, and browser-open fallback.
+- Update the `/docs` page metadata in `src/routes/docs.tsx` so the title/description mention CLI once the feature is public.
+
+Docs quality requirements:
+
+- Keep the CLI docs user-facing and concise; do not expose internal table names or secret hashing details on the public page.
+- Keep implementation/security details in this plan and backend tests, not in the public docs copy.
+- Cross-link to `/app/terminal` for the web chat experience and `/app/api-keys` for key revocation/monitoring.
+
+## 15. Build order
 
 1. Add `chat:write` to `AGENT_SCOPES`.
 2. Add `cli_auth_sessions` migration.
@@ -565,8 +601,9 @@ Operational:
 8. Add `cli-conversations` and `cli-messages` for shared history.
 9. Build `@linkr/cli` with login/logout/whoami/chat/conversations.
 10. Add edge tests and CLI integration tests against local Supabase functions.
-11. Publish a beta package to npm.
-12. Document install:
+11. Update `/docs` with the CLI section, navigation entry, install flow, login flow, command reference, action confirmation notes, troubleshooting, and metadata.
+12. Publish a beta package to npm.
+13. Document install:
 
 ```text
 npm install -g @linkr/cli
@@ -574,7 +611,7 @@ linkr login
 linkr chat
 ```
 
-## 15. Acceptance criteria
+## 16. Acceptance criteria
 
 Login:
 
@@ -610,7 +647,14 @@ Security:
 - Every nonce is single-use.
 - Revoked keys stop working immediately.
 
-## 16. Notes from standards and platform docs
+Docs:
+
+- `/docs` has a visible CLI nav entry and section.
+- The CLI docs show install, login, chat, logout, revoke, conversation, and confirmation flows.
+- The docs accurately say the browser displays only the one-time code and that CLI credentials are revocable from `/app/api-keys`.
+- The `/docs` metadata mentions CLI after public launch.
+
+## 17. Notes from standards and platform docs
 
 - The login bridge should follow the OAuth device authorization pattern: separate high-entropy device code, human-entered user code, short expiry, and rate limits. See RFC 8628.
 - X user auth should continue using OAuth 2.0 Authorization Code with PKCE through the existing Linkr backend. X access tokens are short-lived unless `offline.access` is requested; the CLI should not own that refresh-token lifecycle.
