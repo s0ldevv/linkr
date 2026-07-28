@@ -12,19 +12,15 @@ export async function isFirstLaunchSubsidyEligible(
   const chain = options.chain ?? "robinhood";
   const fundingPolicy = await readLaunchFundingPolicy(admin);
   if (fundingPolicy.mode === "funding_disabled") return false;
-  if (
-    chain === "solana" &&
-    !Deno.env.get("SOL_FUNDING_WALLET")?.trim()
-  ) {
-    return false;
-  }
+  if (!fundingSourceConfigured(chain)) return false;
+  if (fundingPolicy.mode === "fund_every_eligible_launch") return true;
 
   try {
     const { count: launchesCount, error: launchesError } = await admin
       .from("coin_launches")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
-      .neq("status", "failed");
+      .not("status", "in", '("failed","cancelled","rejected")');
     if (launchesError) throw launchesError;
     if ((launchesCount ?? 0) > 0) return false;
 
@@ -32,8 +28,7 @@ export async function isFirstLaunchSubsidyEligible(
       .from("wallet_funding_events")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
-      .eq("funding_kind", "first_launch_minimum")
-      .in("status", ["pending", "prepared", "submitted", "confirmed"]);
+      .eq("funding_kind", "first_launch_minimum");
     if (fundingError) throw fundingError;
     return (fundingCount ?? 0) === 0;
   } catch (error) {
@@ -50,4 +45,9 @@ export async function isFirstLaunchSubsidyEligible(
     );
     return false;
   }
+}
+
+function fundingSourceConfigured(chain: FirstLaunchSubsidyChain): boolean {
+  const name = chain === "solana" ? "SOL_FUNDING_WALLET" : "ETH_DEV_WALLET";
+  return Boolean(Deno.env.get(name)?.trim());
 }

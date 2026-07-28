@@ -89,6 +89,13 @@ export async function fundFirstLaunchIfNeeded(
     args.launchId,
     fundingKind,
   );
+  if (
+    fundingKind === "first_launch_minimum" &&
+    event &&
+    !ACTIVE_FUNDING_STATUSES.includes(String(event.status ?? ""))
+  ) {
+    throw new Error("first_launch_subsidy_already_used");
+  }
   event = event ??
     (await insertFundingEvent(
       admin,
@@ -209,14 +216,14 @@ async function loadExistingFundingEvent(
     .from("wallet_funding_events")
     .select("*")
     .eq("funding_kind", fundingKind)
-    .in("status", ACTIVE_FUNDING_STATUSES)
     .order("created_at", { ascending: true })
     .limit(1);
 
   if (fundingKind === "first_launch_minimum") {
     query.eq("user_id", userId);
   } else {
-    query.eq("coin_launch_id", launchId).eq("user_id", userId);
+    query.eq("coin_launch_id", launchId).eq("user_id", userId)
+      .in("status", ACTIVE_FUNDING_STATUSES);
   }
 
   const { data, error } = await query.maybeSingle();

@@ -141,8 +141,8 @@ export function resolveDevBuy(
       provenance: "user_text",
     };
   }
-  // The subsidized first launch must stay at zero: the funding claim RPC
-  // rejects any positive dev buy and the subsidy caps at 0.02 SOL.
+  // Platform-funded launches must stay at zero: funding workers reject any
+  // positive dev buy and only cover the chain minimum.
   if (defaults.firstLaunchSubsidyEligible === true) {
     return {
       amount: normalizeDevBuy(null, chain),

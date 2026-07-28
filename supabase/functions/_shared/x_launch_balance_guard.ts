@@ -7,9 +7,12 @@ import {
   normalizeSolanaPublicKey,
   solanaConnection,
 } from "./solana_chain.ts";
+import { isFirstLaunchSubsidyEligible } from "./first_launch_subsidy.ts";
 import type { LaunchFields } from "./x_launch_command.ts";
 
 export type XLaunchBalanceChain = "robinhood" | "solana";
+const SOLANA_LAUNCH_FUNDING_CAP_LAMPORTS = 20_000_000n;
+const DEFAULT_ROBINHOOD_LAUNCH_FUNDING_CAP_ETH = 0.005;
 
 export type XLaunchBalanceGuardResult =
   | {
@@ -18,6 +21,7 @@ export type XLaunchBalanceGuardResult =
     balanceRaw: bigint;
     requiredRaw: bigint;
     walletAddress: string;
+    fundingExpected?: boolean;
   }
   | {
     ok: false;
@@ -32,6 +36,11 @@ export type XLaunchBalanceGuardResult =
 export interface XLaunchBalanceGuardDeps {
   getEthBalanceWei?: (address: string) => Promise<bigint>;
   getSolBalanceLamports?: (address: string) => Promise<number>;
+  isLaunchFundingEligible?: (
+    admin: any,
+    userId: string,
+    options: { chain: XLaunchBalanceChain },
+  ) => Promise<boolean>;
   env?: (name: string) => string | undefined;
 }
 
@@ -53,11 +62,12 @@ export async function checkXLaunchNativeBalance(args: {
   deps?: XLaunchBalanceGuardDeps;
 }): Promise<XLaunchBalanceGuardResult> {
   const deps = args.deps ?? {};
+  const env = deps.env ?? ((name) => Deno.env.get(name) ?? undefined);
   const wallet = await loadWalletAddress(args.admin, args.userId, args.chain);
   const requiredRaw = minimumLaunchNativeRequirement(
     args.chain,
     args.fields,
-    deps.env ?? ((name) => Deno.env.get(name) ?? undefined),
+    env,
   );
   if (!wallet) {
     return {
@@ -89,6 +99,25 @@ export async function checkXLaunchNativeBalance(args: {
     };
   }
 
+  if (
+    await launchFundingCanCoverDeficit({
+      ...args,
+      balanceRaw,
+      requiredRaw,
+      deps,
+      env,
+    })
+  ) {
+    return {
+      ok: true,
+      chain: args.chain,
+      balanceRaw,
+      requiredRaw,
+      walletAddress: wallet.address,
+      fundingExpected: true,
+    };
+  }
+
   return {
     ok: false,
     chain: args.chain,
@@ -98,6 +127,40 @@ export async function checkXLaunchNativeBalance(args: {
     requiredRaw,
     walletAddress: wallet.address,
   };
+}
+
+async function launchFundingCanCoverDeficit(args: {
+  admin: any;
+  userId: string;
+  chain: XLaunchBalanceChain;
+  fields: LaunchFields;
+  balanceRaw: bigint;
+  requiredRaw: bigint;
+  deps: XLaunchBalanceGuardDeps;
+  env: (name: string) => string | undefined;
+}): Promise<boolean> {
+  const deficit = args.requiredRaw - args.balanceRaw;
+  if (deficit <= 0n) return true;
+  const unit = args.chain === "solana" ? "SOL" : "ETH";
+  if (devBuyAmount(args.fields, unit) > 0) return false;
+  if (deficit > maximumLaunchFundingDeficit(args.chain, args.env)) {
+    return false;
+  }
+  try {
+    return await (
+      args.deps.isLaunchFundingEligible ?? isFirstLaunchSubsidyEligible
+    )(args.admin, args.userId, { chain: args.chain });
+  } catch (error) {
+    console.error(
+      JSON.stringify({
+        event: "x_launch_funding_eligibility_error",
+        chain: args.chain,
+        message: String(error instanceof Error ? error.message : error)
+          .slice(0, 300),
+      }),
+    );
+    return false;
+  }
 }
 
 export function minimumLaunchNativeRequirement(
@@ -196,6 +259,18 @@ function decimalOrFallback(
 
 function solToLamports(value: number): bigint {
   return BigInt(Math.ceil(value * LAMPORTS_PER_SOL));
+}
+
+function maximumLaunchFundingDeficit(
+  chain: XLaunchBalanceChain,
+  env: (name: string) => string | undefined,
+): bigint {
+  if (chain === "solana") return SOLANA_LAUNCH_FUNDING_CAP_LAMPORTS;
+  const maxEth = decimalOrFallback(
+    env("MAX_FIRST_LAUNCH_SUBSIDY_ETH"),
+    DEFAULT_ROBINHOOD_LAUNCH_FUNDING_CAP_ETH,
+  );
+  return ethers.parseEther(decimalString(maxEth));
 }
 
 function formatNative(chain: XLaunchBalanceChain, value: bigint): string {
