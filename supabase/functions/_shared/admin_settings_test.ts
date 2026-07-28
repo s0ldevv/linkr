@@ -54,7 +54,7 @@ Deno.test("metadata testing policy treats invalid or blank testing fields as uns
       enabled: true,
       test_website_url: "http://not-secure.example",
       test_twitter_url: "https://example.com/not-x",
-      test_telegram_url: "https://t.me/",
+      test_telegram_url: "https://example.com/not-telegram",
     }),
     {
       enabled: true,
@@ -71,13 +71,13 @@ Deno.test("metadata testing policy normalizes common URL input", () => {
       enabled: true,
       test_website_url: "linkr.cash/coin/test",
       test_twitter_url: "x.com/linkrcash/status/123",
-      test_telegram_url: "t.me/linkr",
+      test_telegram_url: "t.me",
     }),
     {
       enabled: true,
       test_website_url: "https://linkr.cash/coin/test",
       test_twitter_url: "https://x.com/linkrcash/status/123",
-      test_telegram_url: "https://t.me/linkr",
+      test_telegram_url: "https://t.me/",
     },
   );
 });

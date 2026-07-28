@@ -233,7 +233,6 @@ export function normalizeMetadataTestingPolicy(
     }),
     test_telegram_url: normalizeOptionalHttpsUrl(row.test_telegram_url, {
       allowedHosts: ["t.me", "telegram.me"],
-      requirePath: true,
     }),
   };
 }
@@ -319,7 +318,6 @@ function normalizeOptionalHttpsUrl(
   value: unknown,
   options: {
     allowedHosts?: string[];
-    requirePath?: boolean;
   } = {},
 ): string | null {
   const raw = String(value ?? "").trim();
@@ -332,9 +330,6 @@ function normalizeOptionalHttpsUrl(
     if (url.protocol !== "https:") return null;
     const host = url.hostname.toLowerCase();
     if (options.allowedHosts && !options.allowedHosts.includes(host)) {
-      return null;
-    }
-    if (options.requirePath && !url.pathname.replace(/^\/+|\/+$/g, "")) {
       return null;
     }
     return url.toString();
