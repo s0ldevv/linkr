@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Activity, Compass, Home, Images, Rocket, type LucideIcon } from "lucide-react";
+import { Compass, Home, Images, Rocket, Wallet, type LucideIcon } from "lucide-react";
 
 export const X_POST_TEMPLATE_URL = `https://x.com/intent/post?text=${encodeURIComponent("@linkrcash ")}`;
 export const X_PROFILE_URL = "https://x.com/linkrcash";
@@ -13,8 +13,8 @@ const MOBILE_BOTTOM_NAV: ReadonlyArray<{
   { href: "/", label: "Home", icon: Home, exact: true },
   { href: "/explore", label: "Explore", icon: Compass },
   { href: "/launch", label: "Launch", icon: Rocket },
-  { href: "/activity", label: "Activity", icon: Activity },
   { href: "/nfts", label: "NFTs", icon: Images },
+  { href: "/app", label: "Dashboard", icon: Wallet },
 ];
 
 export function PublicMobileBottomNav() {
