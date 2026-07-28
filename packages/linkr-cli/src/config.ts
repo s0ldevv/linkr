@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { promises as fs } from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { normalizeStoredApiUrl } from "./api-url.js";
 
 export type LinkrCredentials = {
   apiKey: string;
@@ -29,7 +30,7 @@ export async function readCredentials(): Promise<LinkrCredentials | null> {
     }
     return {
       apiKey: parsed.apiKey,
-      apiUrl: parsed.apiUrl.replace(/\/+$/, ""),
+      apiUrl: normalizeStoredApiUrl(parsed.apiUrl),
       keyPrefix: parsed.keyPrefix,
       agentProfileId: parsed.agentProfileId,
       installId: parsed.installId || randomUUID(),

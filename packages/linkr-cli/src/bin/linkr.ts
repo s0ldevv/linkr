@@ -4,11 +4,13 @@ import {
   chatCommand,
   continueCommand,
   conversationsCommand,
+  doctorCommand,
   loginCommand,
   logoutCommand,
   revokeCurrentCommand,
   whoamiCommand,
 } from "../commands.js";
+import { formatCliError } from "../errors.js";
 import { VERSION } from "../version.js";
 
 const program = new Command();
@@ -27,7 +29,14 @@ program
 program
   .command("logout")
   .description("Remove local Linkr CLI credentials.")
-  .action(() => run(logoutCommand));
+  .option("--revoke", "Revoke the current server-side CLI key before removing credentials")
+  .action((options) => run(() => logoutCommand(options)));
+
+program
+  .command("doctor")
+  .description("Check local Linkr CLI configuration and API reachability.")
+  .option("--api-url <url>", "Linkr API URL")
+  .action((options) => run(() => doctorCommand(options)));
 
 program
   .command("whoami")
@@ -74,7 +83,7 @@ async function run(fn: () => Promise<void>) {
   try {
     await fn();
   } catch (error) {
-    console.error(error instanceof Error ? error.message : String(error));
+    console.error(formatCliError(error));
     process.exitCode = 1;
   }
 }

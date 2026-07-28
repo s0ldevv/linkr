@@ -65,6 +65,10 @@ linkr login --api-url https://www.linkr.cash
 
 `--no-browser` prints the login URL without trying to open it automatically.
 
+`--api-url` should be the Linkr site origin, not an API path. Use
+`https://www.linkr.cash`, not `https://www.linkr.cash/api`. The CLI normalizes common
+`/api` mistakes before it calls the login endpoint.
+
 `--read-only` requests the default chat and read scopes. This is the normal mode for asking questions, viewing account data, researching tokens, and chatting.
 
 `--full` requests additional write scopes for supported value-moving actions. Linkr still enforces server-side scopes, wallet checks, spending caps, confirmations, idempotency, and action expiry. The current CLI full-mode caps are conservative: max buy `0.01 ETH` or `0.05 SOL`, max sell `25%`, max launch initial buy `0.01 ETH` or `0.05 SOL`, max liquidity `0.01 ETH`, max transfers `0`, `500` daily requests, and `25` daily transactions.
@@ -82,6 +86,8 @@ LINKR_API_URL=https://www.linkr.cash linkr login
 | `linkr` | Start an interactive chat. |
 | `linkr login` | Authorize this computer with Linkr. |
 | `linkr logout` | Remove the local CLI credential file. |
+| `linkr logout --revoke` | Revoke the active server-side CLI key, then remove local credentials. |
+| `linkr doctor` | Check the local CLI version, API URL, credentials, and login route. |
 | `linkr whoami` | Show the active CLI credential, wallet, and scopes. |
 | `linkr chat` | Start an interactive chat. |
 | `linkr chat "message"` | Send one prompt and print Linkr's response. |
@@ -232,10 +238,19 @@ Use `logout` to remove only the local file:
 linkr logout
 ```
 
+`logout` does not revoke server-side CLI keys. Use this when you just want this machine to
+forget its local credential.
+
 Use `revoke-current` to revoke the active server-side CLI key and remove the local file:
 
 ```sh
 linkr revoke-current
+```
+
+You can also do both through logout:
+
+```sh
+linkr logout --revoke
 ```
 
 You can also revoke CLI-created keys from the Linkr app API keys page.
@@ -272,6 +287,20 @@ linkr login --no-browser
 ```
 
 Then copy the printed URL into your browser manually.
+
+`API route not found`
+
+Check the API URL you passed to `--api-url` or `LINKR_API_URL`. It should be the site origin:
+
+```sh
+linkr login --api-url https://www.linkr.cash
+```
+
+Do not include `/api`; the CLI adds `/api/cli/...` automatically. You can also run:
+
+```sh
+linkr doctor
+```
 
 `Stale clock` or signed request errors
 

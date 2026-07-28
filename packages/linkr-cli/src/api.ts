@@ -32,6 +32,7 @@ export class LinkrApiError extends Error {
     message: string,
     public readonly code: string,
     public readonly status: number,
+    public readonly url?: string,
   ) {
     super(message);
     this.name = "LinkrApiError";
@@ -143,7 +144,7 @@ async function readJsonResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     const code = String(payload?.error?.code ?? payload?.error ?? `http_${response.status}`);
     const message = String(payload?.error?.message ?? payload?.message ?? code);
-    throw new LinkrApiError(message, code, response.status);
+    throw new LinkrApiError(message, code, response.status, response.url || undefined);
   }
   return payload as T;
 }

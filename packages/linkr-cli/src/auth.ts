@@ -1,11 +1,10 @@
 import { randomUUID } from "node:crypto";
 import open from "open";
 import prompts from "prompts";
+import { describeApiUrlResolution, resolveApiUrl } from "./api-url.js";
 import { LinkrCredentials, writeCredentials } from "./config.js";
 import { unsignedJson } from "./api.js";
 import { VERSION } from "./version.js";
-
-const DEFAULT_API_URL = "https://www.linkr.cash";
 
 type LoginStartResponse = {
   device_code: string;
@@ -33,10 +32,10 @@ export async function login(options: {
   if (options.full && options.readOnly) {
     throw new Error("Choose either --full or --read-only, not both.");
   }
-  const apiUrl = (options.apiUrl || process.env.LINKR_API_URL || DEFAULT_API_URL).replace(
-    /\/+$/,
-    "",
-  );
+  const apiResolution = resolveApiUrl({ apiUrl: options.apiUrl, env: process.env });
+  const apiUrlMessage = describeApiUrlResolution(apiResolution);
+  if (apiUrlMessage) console.log(apiUrlMessage);
+  const apiUrl = apiResolution.apiUrl;
   const requestedScopes = scopesForLogin(options);
   const requestedLimits = limitsForLogin(options);
   const start = await unsignedJson<LoginStartResponse>(apiUrl, "/api/cli/auth/start", {

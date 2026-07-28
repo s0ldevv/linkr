@@ -1,6 +1,6 @@
 {
   "name": "@linkrcash/cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Linkr command line chat client.",
   "type": "module",
   "bin": {
