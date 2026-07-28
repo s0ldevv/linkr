@@ -11,6 +11,7 @@
   --lkt-hero-max: 1730px;
   --lkt-wide-max: 1680px;
   --lkt-section-max: 1680px;
+  --lkt-band-max: 1780px;
   --lkt-terminal-dock-bottom: clamp(14px, 2vw, 24px);
   --lkt-terminal-dock-max: 1280px;
   --lkt-bg: #111111;
@@ -74,6 +75,10 @@
 .lkt-shell > :where(.lkt-terminal, .lkt-workflow-band) {
   margin-inline: auto;
   width: 100%;
+}
+
+.lkt-shell > .lkt-workflow-band {
+  width: min(100%, var(--lkt-band-max));
 }
 
 .lkt-shell > :where(.lkt-section-narrow, .lkt-triple--feeds, .lkt-triple--ranks) {
