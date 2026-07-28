@@ -8,24 +8,24 @@
 // npm graph only loads when an NFT job is actually claimed.
 
 import {
-  createCollection,
   create as createAsset,
+  createCollection,
 } from "npm:@metaplex-foundation/mpl-core@1.1.1";
-import { createUmi } from "npm:@metaplex-foundation/umi-bundle-defaults@1.0.0";
+import { createUmi } from "npm:@metaplex-foundation/umi-bundle-defaults@0.9.2";
 import {
   generateSigner,
   keypairIdentity,
   publicKey as toUmiPublicKey,
   type Umi,
-} from "npm:@metaplex-foundation/umi@1.0.0";
+} from "npm:@metaplex-foundation/umi@0.9.2";
 
 import {
   base58Encode,
   getSolanaTxExplorerUrl,
   LAMPORTS_PER_SOL,
+  type LoadedSolanaWallet,
   loadSolanaWalletById,
   requiredSolanaRpcUrl,
-  type LoadedSolanaWallet,
 } from "../solana_chain.ts";
 
 // Rough SOL floor: parent collection asset rent + royalties plugin state +
@@ -115,7 +115,9 @@ async function uploadJsonMetadata(admin: any, body: Record<string, unknown>) {
       upsert: false,
     },
   );
-  if (error && !/already exists|duplicate/i.test(String(error.message ?? error))) {
+  if (
+    error && !/already exists|duplicate/i.test(String(error.message ?? error))
+  ) {
     throw error;
   }
   const { data } = admin.storage.from("token-logos").getPublicUrl(path);
@@ -132,7 +134,11 @@ function encodeSignature(sig: unknown): string {
 export async function mintCollection(
   input: MintCollectionInput,
 ): Promise<MintCollectionResult> {
-  const wallet = await loadSolanaWalletById(input.admin, input.walletId, input.userId);
+  const wallet = await loadSolanaWalletById(
+    input.admin,
+    input.walletId,
+    input.userId,
+  );
   if (!wallet) throw new Error("solana_wallet_not_found");
 
   const umi = buildUmi(wallet);
@@ -152,9 +158,15 @@ export async function mintCollection(
       creators: [{ address: wallet.address, share: 100 }],
     },
     attributes: [
-      ...(input.websiteUrl ? [{ trait_type: "website", value: input.websiteUrl }] : []),
-      ...(input.twitterUrl ? [{ trait_type: "twitter", value: input.twitterUrl }] : []),
-      ...(input.telegramUrl ? [{ trait_type: "telegram", value: input.telegramUrl }] : []),
+      ...(input.websiteUrl
+        ? [{ trait_type: "website", value: input.websiteUrl }]
+        : []),
+      ...(input.twitterUrl
+        ? [{ trait_type: "twitter", value: input.twitterUrl }]
+        : []),
+      ...(input.telegramUrl
+        ? [{ trait_type: "telegram", value: input.telegramUrl }]
+        : []),
     ],
   });
 
@@ -187,7 +199,11 @@ export async function mintCollection(
 export async function mintNftIntoCollection(
   input: MintNftInput,
 ): Promise<MintNftResult> {
-  const wallet = await loadSolanaWalletById(input.admin, input.walletId, input.userId);
+  const wallet = await loadSolanaWalletById(
+    input.admin,
+    input.walletId,
+    input.userId,
+  );
   if (!wallet) throw new Error("solana_wallet_not_found");
 
   const umi = buildUmi(wallet);

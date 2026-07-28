@@ -47,6 +47,16 @@ Deno.test("capability summary mentions confirmation for value movement", () => {
     capabilityPromptFacts().includes("Pump.fun"),
     "facts should include Pump.fun launches",
   );
+  assert(
+    capabilityPromptFacts().includes("create a collection first"),
+    "facts should include Solana NFT collection-first guidance",
+  );
+  assert(
+    capabilityPromptFacts().includes(
+      "Robinhood NFT launches are not wired yet",
+    ),
+    "facts should include Robinhood NFT unsupported state",
+  );
 });
 
 Deno.test("persona prompt avoids vendor claims and small talk varies", () => {

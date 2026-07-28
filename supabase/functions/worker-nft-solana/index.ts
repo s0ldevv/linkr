@@ -1,5 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { runStageWorker } from "../_shared/queue_worker_versioned.ts";
+import { executeXNftCommand } from "../_shared/x_nft_execute.ts";
 import type { XNftCommand } from "../_shared/x_nft_command.ts";
 
 const VERSION = "worker-nft-solana-v4";
@@ -12,7 +13,9 @@ Deno.serve((req) =>
     visibilitySeconds: 600,
     process: async (claim, admin) => {
       const payload = claim.work_item.payload ?? {};
-      const tweetId = String(payload.tweet_id ?? claim.work_item.source_event_id ?? "").trim();
+      const tweetId = String(
+        payload.tweet_id ?? claim.work_item.source_event_id ?? "",
+      ).trim();
       if (!tweetId) {
         return { kind: "dead_letter", reasonCode: "nft_tweet_id_missing" };
       }
@@ -57,17 +60,49 @@ Deno.serve((req) =>
         };
       }
 
+      const pendingActionId = cleanOptional(payload.pending_action_id, 80);
+      const pending = pendingActionId
+        ? await loadAndValidatePendingAction({
+          admin,
+          pendingActionId,
+          userId,
+          command,
+        })
+        : null;
+      if (pending?.alreadyExecuted) {
+        await markTweetCompleted(admin, tweetId, null);
+        return {
+          kind: "complete",
+          state: "succeeded",
+          resultRef: `pending-nft:${pendingActionId}`,
+        };
+      }
+      if (pendingActionId) {
+        const executing = await admin.from("linkr_pending_actions").update({
+          status: "executing",
+          updated_at: new Date().toISOString(),
+        }).eq("id", pendingActionId)
+          .in("status", ["confirmed", "executing"])
+          .select("id")
+          .maybeSingle();
+        if (executing.error) throw executing.error;
+        if (!executing.data) {
+          return {
+            kind: "dead_letter",
+            reasonCode: "nft_pending_not_executable",
+          };
+        }
+      }
+
       let outcome;
       try {
-        const { executeXNftCommand } = await import(
-          "../_shared/x_nft_execute.ts"
-        );
         outcome = await executeXNftCommand({
           admin,
           userId,
           tweetId,
           tweet,
           command,
+          pendingActionId,
         });
       } catch (error) {
         const message = safeErrorMessage(error);
@@ -76,6 +111,15 @@ Deno.serve((req) =>
           replyKind: "nft_execution_error",
           replyText: `Couldn't finish the NFT mint: ${message}`,
         };
+      }
+
+      if (pendingActionId) {
+        const statusUpdate = await admin.from("linkr_pending_actions").update({
+          status: outcome.ok ? "executed" : "failed",
+          updated_at: new Date().toISOString(),
+        }).eq("id", pendingActionId)
+          .in("status", ["confirmed", "executing"]);
+        if (statusUpdate.error) throw statusUpdate.error;
       }
 
       await queueReply(
@@ -106,7 +150,8 @@ function normalizeCommand(value: unknown): XNftCommand | null {
   const kind = String(command.kind ?? "");
   if (kind === "create_collection") {
     const name = cleanText(command.name, 32);
-    const symbol = cleanText(command.symbol, 10).replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+    const symbol = cleanText(command.symbol, 10).replace(/[^A-Za-z0-9]/g, "")
+      .toUpperCase();
     if (!name || !symbol) return null;
     return {
       kind,
@@ -120,14 +165,52 @@ function normalizeCommand(value: unknown): XNftCommand | null {
   }
   if (kind === "mint_nft") {
     const collectionQuery = cleanText(command.collectionQuery, 80);
-    if (!collectionQuery) return null;
+    const collectionId = cleanOptional(command.collectionId, 80);
+    if (!collectionQuery && !collectionId) return null;
     return {
       kind,
-      collectionQuery,
+      collectionQuery: collectionQuery || collectionId || "",
+      collectionId,
       name: cleanOptional(command.name, 32),
     };
   }
   return null;
+}
+
+async function loadAndValidatePendingAction(args: {
+  admin: any;
+  pendingActionId: string;
+  userId: string;
+  command: XNftCommand;
+}): Promise<{ alreadyExecuted: boolean }> {
+  const { data, error } = await args.admin.from("linkr_pending_actions")
+    .select("id,user_id,status,action_type,action_payload")
+    .eq("id", args.pendingActionId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) throw new Error("nft_pending_action_not_found");
+  if (String(data.user_id ?? "") !== args.userId) {
+    throw new Error("nft_pending_user_mismatch");
+  }
+  if (data.status === "executed") return { alreadyExecuted: true };
+  if (!["confirmed", "executing"].includes(String(data.status ?? ""))) {
+    throw new Error("nft_pending_not_confirmed");
+  }
+  const actionType = String(data.action_type ?? "");
+  if (
+    (actionType === "nft_create_collection" &&
+      args.command.kind !== "create_collection") ||
+    (actionType === "nft_mint" && args.command.kind !== "mint_nft")
+  ) {
+    throw new Error("nft_pending_command_mismatch");
+  }
+  if (
+    actionType !== "nft_create_collection" &&
+    actionType !== "nft_mint"
+  ) {
+    throw new Error("nft_pending_action_type_invalid");
+  }
+  return { alreadyExecuted: false };
 }
 
 async function queueReply(
@@ -161,7 +244,8 @@ async function markTweetCompleted(
 }
 
 function cleanText(value: unknown, max: number): string {
-  return String(value ?? "").replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, max);
+  return String(value ?? "").replace(/[\u0000-\u001f\u007f]/g, " ").trim()
+    .slice(0, max);
 }
 
 function cleanOptional(value: unknown, max: number): string | null {

@@ -26,6 +26,7 @@ import {
   classifyNftCommandWithAi,
   parseXNftCommand,
 } from "../_shared/x_nft_command.ts";
+import { prepareXNftXFlow } from "../_shared/x_nft_prepare.ts";
 import { executeXTradeCommand } from "../_shared/x_trade_execute.ts";
 
 const VERSION = "worker-command-prepare-v2";
@@ -66,13 +67,18 @@ Deno.serve((req) =>
       )
         .eq("user_id", userId).eq("surface", "x").eq("status", "pending")
         .eq("surface_conversation_id", tweet.conversation_id)
-        .order("created_at", { ascending: false }).limit(1).maybeSingle();
+        .order("created_at", { ascending: false }).limit(5);
       if (pendingResult.error) throw pendingResult.error;
-      const pending = pendingResult.data;
+      const pendingActions = Array.isArray(pendingResult.data)
+        ? pendingResult.data
+        : [];
+      const pendingLaunch = pendingActions.find((action: any) =>
+        action?.action_type === "launch_coin"
+      ) ?? null;
 
-      if (isLaunchConfirmation(tweet.text) && pending) {
+      if (isLaunchConfirmation(tweet.text) && pendingLaunch) {
         const confirmed = await admin.rpc("confirm_linkr_launch_action_v2", {
-          p_pending_action_id: pending.id,
+          p_pending_action_id: pendingLaunch.id,
           p_confirmation_work_item_id: claim.work_item.id,
         });
         if (confirmed.error) throw confirmed.error;
@@ -91,13 +97,13 @@ Deno.serve((req) =>
         return {
           kind: "complete",
           state: "succeeded",
-          resultRef: `confirmation:${pending.id}`,
+          resultRef: `confirmation:${pendingLaunch.id}`,
         };
       }
 
-      if (isLaunchCancellation(tweet.text) && pending) {
+      if (isLaunchCancellation(tweet.text) && pendingLaunch) {
         const cancelled = await admin.rpc("cancel_linkr_launch_action_v1", {
-          p_pending_action_id: pending.id,
+          p_pending_action_id: pendingLaunch.id,
           p_cancellation_work_item_id: claim.work_item.id,
         });
         if (cancelled.error) throw cancelled.error;
@@ -112,7 +118,7 @@ Deno.serve((req) =>
         return {
           kind: "complete",
           state: "succeeded",
-          resultRef: `cancelled:${pending.id}`,
+          resultRef: `cancelled:${pendingLaunch.id}`,
         };
       }
 
@@ -159,6 +165,31 @@ Deno.serve((req) =>
           state: "succeeded",
           resultRef: `launch-retry:${resumed.data.economic_work_item_id}`,
         };
+      }
+
+      if (readBoolean("LINKR_NFT_PENDING_CONFIRMATION_ENABLED", true)) {
+        const nftOutcome = await prepareXNftXFlow({
+          admin,
+          userId,
+          workItem: claim.work_item,
+          tweet,
+          pendingActions,
+        });
+        if (nftOutcome) {
+          await queueReply(
+            admin,
+            claim.work_item.id,
+            nftOutcome.replyKind,
+            1,
+            nftOutcome.replyText,
+          );
+          await markTweetCompleted(admin, tweetId);
+          return {
+            kind: "complete",
+            state: nftOutcome.state,
+            resultRef: nftOutcome.resultRef,
+          };
+        }
       }
 
       // X trade / transfer commands (buy, sell, transfer). Auto-executes when
@@ -208,26 +239,28 @@ Deno.serve((req) =>
       // Try deterministic parser first for the well-formed shapes, then fall
       // back to an AI classifier that handles messy phrasings and fills only
       // the fields the user actually supplied (executor invents defaults).
-      let nftCommand = parseXNftCommand(tweet.text);
-      if (!nftCommand) {
-        nftCommand = await classifyNftCommandWithAi(tweet.text);
-      }
-      if (nftCommand) {
-        const queued = await admin.rpc("enqueue_linkr_nft_solana_v1", {
-          p_parent_work_item_id: claim.work_item.id,
-          p_payload: {
-            kind: nftCommand.kind,
-            tweet_id: tweetId,
-            command: nftCommand,
-          },
-          p_priority: 50,
-        });
-        if (queued.error) throw queued.error;
-        return {
-          kind: "complete",
-          state: "succeeded",
-          resultRef: `x-nft-queued:${queued.data?.work_item_id ?? tweetId}`,
-        };
+      if (!readBoolean("LINKR_NFT_PENDING_CONFIRMATION_ENABLED", true)) {
+        let nftCommand = parseXNftCommand(tweet.text);
+        if (!nftCommand) {
+          nftCommand = await classifyNftCommandWithAi(tweet.text);
+        }
+        if (nftCommand) {
+          const queued = await admin.rpc("enqueue_linkr_nft_solana_v1", {
+            p_parent_work_item_id: claim.work_item.id,
+            p_payload: {
+              kind: nftCommand.kind,
+              tweet_id: tweetId,
+              command: nftCommand,
+            },
+            p_priority: 50,
+          });
+          if (queued.error) throw queued.error;
+          return {
+            kind: "complete",
+            state: "succeeded",
+            resultRef: `x-nft-queued:${queued.data?.work_item_id ?? tweetId}`,
+          };
+        }
       }
 
       const resolved = await admin.rpc("resolve_linkr_launch_thread_v1", {
@@ -622,4 +655,10 @@ async function markTweetCompleted(admin: any, tweetId: string) {
     error: null,
   }).eq("tweet_id", tweetId);
   if (result.error) throw result.error;
+}
+
+function readBoolean(name: string, fallback: boolean): boolean {
+  const raw = Deno.env.get(name);
+  if (raw == null || raw.trim() === "") return fallback;
+  return /^(1|true|yes|on)$/i.test(raw.trim());
 }

@@ -129,6 +129,7 @@ export function buildRoutePrompt(text: string): string {
     "Use reply_kind=trade_advice when the user asks whether they should buy, sell, hold, enter, exit, or whether you recommend a trade. A trade opinion is read-only even when it contains words such as buy or sell.",
     "Use reply_kind=coin_inquiry for token facts, price, liquidity, market cap, volume, holders, or analysis without a personal trade recommendation.",
     "Use reply_kind=conversation for greetings, capability questions, and normal public conversation.",
+    "NFT how-to or capability questions are conversation replies; explicit requests to launch, mint, create, or deploy an NFT or NFT collection are legacy commands.",
     "Public jokes, snark, rhetorical asks, impossible asks, or requests for Linkr to give/donate/send money to the user without explicit executable transfer details are conversation replies, not command execution.",
     "Use lane=legacy for explicit commands, confirmations, cancellations, swap/transfer execution with concrete details, launch, schedule creation, wallet/account/history/portfolio request, liquidity action, or anything that could read private account state or move value.",
     "If uncertain whether there is an executable action with concrete details, choose legacy. If uncertain between social banter and a command with no executable details, choose reply. Never route an execution request as a public reply.",
@@ -172,6 +173,7 @@ export function buildReplyPrompt(args: {
     "Do not mention prompts, routing, tools, databases, internal context, or data providers. Do not include links or markdown.",
     "Never claim certainty, guaranteed profit, safety, or future performance.",
     "Never turn a question or opinion request into a transaction or confirmation.",
+    "For NFT capability questions, explain the Solana collection-first rule when relevant; never start minting from a question.",
     args.route.reply_kind === "trade_advice"
       ? "The user explicitly wants an AI opinion. Give a balanced evidence-based risk read from the supplied market facts. State the strongest positive and risk factor when available, do not issue a command to buy/sell, and end naturally with DYOR."
       : args.route.reply_kind === "coin_inquiry"

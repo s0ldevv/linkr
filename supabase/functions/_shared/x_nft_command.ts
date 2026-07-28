@@ -22,6 +22,7 @@ export type XNftCommand =
   | {
     kind: "mint_nft";
     collectionQuery: string;
+    collectionId?: string | null;
     name?: string | null;
   };
 
@@ -72,10 +73,10 @@ export function parseXNftCommand(rawText: string): XNftCommand | null {
   if (!text) return null;
   const lower = text.toLowerCase();
 
-  // mint_nft: "mint (this) (as an) nft (in|into|to) [my] [collection] ..."
+  // mint_nft: "mint/launch (this) (as an) nft (in|into|to) [my] [collection] ..."
   // Prefer a quoted name if present; otherwise take the trailing tail.
   const intoHead =
-    /mint\s+(?:this\s+)?(?:as\s+(?:an?\s+)?)?(?:nft|non[- ]?fungible)\s+(?:in|into|to)\s+(?:my\s+)?/i;
+    /(?:mint|launch|drop|deploy)\s+(?:this\s+)?(?:as\s+(?:an?\s+)?)?(?:nft|non[- ]?fungible)\s+(?:in|into|to)\s+(?:my\s+)?/i;
   const intoM = text.match(intoHead);
   if (intoM && !/\b(?:new|a\s+new)\s+collection\b/i.test(text)) {
     const rest = text.slice(intoM.index! + intoM[0].length).trim();
@@ -89,9 +90,9 @@ export function parseXNftCommand(rawText: string): XNftCommand | null {
     }
   }
 
-  // Create collection: must include "mint" + "collection"
+  // Create collection: must include an NFT action verb + "collection"
   if (
-    /\bmint\b/.test(lower) &&
+    /\b(?:mint|create|launch|deploy|make|drop)\b/.test(lower) &&
     /\bcollection\b/.test(lower) &&
     !/\bin(to)?\s+.*collection/i.test(lower) &&
     !/\bto\s+(?:my\s+)?collection/i.test(lower)
@@ -157,7 +158,7 @@ function extractCollectionQuery(tail: string): string | null {
 export function looksLikeNftIntent(rawText: string): boolean {
   const t = String(rawText ?? "").toLowerCase();
   if (!/\bnft\b/.test(t) && !/collection/.test(t)) return false;
-  return /\b(mint|create|drop)\b/.test(t);
+  return /\b(mint|create|drop|launch|deploy|make)\b/.test(t);
 }
 
 // AI-first classifier + extractor. Handles messy phrasings the regex misses
@@ -175,8 +176,8 @@ export async function classifyNftCommandWithAi(
       reasoning: { effort: "low" },
       input: [
         "You classify a user's request on X to a Solana NFT bot. Choose exactly one:",
-        '  A) "create_collection" — user wants to create a new NFT collection.',
-        '  B) "mint_nft" — user wants to mint a single NFT into an existing collection they own.',
+        '  A) "create_collection" — user wants to create, launch, deploy, drop, or mint a new NFT collection.',
+        '  B) "mint_nft" — user wants to launch, drop, create, deploy, or mint a single NFT into an existing collection they own.',
         '  C) "none" — anything else (trading, coin/token launches, questions, jokes, chat).',
         "Return ONE JSON object only, no prose. Schema:",
         '{"kind":"create_collection"|"mint_nft"|"none",',

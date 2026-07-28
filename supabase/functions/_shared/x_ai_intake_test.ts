@@ -106,6 +106,31 @@ Deno.test("X router treats social or impossible value asks as conversation", () 
   );
 });
 
+Deno.test("X router keeps NFT how-to conversational but executable NFT requests legacy", () => {
+  const routePrompt = buildRoutePrompt("@linkrcash how can I launch an NFT?");
+  assert(
+    routePrompt.includes("NFT how-to or capability questions"),
+    "router should keep NFT how-to questions conversational",
+  );
+  assert(
+    routePrompt.includes("explicit requests to launch, mint, create"),
+    "router should reserve executable NFT requests for legacy command flow",
+  );
+
+  const replyPrompt = buildReplyPrompt({
+    text: "@linkrcash how can I launch an NFT?",
+    route: parseXAiRoute({ lane: "reply", reply_kind: "conversation" }),
+  });
+  assert(
+    replyPrompt.includes("Solana collection-first rule"),
+    "reply prompt should ground NFT collection-first guidance",
+  );
+  assert(
+    replyPrompt.includes("Robinhood NFT launches are not wired yet"),
+    "reply prompt should include Robinhood NFT unsupported fact",
+  );
+});
+
 Deno.test("X reply prompt grounds persona and permits normal conversation", () => {
   const prompt = buildReplyPrompt({
     text: "@linkrcash who made you?",

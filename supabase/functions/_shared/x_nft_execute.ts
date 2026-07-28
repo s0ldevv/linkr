@@ -24,6 +24,7 @@ export interface XNftExecutionInput {
     referenced_tweet_id?: string | null;
   };
   command: XNftCommand;
+  pendingActionId?: string | null;
 }
 
 export interface XNftExecutionResult {
@@ -43,14 +44,18 @@ function trim(text: string): string {
 async function resolveImageUrl(
   admin: any,
   tweet: XNftExecutionInput["tweet"],
-): Promise<{ url: string | null; source: "user_media" | "parent_media" | "unknown" }> {
+): Promise<
+  { url: string | null; source: "user_media" | "parent_media" | "unknown" }
+> {
   if (tweet.media_url && /^https?:\/\//i.test(tweet.media_url)) {
     return { url: tweet.media_url, source: "user_media" };
   }
   // Try direct parent (reply target)
   const candidates: string[] = [];
   if (tweet.parent_tweet_id) candidates.push(tweet.parent_tweet_id);
-  if (tweet.referenced_tweet_id && !candidates.includes(tweet.referenced_tweet_id)) {
+  if (
+    tweet.referenced_tweet_id && !candidates.includes(tweet.referenced_tweet_id)
+  ) {
     candidates.push(tweet.referenced_tweet_id);
   }
   if (
@@ -87,7 +92,24 @@ async function resolveWallet(admin: any, userId: string) {
   return data;
 }
 
-async function findCollection(admin: any, userId: string, query: string) {
+async function findCollection(
+  admin: any,
+  userId: string,
+  query: string,
+  collectionId?: string | null,
+) {
+  const id = String(collectionId ?? "").trim();
+  if (id) {
+    const byId = await admin
+      .from("nft_collections")
+      .select("id,name,symbol,mint_address,status")
+      .eq("user_id", userId)
+      .eq("status", "confirmed")
+      .eq("id", id)
+      .maybeSingle();
+    if (byId.error) throw byId.error;
+    if (byId.data) return byId.data;
+  }
   const raw = String(query ?? "").trim();
   if (!raw) return null;
   // Postgrest .or() with commas in values breaks the parser; escape and wrap.
@@ -128,7 +150,8 @@ export async function executeXNftCommand(
     return {
       ok: false,
       replyKind: "nft_wallet_missing",
-      replyText: "You need a Solana wallet linked to mint NFTs. Set one up in the SOLMate dashboard.",
+      replyText:
+        "You need a Solana wallet linked to mint NFTs. Set one up in the SOLMate dashboard.",
     };
   }
 
@@ -150,7 +173,9 @@ export async function executeXNftCommand(
       return {
         ok: false,
         replyKind: "nft_image_unusable",
-        replyText: `Couldn't read that image: ${String((error as Error).message).slice(0, 80)}`,
+        replyText: `Couldn't read that image: ${
+          String((error as Error).message).slice(0, 80)
+        }`,
       };
     }
 
@@ -164,29 +189,70 @@ export async function executeXNftCommand(
         input.tweet?.text ?? null,
       );
       if (!description) {
-        description = `${input.command.name} — a Solana NFT collection minted via @linkrcash.`;
+        description =
+          `${input.command.name} — a Solana NFT collection minted via @linkrcash.`;
       }
     }
 
-    const insert = await input.admin
-      .from("nft_collections")
-      .insert({
-        user_id: input.userId,
-        wallet_id: wallet.id,
-        name: input.command.name,
-        symbol: input.command.symbol,
-        description,
-        image_url: hostedImage,
-        website_url: input.command.websiteUrl,
-        twitter_url: input.command.twitterUrl,
-        telegram_url: input.command.telegramUrl,
-        source_tweet_id: input.tweetId,
-        status: "pending",
-      })
-      .select("id")
-      .single();
-    if (insert.error) throw insert.error;
-    const collectionRowId = insert.data.id as string;
+    const existingCollection = await loadExistingNftRow(
+      input.admin,
+      "nft_collections",
+      input.pendingActionId,
+    );
+    if (existingCollection?.status === "confirmed") {
+      return {
+        ok: true,
+        replyKind: "nft_collection_minted",
+        replyText: trim(
+          `Minted collection ${
+            existingCollection.name ?? input.command.name
+          } ✅ https://solmate.live/nfts/${existingCollection.id}`,
+        ),
+      };
+    }
+
+    let collectionRowId = String(existingCollection?.id ?? "");
+    if (collectionRowId) {
+      const update = await input.admin
+        .from("nft_collections")
+        .update({
+          user_id: input.userId,
+          wallet_id: wallet.id,
+          name: input.command.name,
+          symbol: input.command.symbol,
+          description,
+          image_url: hostedImage,
+          website_url: input.command.websiteUrl,
+          twitter_url: input.command.twitterUrl,
+          telegram_url: input.command.telegramUrl,
+          source_tweet_id: input.tweetId,
+          status: "pending",
+          error: null,
+        })
+        .eq("id", collectionRowId);
+      if (update.error) throw update.error;
+    } else {
+      const insert = await input.admin
+        .from("nft_collections")
+        .insert({
+          user_id: input.userId,
+          wallet_id: wallet.id,
+          name: input.command.name,
+          symbol: input.command.symbol,
+          description,
+          image_url: hostedImage,
+          website_url: input.command.websiteUrl,
+          twitter_url: input.command.twitterUrl,
+          telegram_url: input.command.telegramUrl,
+          source_tweet_id: input.tweetId,
+          pending_action_id: input.pendingActionId ?? null,
+          status: "pending",
+        })
+        .select("id")
+        .single();
+      if (insert.error) throw insert.error;
+      collectionRowId = insert.data.id as string;
+    }
 
     try {
       const { mintCollection } = await import("./solana_nft/mint.ts");
@@ -245,7 +311,12 @@ export async function executeXNftCommand(
   }
 
   // mint_nft
-  const collection = await findCollection(input.admin, input.userId, input.command.collectionQuery);
+  const collection = await findCollection(
+    input.admin,
+    input.userId,
+    input.command.collectionQuery,
+    input.command.collectionId,
+  );
   if (!collection) {
     return {
       ok: false,
@@ -270,28 +341,66 @@ export async function executeXNftCommand(
     return {
       ok: false,
       replyKind: "nft_image_unusable",
-      replyText: `Couldn't read that image: ${String((error as Error).message).slice(0, 80)}`,
+      replyText: `Couldn't read that image: ${
+        String((error as Error).message).slice(0, 80)
+      }`,
     };
   }
 
-  const nftName = (input.command.name ?? `${collection.name} #${Date.now().toString().slice(-4)}`).slice(0, 32);
+  const nftName = (input.command.name ??
+    `${collection.name} #${Date.now().toString().slice(-4)}`).slice(0, 32);
 
-  const insert = await input.admin
-    .from("nft_mints")
-    .insert({
-      user_id: input.userId,
-      wallet_id: wallet.id,
-      collection_id: collection.id,
-      name: nftName,
-      image_url: hostedImage,
-      source_tweet_id: input.tweetId,
-      image_source: image.source,
-      status: "pending",
-    })
-    .select("id")
-    .single();
-  if (insert.error) throw insert.error;
-  const mintRowId = insert.data.id as string;
+  const existingMint = await loadExistingNftRow(
+    input.admin,
+    "nft_mints",
+    input.pendingActionId,
+  );
+  if (existingMint?.status === "confirmed") {
+    return {
+      ok: true,
+      replyKind: "nft_minted",
+      replyText: trim(
+        `Minted NFT into ${collection.name} ✅ https://solmate.live/nfts/${collection.id}`,
+      ),
+    };
+  }
+
+  let mintRowId = String(existingMint?.id ?? "");
+  if (mintRowId) {
+    const update = await input.admin
+      .from("nft_mints")
+      .update({
+        user_id: input.userId,
+        wallet_id: wallet.id,
+        collection_id: collection.id,
+        name: nftName,
+        image_url: hostedImage,
+        source_tweet_id: input.tweetId,
+        image_source: image.source,
+        status: "pending",
+        error: null,
+      })
+      .eq("id", mintRowId);
+    if (update.error) throw update.error;
+  } else {
+    const insert = await input.admin
+      .from("nft_mints")
+      .insert({
+        user_id: input.userId,
+        wallet_id: wallet.id,
+        collection_id: collection.id,
+        name: nftName,
+        image_url: hostedImage,
+        source_tweet_id: input.tweetId,
+        image_source: image.source,
+        pending_action_id: input.pendingActionId ?? null,
+        status: "pending",
+      })
+      .select("id")
+      .single();
+    if (insert.error) throw insert.error;
+    mintRowId = insert.data.id as string;
+  }
 
   try {
     const { mintNftIntoCollection } = await import("./solana_nft/mint.ts");
@@ -353,4 +462,18 @@ async function rehostNftImage(admin: any, sourceUrl: string): Promise<string> {
   const stored = await storeCapturedImage(admin, captured);
   captured.bytes.fill(0);
   return stored.publicUrl;
+}
+
+async function loadExistingNftRow(
+  admin: any,
+  table: "nft_collections" | "nft_mints",
+  pendingActionId?: string | null,
+): Promise<any | null> {
+  const id = String(pendingActionId ?? "").trim();
+  if (!id) return null;
+  const result = await admin.from(table).select("*")
+    .eq("pending_action_id", id)
+    .maybeSingle();
+  if (result.error) throw result.error;
+  return result.data ?? null;
 }

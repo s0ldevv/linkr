@@ -61,6 +61,13 @@ export const LINKR_CAPABILITIES: LinkrCapability[] = [
       "a missing or ambiguous chain requires clarification; a second confirmation is reserved for configured safety exceptions",
   },
   {
+    key: "nft",
+    public_summary:
+      "help with Solana NFT collections and NFT mints; on Solana, users create a collection first, then mint NFTs into that confirmed collection; Robinhood NFT launches are not wired yet",
+    confirmation_note:
+      "NFT collection creation and NFT mints require explicit confirmation before execution",
+  },
+  {
     key: "rewards",
     public_summary:
       "inspect and claim eligible Robinhood Chain creator rewards and Solana Pump.fun fee-sharing rewards",
@@ -82,11 +89,11 @@ export const LINKR_CAPABILITIES: LinkrCapability[] = [
 ];
 
 export function capabilityPromptSummary(): string {
-  return "I work on Robinhood Chain (EVM/ETH) and Solana (SOL/Pump.fun/PumpSwap). I can help with wallets, token research, public X search and post explanations, buys, sells, scheduled actions, transfers, irreversible token burns, launches, creator rewards, LP positions, liquidity actions, pending actions, and Linkr history. Risky or incomplete value-moving actions need confirmation; burns always require a separate confirmation.";
+  return "I work on Robinhood Chain (EVM/ETH) and Solana (SOL/Pump.fun/PumpSwap). I can help with wallets, token research, public X search and post explanations, buys, sells, scheduled actions, transfers, irreversible token burns, launches, Solana NFT collections and mints, creator rewards, LP positions, liquidity actions, pending actions, and Linkr history. Risky or incomplete value-moving actions need confirmation; burns always require a separate confirmation.";
 }
 
 export function chainCapabilityReply(): string {
-  return "I operate on Robinhood Chain (EVM/ETH) and Solana (SOL). That includes Robinhood token actions plus Solana swaps, transfers, Pump.fun launches, and PumpSwap liquidity.";
+  return "I operate on Robinhood Chain (EVM/ETH) and Solana (SOL). That includes Robinhood token actions plus Solana swaps, transfers, Pump.fun launches, PumpSwap liquidity, and Solana NFT collection/mint help.";
 }
 
 export function capabilityPromptFacts(): string {
