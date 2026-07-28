@@ -119,14 +119,20 @@ export async function setAdminSetting(args: {
   reason?: string | null;
   requestId?: string | null;
 }): Promise<unknown> {
+  const value = args.key === "metadata_testing_policy"
+    ? normalizeMetadataTestingPolicy(args.value)
+    : args.value ?? {};
   const { data, error } = await args.admin.rpc("set_linkr_admin_setting_v1", {
     p_key: args.key,
-    p_value: args.value ?? {},
+    p_value: value,
     p_admin_user_id: args.adminUserId,
     p_reason: args.reason ?? null,
     p_request_id: args.requestId ?? null,
   });
-  if (error) throw error;
+  if (error) {
+    const code = adminSettingErrorCode(error);
+    throw new Error(code ?? "admin_setting_update_failed");
+  }
   if (args.key === "launch_funding_policy") {
     return normalizeLaunchFundingPolicy(data);
   }
@@ -221,9 +227,14 @@ export function normalizeMetadataTestingPolicy(
   const enabled = row.enabled === true;
   return {
     enabled,
-    test_website_url: normalizeHttpsUrl(row.test_website_url),
-    test_twitter_url: normalizeHttpsUrl(row.test_twitter_url),
-    test_telegram_url: normalizeHttpsUrl(row.test_telegram_url),
+    test_website_url: normalizeOptionalHttpsUrl(row.test_website_url),
+    test_twitter_url: normalizeOptionalHttpsUrl(row.test_twitter_url, {
+      allowedHosts: ["x.com", "twitter.com"],
+    }),
+    test_telegram_url: normalizeOptionalHttpsUrl(row.test_telegram_url, {
+      allowedHosts: ["t.me", "telegram.me"],
+      requirePath: true,
+    }),
   };
 }
 
@@ -304,16 +315,52 @@ function boundedInteger(
   return Math.min(maximum, Math.max(minimum, number));
 }
 
-function normalizeHttpsUrl(value: unknown): string | null {
+function normalizeOptionalHttpsUrl(
+  value: unknown,
+  options: {
+    allowedHosts?: string[];
+    requirePath?: boolean;
+  } = {},
+): string | null {
   const raw = String(value ?? "").trim();
   if (!raw) return null;
+  const withProtocol = /^[a-z][a-z0-9+.-]*:\/\//i.test(raw)
+    ? raw
+    : `https://${raw}`;
   try {
-    const url = new URL(raw);
+    const url = new URL(withProtocol);
     if (url.protocol !== "https:") return null;
+    const host = url.hostname.toLowerCase();
+    if (options.allowedHosts && !options.allowedHosts.includes(host)) {
+      return null;
+    }
+    if (options.requirePath && !url.pathname.replace(/^\/+|\/+$/g, "")) {
+      return null;
+    }
     return url.toString();
   } catch (_) {
     return null;
   }
+}
+
+function adminSettingErrorCode(error: unknown): string | null {
+  const row = record(error);
+  const message = String(row.message ?? "").trim();
+  const direct = simpleAdminSettingError(message);
+  if (direct) return direct;
+  const match = message.match(
+    /\b(invalid_[a-z0-9_]+|x_gating_threshold_out_of_range|unknown_admin_setting(?::[a-z0-9_]+)?)\b/i,
+  );
+  return simpleAdminSettingError(match?.[1]);
+}
+
+function simpleAdminSettingError(value: unknown): string | null {
+  const text = String(value ?? "").trim().toLowerCase();
+  if (text.startsWith("unknown_admin_setting")) return "unknown_admin_setting";
+  if (/^(invalid_[a-z0-9_]+|x_gating_threshold_out_of_range)$/.test(text)) {
+    return text;
+  }
+  return null;
 }
 
 function record(value: unknown): Record<string, any> {

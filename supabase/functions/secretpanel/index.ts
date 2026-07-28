@@ -1,9 +1,20 @@
 // deno-lint-ignore-file no-explicit-any
-import { corsHeaders, jsonResponse, withSensitiveCors } from "../_shared/cors.ts";
+import {
+  corsHeaders,
+  jsonResponse,
+  withSensitiveCors,
+} from "../_shared/cors.ts";
 import { getCallerUserId, serviceClient } from "../_shared/supabase.ts";
 import { internalErrorResponse, readJsonBody } from "../_shared/http.ts";
-import { readAllAdminSettings, setAdminSetting } from "../_shared/admin_settings.ts";
-import { getActiveXBan, isLinkrAdminUser, normalizeXHandle } from "../_shared/x_bans.ts";
+import {
+  readAllAdminSettings,
+  setAdminSetting,
+} from "../_shared/admin_settings.ts";
+import {
+  getActiveXBan,
+  isLinkrAdminUser,
+  normalizeXHandle,
+} from "../_shared/x_bans.ts";
 import { loadExpectedXBotIdentity } from "../_shared/x_bot_identity.ts";
 import { loadXBotPostAuthMode } from "../_shared/x_posting_auth.ts";
 import {
@@ -25,10 +36,16 @@ function supabaseUrl(): string {
   return requiredEnv("SUPABASE_URL").replace(/\/+$/g, "");
 }
 
-async function oauthLoginUrl(admin: any, adminUserId: string): Promise<string | null> {
+async function oauthLoginUrl(
+  admin: any,
+  adminUserId: string,
+): Promise<string | null> {
   if (!Deno.env.get("X_OAUTH_ADMIN_KEY")) return null;
   const state = crypto.randomUUID() + crypto.randomUUID().replace(/-/g, "");
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(state));
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(state),
+  );
   const stateHash = [...new Uint8Array(digest)]
     .map((byte) => byte.toString(16).padStart(2, "0"))
     .join("");
@@ -94,21 +111,22 @@ async function loadStatus(admin: any, adminUserId: string) {
   } catch (_) {
     // Missing identity is represented in posting_auth below.
   }
-  const [{ data: tokenRow, error: tokenError }, { count: pendingReplies }] = await Promise.all([
-    admin
-      .from("x_bot_tokens")
-      .select(
-        "account_key,bot_handle,x_user_id,token_type,scope,expires_at,is_active,last_refreshed_at,last_refresh_attempt_at,last_refresh_status,last_error,updated_at",
-      )
-      .eq("account_key", ACCOUNT_KEY)
-      .order("updated_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-    admin
-      .from("twitter_replies")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "pending"),
-  ]);
+  const [{ data: tokenRow, error: tokenError }, { count: pendingReplies }] =
+    await Promise.all([
+      admin
+        .from("x_bot_tokens")
+        .select(
+          "account_key,bot_handle,x_user_id,token_type,scope,expires_at,is_active,last_refreshed_at,last_refresh_attempt_at,last_refresh_status,last_error,updated_at",
+        )
+        .eq("account_key", ACCOUNT_KEY)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      admin
+        .from("twitter_replies")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending"),
+    ]);
   if (tokenError) throw tokenError;
 
   const healthSources = [
@@ -124,7 +142,7 @@ async function loadStatus(admin: any, adminUserId: string) {
         .select("source,status,details,checked_at")
         .eq("source", source)
         .order("checked_at", { ascending: false })
-        .limit(3),
+        .limit(3)
     ),
   );
   for (const result of healthResults) {
@@ -133,7 +151,7 @@ async function loadStatus(admin: any, adminUserId: string) {
   const healthRows = healthResults
     .flatMap((result) => result.data ?? [])
     .sort((left: any, right: any) =>
-      String(right.checked_at).localeCompare(String(left.checked_at)),
+      String(right.checked_at).localeCompare(String(left.checked_at))
     );
 
   const { data: bans, error: bansError } = await admin
@@ -150,30 +168,32 @@ async function loadStatus(admin: any, adminUserId: string) {
     ? Math.floor((expiresMs - Date.now()) / 1000)
     : null;
   const lastError = String(tokenRow?.last_error ?? "");
-  const latestAuthHealth = healthRows.find((row: any) => row.source === "x-post-auth") ?? null;
+  const latestAuthHealth =
+    healthRows.find((row: any) => row.source === "x-post-auth") ?? null;
   const oauth1Configured = [
     "X_OAUTH1_CONSUMER_KEY",
     "X_OAUTH1_CONSUMER_SECRET",
     "X_OAUTH1_ACCESS_TOKEN",
     "X_OAUTH1_ACCESS_TOKEN_SECRET",
   ].every((name) => Boolean(Deno.env.get(name)));
-  const postingConfigured =
-    authMode === "oauth1"
-      ? oauth1Configured && Boolean(expectedIdentity)
-      : authMode === "oauth2"
-        ? Boolean(tokenRow?.is_active)
-        : false;
+  const postingConfigured = authMode === "oauth1"
+    ? oauth1Configured && Boolean(expectedIdentity)
+    : authMode === "oauth2"
+    ? Boolean(tokenRow?.is_active)
+    : false;
   const authHealthDetails =
     latestAuthHealth?.details && typeof latestAuthHealth.details === "object"
       ? (latestAuthHealth.details as Record<string, unknown>)
       : {};
-  const postingLastError =
-    latestAuthHealth?.status === "ok"
-      ? null
-      : String(authHealthDetails.message ?? authHealthDetails.error ?? "") || null;
+  const postingLastError = latestAuthHealth?.status === "ok"
+    ? null
+    : String(authHealthDetails.message ?? authHealthDetails.error ?? "") ||
+      null;
 
   return {
-    oauth_login_url: authMode === "oauth2" ? await oauthLoginUrl(admin, adminUserId) : null,
+    oauth_login_url: authMode === "oauth2"
+      ? await oauthLoginUrl(admin, adminUserId)
+      : null,
     oauth_login_configured: Boolean(Deno.env.get("X_OAUTH_ADMIN_KEY")),
     posting_auth: {
       mode: authMode,
@@ -183,28 +203,29 @@ async function loadStatus(admin: any, adminUserId: string) {
       last_verified_at: latestAuthHealth?.checked_at ?? null,
       last_verification_status: latestAuthHealth?.status ?? null,
       last_error: postingLastError,
-      needs_attention:
-        !postingConfigured || (latestAuthHealth != null && latestAuthHealth.status !== "ok"),
+      needs_attention: !postingConfigured ||
+        (latestAuthHealth != null && latestAuthHealth.status !== "ok"),
     },
     bot_token: tokenRow
       ? {
-          account_key: tokenRow.account_key,
-          bot_handle: tokenRow.bot_handle,
-          x_user_id: tokenRow.x_user_id,
-          token_type: tokenRow.token_type,
-          scope: tokenRow.scope,
-          expires_at: tokenRow.expires_at,
-          expires_in_seconds: expiresInSeconds,
-          is_active: Boolean(tokenRow.is_active),
-          last_refreshed_at: tokenRow.last_refreshed_at,
-          last_refresh_attempt_at: tokenRow.last_refresh_attempt_at,
-          last_refresh_status: tokenRow.last_refresh_status,
-          last_error: tokenRow.last_error,
-          updated_at: tokenRow.updated_at,
-          needs_reauth:
-            tokenRow.last_refresh_status === "failed" &&
-            /invalid_request|token was invalid|invalid refresh|revoked/i.test(lastError),
-        }
+        account_key: tokenRow.account_key,
+        bot_handle: tokenRow.bot_handle,
+        x_user_id: tokenRow.x_user_id,
+        token_type: tokenRow.token_type,
+        scope: tokenRow.scope,
+        expires_at: tokenRow.expires_at,
+        expires_in_seconds: expiresInSeconds,
+        is_active: Boolean(tokenRow.is_active),
+        last_refreshed_at: tokenRow.last_refreshed_at,
+        last_refresh_attempt_at: tokenRow.last_refresh_attempt_at,
+        last_refresh_status: tokenRow.last_refresh_status,
+        last_error: tokenRow.last_error,
+        updated_at: tokenRow.updated_at,
+        needs_reauth: tokenRow.last_refresh_status === "failed" &&
+          /invalid_request|token was invalid|invalid refresh|revoked/i.test(
+            lastError,
+          ),
+      }
       : null,
     pending_replies: pendingReplies ?? 0,
     health: healthRows,
@@ -232,7 +253,9 @@ async function lookupXUser(handle: string) {
   });
   const body = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(`x_user_lookup_failed_${response.status}: ${shortText(body, 500)}`);
+    throw new Error(
+      `x_user_lookup_failed_${response.status}: ${shortText(body, 500)}`,
+    );
   }
 
   const user = body?.data;
@@ -241,7 +264,9 @@ async function lookupXUser(handle: string) {
     id: String(user.id),
     username: normalizeXHandle(user.username),
     name: String(user.name ?? user.username ?? username),
-    profileImageUrl: typeof user.profile_image_url === "string" ? user.profile_image_url : null,
+    profileImageUrl: typeof user.profile_image_url === "string"
+      ? user.profile_image_url
+      : null,
   };
 }
 
@@ -420,8 +445,13 @@ async function handleSecretPanel(req: Request): Promise<Response> {
     const status = /unauthorized/i.test(message)
       ? 401
       : /forbidden|not_linkr/i.test(message)
-        ? 403
-        : 500;
+      ? 403
+      : /^(invalid_[a-z0-9_]+|x_gating_threshold_out_of_range|unknown_admin_setting)$/i
+          .test(
+            message,
+          )
+      ? 400
+      : 500;
     if (status >= 500) {
       return internalErrorResponse(error, { function: "secretpanel" });
     }
