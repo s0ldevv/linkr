@@ -769,9 +769,9 @@ const HERO_PLATFORMS = [
   "Discord",
 ] as const;
 
-const PLATFORM_HOLD_MS = 2100;
-const PLATFORM_LEAVE_MS = 520;
-const PLATFORM_ENTER_MS = 40;
+const PLATFORM_HOLD_MS = 1250;
+const PLATFORM_LEAVE_MS = 340;
+const PLATFORM_ENTER_MS = 25;
 
 type PlatformFlipPhase = "entering" | "visible" | "leaving";
 

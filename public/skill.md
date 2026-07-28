@@ -1,6 +1,6 @@
 ---
 name: linkr-agent-api
-version: 4
+version: 5
 base_url: https://linkr.cash
 openapi_url: https://linkr.cash/api/openapi.json
 docs_url: https://linkr.cash/agent-api
@@ -15,15 +15,15 @@ token_input_rule: full_evm_contract_address_or_full_solana_mint_only
 
 This file teaches an AI agent how to use Linkr from a clean start.
 
-Linkr is an interface and execution layer for permissionless token launch, trading, wallet, history, token-burn, and liquidity workflows on Robinhood Chain and Solana. Through the Agent API, an authenticated AI agent can receive a Linkr-controlled profile, use generated Linkr wallets, inspect wallet addresses, balances, portfolio, and history, launch tokens, buy and sell tokens by full EVM contract address or full Solana mint, transfer native ETH or SOL, prepare and separately confirm irreversible fungible-token burns, manage user-owned Robinhood Uniswap V3 and Pump.fun/PumpSwap liquidity positions, claim supported creator rewards, list recently launched Linkr coins, and inspect detailed coin data.
+Linkr is an interface and execution layer for permissionless token launch, trading, wallet, history, schedules, token-burn, rewards, and liquidity workflows on Robinhood Chain and Solana. Through the Agent API, an authenticated AI agent can receive a Linkr-controlled profile, use Linkr profile wallets, inspect wallet addresses, balances, portfolio, and history, launch tokens, buy and sell tokens by full EVM contract address or full Solana mint, transfer native ETH or SOL, create and manage schedules, prepare and separately confirm irreversible fungible-token burns, manage user-owned Robinhood Uniswap V3 and Pump.fun/PumpSwap liquidity positions, claim supported creator rewards, list recently launched Linkr coins, and inspect detailed coin data.
 
-The API is not anonymous and not free-form. Each agent must have a Linkr agent profile, a generated wallet, and a scoped API key. Every business request must be signed with HMAC headers. Value-moving actions should be dry-run first, then executed only when the agent has clear user intent and the generated wallet is funded.
+The API is not anonymous and not free-form. Each agent must have a Linkr agent profile, Linkr profile wallets, and a scoped API key. Every business request must be signed with HMAC headers. Value-moving actions should be dry-run first, then executed only when the agent has clear user intent and the correct profile wallet is funded.
 
 ## Mental Model
 
 - Linkr is the platform.
 - The agent profile is the API identity.
-- The generated Linkr wallets are the on-chain accounts used for trades, transfers, launches, liquidity, and reward claims.
+- The Linkr profile wallets are the on-chain accounts used for trades, transfers, launches, liquidity, and reward claims.
 - The API key authenticates the agent.
 - HMAC headers prove the request body, timestamp, nonce, path, and idempotency key were not altered.
 - Scopes decide which actions the key may perform.
@@ -53,16 +53,18 @@ Request only the scopes your runtime needs.
 
 ```text
 profile:read       Read your agent profile, key metadata, limits, wallet addresses, balances, and portfolio.
-actions:read       Poll queued launches, transactions, liquidity actions, LP positions, and private history.
+actions:read       Poll queued launches, transactions, liquidity actions, LP positions, and account history.
 coins:read         List recently launched Linkr coins.
 coin:read          Read full coin detail and market data for one token.
 launch:write       Queue a Robinhood Chain or Solana/Pump.fun token launch.
 trade:buy          Buy a token with ETH or SOL.
 trade:sell         Sell a held token for ETH or SOL.
-transfer:write     Transfer native ETH or SOL from the generated wallet.
+transfer:write     Transfer native ETH or SOL from the correct Linkr profile wallet.
+schedule:read      List and inspect scheduled actions.
+schedule:write     Create, pause, resume, update, or cancel scheduled actions.
 burn:write         Prepare and separately confirm an irreversible fungible-token burn.
 liquidity:write    Add/remove Robinhood V3 or PumpSwap liquidity; collect Robinhood V3 fees.
-rewards:claim      Claim supported creator rewards for launches created by the wallet.
+rewards:claim      Claim supported creator rewards controlled by the matching profile wallet.
 ```
 
 ## First-Time Setup
@@ -90,8 +92,10 @@ Content-Type: application/json
   "requested_scopes": ["profile:read", "coins:read", "coin:read", "trade:buy"],
   "limits": {
     "max_buy_eth": 0.01,
+    "max_buy_sol": 0.05,
     "max_sell_percent": 25,
     "max_transfer_eth": 0,
+    "max_transfer_sol": 0,
     "max_launch_initial_buy_eth": 0,
     "max_liquidity_eth": 0
   }
@@ -134,7 +138,7 @@ After registration, call signed `GET /api/me` to verify the profile and `GET /ap
 
 ## Funding the Wallet
 
-All value-moving endpoints use the generated Linkr wallet returned by `GET /api/me` or registration. The API does not magically fund the wallet.
+Value-moving endpoints use Linkr profile wallet addresses returned by `GET /api/me`, registration, or `GET /api/wallet`. The API does not magically fund wallets.
 
 Before buying, launching with an initial buy, transferring, adding liquidity, or claiming rewards that require gas:
 
@@ -336,7 +340,7 @@ All endpoint paths below are relative to `https://linkr.cash`.
 
 ### GET /api/me
 
-Purpose: verify the authenticated agent, key, scopes, limits, and generated wallet.
+Purpose: verify the authenticated agent, key, scopes, limits, and generated EVM wallet.
 
 Required scope: `profile:read`
 
@@ -628,14 +632,21 @@ Recommended first step: dry-run.
 Request fields:
 
 ```text
-name             Required. Token name. Max 64 chars.
-symbol           Required. Up to 12 alphanumeric chars after normalization. Uppercased.
-description      Required. Max 512 chars.
-image_url        Required. Public image URL.
-initial_buy_eth  Optional. Non-negative ETH amount. Also accepts dev_buy_eth.
-website_url      Optional. Metadata website URL.
-twitter_url      Optional. Metadata X/Twitter URL.
-dry_run          Optional boolean.
+chain                       Optional. robinhood/evm/4663, or solana/sol/pump_fun. Defaults to Robinhood Chain.
+name                        Required. Token name. Max 60 chars on Robinhood, 32 on Solana/Pump.fun.
+symbol                      Required. Up to 20 alphanumeric chars on Robinhood, 10 on Solana/Pump.fun. Uppercased.
+description                 Required. Max 512 chars.
+image_url                   Required. HTTPS public image URL.
+initial_buy_eth             Optional. Robinhood Chain initial buy amount. Also accepts dev_buy_eth.
+initial_buy_sol             Optional. Solana/Pump.fun initial buy amount. Also accepts dev_buy_sol.
+website_url                 Optional HTTPS metadata website URL.
+twitter_url                 Optional HTTPS metadata X/Twitter URL.
+telegram_url                Optional HTTPS t.me metadata URL.
+pump_reward_mode            Optional Solana/Pump.fun mode: creator_rewards or cashback.
+pump_cashback               Optional boolean alias for cashback mode.
+creator_reward_recipient    Optional Solana wallet or X handle to receive a creator-reward share.
+creator_reward_share_bps    Optional recipient share in basis points when a recipient is provided.
+dry_run                     Optional boolean.
 ```
 
 Dry-run example:
@@ -647,6 +658,23 @@ Dry-run example:
   "description": "A token launched through Linkr.",
   "image_url": "https://example.com/image.png",
   "initial_buy_eth": "0",
+  "dry_run": true
+}
+```
+
+Solana/Pump.fun dry-run example:
+
+```json
+{
+  "chain": "solana",
+  "name": "Example Token",
+  "symbol": "EXAMPLE",
+  "description": "A token launched through Linkr on Pump.fun.",
+  "image_url": "https://example.com/image.png",
+  "initial_buy_sol": "0.1",
+  "telegram_url": "https://t.me/example",
+  "creator_reward_recipient": "@recipient",
+  "creator_reward_share_bps": 2500,
   "dry_run": true
 }
 ```
@@ -774,7 +802,7 @@ Important:
 
 ### POST /api/transfer
 
-Purpose: transfer native ETH or SOL from the generated wallet.
+Purpose: transfer native ETH from the generated EVM wallet or native SOL from the primary Solana wallet.
 
 Required scope: `transfer:write`
 
@@ -828,9 +856,157 @@ For SOL transfers, send:
 }
 ```
 
+### GET /api/schedules
+
+Purpose: list scheduled actions owned by the authenticated agent user.
+
+Required scope: `schedule:read`
+
+Signed: yes
+
+Body: none
+
+Query fields:
+
+```text
+status  Optional. Filter by active, paused, cancelled, executed, failed, or expired.
+limit   Optional. Number of schedules to return.
+```
+
+Example:
+
+```text
+GET /api/schedules?status=active&limit=20
+```
+
+### POST /api/schedules
+
+Purpose: create one-time or recurring timed schedules, or market-cap buy/sell schedules.
+
+Required scope: `schedule:write`
+
+Signed: yes
+
+Requires `Idempotency-Key`: yes
+
+Supported action types:
+
+```text
+buy
+sell
+transfer
+launch_coin
+claim_creator_rewards
+add_liquidity
+remove_liquidity
+collect_liquidity_fees
+```
+
+Market-cap triggers support buy and sell schedules only.
+
+Request fields:
+
+```text
+chain               Required. robinhood or solana.
+action_type         Required. One supported action type.
+trigger_type        Required. time or market_cap.
+scheduled_for       Optional ISO time for timed schedules. Also accepts run_at or starts_at.
+delay_seconds       Optional relative delay for timed schedules. Also accepts after_seconds.
+interval_seconds    Optional recurring interval. Also accepts every_seconds or repeat_seconds.
+schedule_kind       Optional. one_time, interval, daily, weekly, or condition.
+trigger_direction   Required for market_cap. below or above.
+trigger_value_usd   Required for market_cap. Positive USD market cap.
+token_address       Required for buy/sell schedules. Full EVM address or Solana mint.
+amount              Required for buy or transfer schedules.
+amount_unit         Required with amount. eth, sol, or usd.
+recipient           Required for transfer schedules.
+sell_percent        Required for percent sells. Also accepts percent.
+name/symbol/description/image_url  Required for scheduled launches.
+```
+
+Timed buy example:
+
+```json
+{
+  "chain": "solana",
+  "action_type": "buy",
+  "token_address": "<Solana mint>",
+  "amount": "0.02",
+  "amount_unit": "sol",
+  "trigger_type": "time",
+  "delay_seconds": 3600,
+  "schedule_kind": "one_time"
+}
+```
+
+Market-cap sell example:
+
+```json
+{
+  "chain": "robinhood",
+  "action_type": "sell",
+  "token_address": "0x...",
+  "sell_percent": 50,
+  "trigger_type": "market_cap",
+  "trigger_direction": "above",
+  "trigger_value_usd": "1000000",
+  "schedule_kind": "condition"
+}
+```
+
+### GET /api/schedules/<id>
+
+Purpose: read one schedule.
+
+Required scope: `schedule:read`
+
+Signed: yes
+
+### PATCH /api/schedules/<id>
+
+Purpose: pause, resume, cancel, or update a schedule.
+
+Required scope: `schedule:write`
+
+Signed: yes
+
+Request fields:
+
+```text
+action           Required. pause, resume, cancel, or update.
+scheduled_for    Optional for update.
+interval_seconds Optional for update.
+ends_at          Optional for update. Send null to clear.
+max_occurrences  Optional for update. Send null to clear.
+priority         Optional for update.
+```
+
+Examples:
+
+```json
+{
+  "action": "pause"
+}
+```
+
+```json
+{
+  "action": "update",
+  "scheduled_for": "2026-08-01T17:00:00Z"
+}
+```
+
+### DELETE /api/schedules/<id>
+
+Purpose: cancel a schedule.
+
+Required scope: `schedule:write`
+
+Signed: yes
+
 ### POST /api/burn-token
 
-Purpose: prepare, separately confirm, or cancel an irreversible fungible-token burn from the generated Linkr wallet.
+Purpose: prepare, separately confirm, or cancel an irreversible fungible-token burn from the correct Linkr profile wallet.
 
 Required scope: `burn:write`
 

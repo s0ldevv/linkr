@@ -53,7 +53,12 @@ const endpoints = [
     "onboarding token",
     "Redeem a one-time onboarding token and receive the runtime credentials once.",
   ],
-  ["GET", "/api/me", "profile:read", "Authenticated agent profile, wallet, scopes, and limits."],
+  [
+    "GET",
+    "/api/me",
+    "profile:read",
+    "Authenticated agent profile, EVM wallet, scopes, and limits.",
+  ],
   [
     "GET",
     "/api/wallet",
@@ -203,8 +208,8 @@ export function AgentApiDocsPage() {
                 </p>
                 <p>
                   The user always controls the agent from the dashboard. They log in with X, create
-                  an agent profile, copy a one-time API key or onboarding token, fund the generated
-                  wallet, and can later revoke a key or disable the whole agent.
+                  an agent profile, copy a one-time API key or onboarding token, fund the right
+                  profile wallets, and can later revoke a key or disable the whole agent.
                 </p>
               </div>
               <div className="agent-api-flow">
@@ -216,12 +221,12 @@ export function AgentApiDocsPage() {
                 <FlowStep
                   label="02"
                   title="Create agent"
-                  text="The Agents dashboard creates the profile, wallet, scopes, limits, and key."
+                  text="The Agents dashboard creates the profile, wallet access, scopes, limits, and key."
                 />
                 <FlowStep
                   label="03"
                   title="Fund wallet"
-                  text="The user sends Robinhood Chain ETH to the generated agent wallet."
+                  text="The user funds Robinhood Chain ETH and Solana SOL for the chains the agent will use."
                 />
                 <FlowStep
                   label="04"
@@ -252,12 +257,12 @@ export function AgentApiDocsPage() {
                   <h3>Why login is required</h3>
                   <p>
                     Agent profiles are not anonymous. Each one belongs to a Linkr user, gets a
-                    generated EVM wallet plus the user's Solana app wallet set, and is governed by
+                    generated EVM wallet plus the user's Solana wallet set, and is governed by
                     scopes, spending limits, revocable keys, and dashboard activity history.
                   </p>
                   <CheckList
                     items={[
-                      "The user controls funding by funding only the generated agent wallet.",
+                      "The user controls funding by funding only the Linkr wallet addresses they intend to use.",
                       "The user controls permissions by choosing scopes and caps.",
                       "The user can stop access by revoking a key or disabling an agent.",
                     ]}
@@ -284,7 +289,7 @@ export function AgentApiDocsPage() {
                   <p>
                     Use this when you control the runtime yourself. In Dashboard -&gt; Agents, enter
                     an agent name and contact, then click Create agent and key. Linkr creates the
-                    profile, generated wallet, scopes, limits, and first API key.
+                    profile, generated EVM wallet, scopes, limits, and first API key.
                   </p>
                   <CheckList
                     items={[
@@ -304,7 +309,7 @@ export function AgentApiDocsPage() {
                   <CheckList
                     items={[
                       "Onboarding tokens are temporary and redeem once.",
-                      "Redemption returns the generated wallet and first API key.",
+                      "Redemption returns the generated EVM wallet and first API key.",
                       "After redemption, normal requests must be HMAC signed.",
                     ]}
                   />
@@ -353,9 +358,9 @@ export function AgentApiDocsPage() {
               </CodeBlock>
               <div className="agent-api-copy">
                 <p>
-                  The response includes the agent profile id, generated wallet, scopes, limits, and
-                  one plaintext API key. The API key is also the HMAC secret. Store it securely and
-                  never expose it in prompts, logs, browser URLs, or public repositories.
+                  The response includes the agent profile id, generated EVM wallet, scopes, limits,
+                  and one plaintext API key. The API key is also the HMAC secret. Store it securely
+                  and never expose it in prompts, logs, browser URLs, or public repositories.
                 </p>
                 <p>
                   Request <code>burn:write</code> only when the runtime genuinely needs destructive
@@ -368,12 +373,13 @@ export function AgentApiDocsPage() {
             <InfoSection id="fund-wallet" icon={Wallet} eyebrow="Step 4" title="Fund the wallet">
               <div className="lkd-split">
                 <div className="lkd-info-panel">
-                  <h3>Find the generated wallet</h3>
+                  <h3>Find the profile wallets</h3>
                   <p>
-                    Every value-moving API call uses the generated Linkr wallet, not the user's X
-                    account and not a random wallet supplied by the agent. Robinhood Chain actions
-                    use the generated EVM wallet. Solana trades and SOL transfers use the user's
-                    primary generated Solana wallet.
+                    Every value-moving API call uses a Linkr wallet on the user's profile, not the
+                    user's X account and not a random wallet supplied by the agent. Robinhood Chain
+                    actions use the generated EVM wallet. Solana trades, SOL transfers, Pump.fun
+                    launches, PumpSwap liquidity, and Solana rewards use the user's primary Solana
+                    wallet.
                   </p>
                   <CodeBlock compact>
                     {`GET /api/me
@@ -399,7 +405,7 @@ GET /api/wallet
                   <h3>Fund deliberately</h3>
                   <p>
                     The user sends Robinhood Chain ETH to the generated EVM wallet for EVM actions
-                    and SOL to the generated Solana wallet for Solana swaps, fees, and transfers. No
+                    and SOL to the primary Solana wallet for Solana swaps, fees, and transfers. No
                     funded wallet means no buys, launches with initial buys, transfers, liquidity
                     changes, or reward-claim gas.
                   </p>
@@ -462,7 +468,8 @@ POST
                   <h3>Confirm identity</h3>
                   <p>
                     The first signed request should be GET /api/me. It proves the key works and
-                    returns the agent profile, generated wallet, scopes, limits, and current status.
+                    returns the agent profile, generated EVM wallet, scopes, limits, and current
+                    status.
                   </p>
                   <CodeBlock compact>{`GET /api/me`}</CodeBlock>
                 </div>
@@ -503,11 +510,12 @@ GET /api/coin-info?mint=So11111111111111111111111111111111111111112`}
                   requests. Coin info supports Robinhood Chain EVM contracts and Solana mints for
                   analytics, including Solana creator reward status from Pump fee sharing when
                   available. Trading supports full Robinhood Chain EVM contract addresses or full
-                  Solana mint addresses. Launches support Robinhood Chain by default and
-                  Solana/Pump.fun when chain=solana or Pump.fun/Solana wording is used. Liquidity
-                  add/remove supports Robinhood Chain Uniswap V3 and Solana Pump.fun/PumpSwap
-                  positions; collect-fees is Robinhood V3 only. Cashtags, symbols, names, and
-                  guesses are not executable inputs.
+                  Solana mint addresses. Launches use Robinhood Chain unless the request sets
+                  chain=solana or chain=pump_fun for Pump.fun. Liquidity add/remove supports
+                  Robinhood Chain Uniswap V3 and Solana Pump.fun/PumpSwap positions; collect-fees is
+                  Robinhood V3 only. Cashtags, symbols, names, and guesses are not executable
+                  inputs. Solana NFT minting is available through the X and app NFT flow, not
+                  through the Agent API.
                 </p>
               </div>
               <div className="agent-api-endpoint-list">
@@ -526,7 +534,7 @@ GET /api/coin-info?mint=So11111111111111111111111111111111111111112`}
                   <CheckList
                     items={[
                       "Trade: for Robinhood use token_address plus amount_eth for buys or percent for sells; for Solana use chain=solana, token_mint, amount_sol for buys or percent for sells.",
-                      "Launch: name, symbol, description, image_url, dry_run, optional chain=solana for Pump.fun, initial_buy_eth for Robinhood, initial_buy_sol for Solana, and optional website_url, twitter_url, or telegram_url metadata.",
+                      "Launch: name, symbol, description, HTTPS image_url, dry_run, optional chain=solana or chain=pump_fun for Pump.fun, initial_buy_eth for Robinhood, initial_buy_sol for Solana, optional HTTPS website_url, twitter_url, telegram_url, and optional Solana creator-reward recipient settings.",
                       "Transfer: for Robinhood use recipient plus amount_eth; for Solana use chain=solana, recipient, amount_sol, dry_run, and a low max_transfer_sol cap.",
                       "Schedules: use /api/schedules with action_type buy, sell, transfer, launch_coin, claim_creator_rewards, add_liquidity, remove_liquidity, or collect_liquidity_fees. Timed triggers accept scheduled_for/run_at/starts_at, delay_seconds/after_seconds, or interval_seconds for the first run; schedule_kind can be one_time, interval, daily, or weekly. Market-cap triggers support buy/sell condition schedules, including recurring conditions.",
                       "Burn: POST /api/burn-token with action=prepare, explicit chain, one full CA/mint, and an exact token amount or all. Show the returned warning, then use a separate signed action=confirm request with the frozen pending id and IRREVERSIBLE_TOKEN_BURN acknowledgement.",
@@ -596,9 +604,10 @@ POST /api/trade
                     wallet for the selected chain pays gas and any approved initial buy. Omit chain
                     for Robinhood Chain, or send chain=solana for a Pump.fun launch from the user's
                     primary Solana wallet. If website_url is omitted, Linkr uses
-                    https://linkr.cash/coin/&lt;token&gt;. Telegram metadata is optional on both
-                    launch paths. The response can include an action id to poll through
-                    /api/actions/&lt;id&gt;.
+                    https://linkr.cash/coin/&lt;token&gt;. Optional website, X/Twitter, Telegram,
+                    and source metadata URLs must be HTTPS links. Solana launches can also configure
+                    Pump.fun creator-reward mode and an optional recipient split. The response can
+                    include an action id to poll through /api/actions/&lt;id&gt;.
                   </p>
                   <CodeBlock compact>
                     {`POST /api/launch-token
@@ -620,7 +629,9 @@ POST /api/launch-token
   "description": "A token launched through Linkr on Pump.fun.",
   "image_url": "https://...",
   "initial_buy_sol": "0.1",
-  "telegram_url": "@example",
+  "telegram_url": "https://t.me/example",
+  "creator_reward_recipient": "@recipient",
+  "creator_reward_share_bps": 2500,
   "dry_run": true
 }`}
                   </CodeBlock>
@@ -662,7 +673,7 @@ POST /api/burn-token
                       "No prepare-and-execute request exists; confirm is a separately signed request.",
                       "Tickers, names, links, prior context, native ETH/SOL, NFTs, and LP removal are rejected.",
                       "Solana uses BurnChecked from wallet-owned SPL Token or Token-2022 accounts.",
-                      "Robinhood Chain requires a verified ABI with the exact nonpayable holder burn(uint256) function and a successful simulation.",
+                      "Robinhood Chain requires a token contract with the standard holder burn(uint256) function and a successful simulation.",
                       "After an EVM receipt confirms, Linkr verifies that the wallet balance and total supply both decreased by the exact frozen amount.",
                       "Unsupported EVM tokens are refused; Linkr never silently substitutes a dead-address transfer.",
                       "A retry can only rebroadcast the same signed transaction; it cannot create a second burn.",
@@ -674,9 +685,9 @@ POST /api/burn-token
                 <div className="lkd-info-panel">
                   <h3>Transfer funds</h3>
                   <p>
-                    Use /api/transfer to move native ETH or SOL from the generated wallet for that
-                    chain. Keep this scope off by default unless the agent truly needs it, and keep
-                    max_transfer_eth and max_transfer_sol low.
+                    Use /api/transfer to move native ETH from the generated EVM wallet or native SOL
+                    from the primary Solana wallet. Keep this scope off by default unless the agent
+                    truly needs it, and keep max_transfer_eth and max_transfer_sol low.
                   </p>
                   <CodeBlock compact>
                     {`POST /api/transfer
@@ -737,12 +748,71 @@ POST /api/liquidity/remove
               </div>
               <div className="lkd-split">
                 <div className="lkd-info-panel">
+                  <h3>Schedule actions</h3>
+                  <p>
+                    Use /api/schedules for one-time or recurring timed actions. Market-cap
+                    conditions are available for buy and sell schedules only. Scheduled launches,
+                    rewards, and liquidity still run through the same validation as their immediate
+                    endpoints.
+                  </p>
+                  <CodeBlock compact>
+                    {`POST /api/schedules
+{
+  "chain": "solana",
+  "action_type": "buy",
+  "token_address": "<Solana mint>",
+  "amount": "0.02",
+  "amount_unit": "sol",
+  "trigger_type": "time",
+  "delay_seconds": 3600,
+  "schedule_kind": "one_time"
+}
+
+POST /api/schedules
+{
+  "chain": "robinhood",
+  "action_type": "sell",
+  "token_address": "0x...",
+  "sell_percent": 50,
+  "trigger_type": "market_cap",
+  "trigger_direction": "above",
+  "trigger_value_usd": "1000000",
+  "schedule_kind": "condition"
+}`}
+                  </CodeBlock>
+                </div>
+                <div className="lkd-info-panel">
+                  <h3>Control schedules</h3>
+                  <p>
+                    Use GET /api/schedules to list schedules, GET /api/schedules/&lt;id&gt; to read
+                    one schedule, PATCH to pause, resume, cancel, or update it, and DELETE to cancel
+                    it. Agents should show the user the exact trigger and action before creating or
+                    changing a schedule.
+                  </p>
+                  <CodeBlock compact>
+                    {`GET /api/schedules?status=active
+
+PATCH /api/schedules/<id>
+{
+  "action": "pause"
+}
+
+PATCH /api/schedules/<id>
+{
+  "action": "update",
+  "scheduled_for": "2026-08-01T17:00:00Z"
+}`}
+                  </CodeBlock>
+                </div>
+              </div>
+              <div className="lkd-split">
+                <div className="lkd-info-panel">
                   <h3>Claim creator rewards</h3>
                   <p>
                     Use /api/coin-info with a Robinhood Chain token address or Solana mint to
                     inspect creator reward status first. Then dry-run /api/creator-rewards/claim for
-                    rewards controlled by the generated wallet. The endpoint supports Robinhood
-                    Chain launch rewards and eligible Solana Pump.fun fee-sharing rewards.
+                    rewards controlled by the matching Linkr profile wallet. The endpoint supports
+                    Robinhood Chain launch rewards and eligible Solana Pump.fun fee-sharing rewards.
                   </p>
                   <CodeBlock compact>
                     {`POST /api/creator-rewards/claim
@@ -816,7 +886,7 @@ POST /api/creator-rewards/claim
                 <div className="lkd-info-panel">
                   <h3>Funds stay scoped</h3>
                   <p>
-                    Each agent acts from its generated Linkr wallet. Fund that wallet deliberately,
+                    Each agent acts from Linkr profile wallets. Fund the right wallet deliberately,
                     keep per-key transaction caps low, and only enable scopes the runtime actually
                     needs.
                   </p>
@@ -839,9 +909,10 @@ POST /api/creator-rewards/claim
                 <p>
                   A complete production setup is: user logs in with X, creates an agent on the
                   Agents dashboard, gives the runtime a direct key or onboarding token, confirms the
-                  generated wallet with /api/me, funds that wallet, verifies read calls, dry-runs
-                  value-moving requests, executes only with clear user intent, then monitors every
-                  action from the dashboard.
+                  generated EVM wallet with /api/me, checks chain-specific addresses with
+                  /api/wallet, funds the right wallet, verifies read calls, dry-runs value-moving
+                  requests, executes only with clear user intent, then monitors every action from
+                  the dashboard.
                 </p>
               </div>
               <div className="lkd-masthead-actions agent-api-bottom-actions">

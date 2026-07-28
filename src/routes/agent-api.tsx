@@ -8,7 +8,7 @@ export const Route = createFileRoute("/agent-api")({
       {
         name: "description",
         content:
-          "Authenticated Linkr Agent API docs for registration, signed requests, Robinhood and Solana wallets, launches, swaps, transfers, burns, liquidity, creator rewards, history, and coin data.",
+          "Authenticated Linkr Agent API docs for registration, signed requests, Robinhood and Solana wallets, launches, swaps, transfers, schedules, burns, liquidity, creator rewards, history, and coin data.",
       },
     ],
   }),

@@ -2,7 +2,7 @@ export const agentApiOpenApi = {
   openapi: "3.1.0",
   info: {
     title: "Linkr Agent API",
-    version: "1.4.0",
+    version: "1.4.1",
     description:
       "Authenticated API for Linkr agent profiles, wallets, portfolio, history, token launches, trades, transfers, schedules, separately confirmed token burns, Pump.fun/PumpSwap and Robinhood liquidity, rewards, and coin data.",
   },
@@ -41,6 +41,169 @@ export const agentApiOpenApi = {
           quote: { type: "object" },
           idempotent_replay: { type: "boolean" },
         },
+      },
+      LaunchTokenRequest: {
+        type: "object",
+        required: ["name", "symbol", "description", "image_url"],
+        properties: {
+          chain: {
+            type: "string",
+            enum: ["robinhood", "evm", "4663", "solana", "sol", "pump_fun"],
+            default: "robinhood",
+          },
+          name: {
+            type: "string",
+            maxLength: 60,
+            description: "Token name. Solana/Pump.fun launches allow up to 32 characters.",
+          },
+          symbol: {
+            type: "string",
+            maxLength: 20,
+            description: "Token ticker. Solana/Pump.fun launches allow up to 10 characters.",
+          },
+          description: { type: "string", maxLength: 512 },
+          image_url: {
+            type: "string",
+            format: "uri",
+            description: "HTTPS token image URL.",
+          },
+          initial_buy_eth: {
+            oneOf: [{ type: "number" }, { type: "string" }],
+            description: "Robinhood Chain initial buy amount in ETH. Defaults to 0.",
+          },
+          dev_buy_eth: {
+            oneOf: [{ type: "number" }, { type: "string" }],
+            description: "Alias for initial_buy_eth.",
+          },
+          initial_buy_sol: {
+            oneOf: [{ type: "number" }, { type: "string" }],
+            description: "Solana/Pump.fun initial buy amount in SOL. Defaults to 0.",
+          },
+          dev_buy_sol: {
+            oneOf: [{ type: "number" }, { type: "string" }],
+            description: "Alias for initial_buy_sol.",
+          },
+          website_url: {
+            type: "string",
+            format: "uri",
+            description: "Optional HTTPS website metadata URL.",
+          },
+          twitter_url: {
+            type: "string",
+            format: "uri",
+            description: "Optional HTTPS x.com or twitter.com metadata URL.",
+          },
+          telegram_url: {
+            type: "string",
+            format: "uri",
+            description: "Optional HTTPS t.me metadata URL.",
+          },
+          source_url: {
+            type: "string",
+            format: "uri",
+            description: "Optional HTTPS source URL.",
+          },
+          pump_reward_mode: {
+            type: "string",
+            enum: ["creator_rewards", "cashback"],
+            description: "Solana/Pump.fun creator-reward mode.",
+          },
+          pump_cashback: {
+            type: "boolean",
+            description: "Set true to use Pump.fun cashback mode on Solana launches.",
+          },
+          creator_reward_recipient: {
+            type: "string",
+            description:
+              "Optional Solana wallet address or X handle that receives a share of creator rewards.",
+          },
+          creator_rewards_recipient: {
+            type: "string",
+            description: "Alias for creator_reward_recipient.",
+          },
+          creator_reward_share_bps: {
+            type: "integer",
+            minimum: 1,
+            maximum: 10000,
+            description: "Recipient share in basis points when a recipient is provided.",
+          },
+          dry_run: { type: "boolean", default: true },
+        },
+        description:
+          "Queue a Robinhood Chain token launch or a Solana/Pump.fun launch. Metadata URLs must be HTTPS links.",
+      },
+      TradeRequest: {
+        type: "object",
+        required: ["side"],
+        properties: {
+          chain: { type: "string", enum: ["robinhood", "solana"] },
+          side: { type: "string", enum: ["buy", "sell"] },
+          token_address: {
+            type: "string",
+            description: "Robinhood Chain EVM token address, or Solana mint when chain=solana.",
+          },
+          token_mint: { type: "string", description: "Solana mint for Solana trades." },
+          mint: { type: "string", description: "Alias for Solana token_mint." },
+          token: { type: "string", description: "Alias for token_address or token_mint." },
+          amount_eth: {
+            oneOf: [{ type: "number" }, { type: "string" }],
+            description: "ETH amount for Robinhood Chain buys.",
+          },
+          eth_amount: {
+            oneOf: [{ type: "number" }, { type: "string" }],
+            description: "Alias for amount_eth.",
+          },
+          amount_sol: {
+            oneOf: [{ type: "number" }, { type: "string" }],
+            description: "SOL amount for Solana buys.",
+          },
+          sol_amount: {
+            oneOf: [{ type: "number" }, { type: "string" }],
+            description: "Alias for amount_sol.",
+          },
+          percent: {
+            oneOf: [{ type: "number" }, { type: "string" }],
+            description: "Percent of the current holding to sell.",
+          },
+          sell_percent: {
+            oneOf: [{ type: "number" }, { type: "string" }],
+            description: "Alias for percent.",
+          },
+          slippage_bps: { type: "integer", minimum: 0, maximum: 10000 },
+          dry_run: { type: "boolean", default: true },
+        },
+        description:
+          "Dry-run or execute buys and sells by full Robinhood Chain contract address or Solana mint. Cashtags and symbols are not executable inputs.",
+      },
+      TransferRequest: {
+        type: "object",
+        properties: {
+          chain: { type: "string", enum: ["robinhood", "solana"] },
+          recipient: {
+            type: "string",
+            description: "Full EVM address for Robinhood Chain or full Solana address for Solana.",
+          },
+          to: { type: "string", description: "Alias for recipient." },
+          amount_eth: {
+            oneOf: [{ type: "number" }, { type: "string" }],
+            description: "Native ETH amount for Robinhood Chain transfers.",
+          },
+          eth_amount: {
+            oneOf: [{ type: "number" }, { type: "string" }],
+            description: "Alias for amount_eth.",
+          },
+          amount_sol: {
+            oneOf: [{ type: "number" }, { type: "string" }],
+            description: "Native SOL amount for Solana transfers.",
+          },
+          sol_amount: {
+            oneOf: [{ type: "number" }, { type: "string" }],
+            description: "Alias for amount_sol.",
+          },
+          dry_run: { type: "boolean", default: true },
+        },
+        description:
+          "Dry-run or execute native ETH or native SOL transfers. The Agent API transfer endpoint does not transfer USDC.",
       },
       LiquidityAddRequest: {
         type: "object",
@@ -380,16 +543,22 @@ export const agentApiOpenApi = {
       post: postEndpoint(
         "launch:write",
         "Queue a Linkr token launch on Robinhood Chain or Solana/Pump.fun.",
+        "LaunchTokenRequest",
       ),
     },
     "/api/trade": {
       post: postEndpoint(
         "trade:buy or trade:sell",
         "Dry-run or execute a buy/sell swap by full Robinhood Chain contract address or Solana mint.",
+        "TradeRequest",
       ),
     },
     "/api/transfer": {
-      post: postEndpoint("transfer:write", "Dry-run or execute a native ETH or SOL transfer."),
+      post: postEndpoint(
+        "transfer:write",
+        "Dry-run or execute a native ETH or SOL transfer.",
+        "TransferRequest",
+      ),
     },
     "/api/schedules": {
       get: endpoint("schedule:read", "List authenticated agent schedules."),
@@ -466,7 +635,7 @@ export const agentApiOpenApi = {
 function registrationEndpoint() {
   return {
     description:
-      "Redeem a one-time onboarding token to create an agent profile, generated wallet, and first API key. This setup call does not use Agent API HMAC headers because the key does not exist yet.",
+      "Redeem a one-time onboarding token to create an agent profile, generated EVM wallet, and first API key. This setup call does not use Agent API HMAC headers because the key does not exist yet.",
     security: [],
     requestBody: {
       required: true,

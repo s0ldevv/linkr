@@ -418,10 +418,10 @@
   display: inline-block;
   transform-origin: 50% 50%;
   transition:
-    transform 0.52s cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 0.44s ease,
-    filter 0.44s ease,
-    text-shadow 0.44s ease;
+    transform 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.28s ease,
+    filter 0.28s ease,
+    text-shadow 0.28s ease;
   will-change: transform, opacity, filter;
 }
 
@@ -448,7 +448,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .lkx-hero-flip-track > span {
-    transition: opacity 0.3s ease;
+    transition: opacity 0.2s ease;
   }
 
   .lkx-hero-flip-track > span[data-phase="entering"],

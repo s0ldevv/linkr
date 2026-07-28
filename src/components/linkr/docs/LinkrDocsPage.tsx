@@ -75,6 +75,7 @@ const tocGroups: TocGroup[] = [
       { id: "market-data", label: "Market data" },
       { id: "scheduler", label: "Scheduler" },
       { id: "launches", label: "Launches" },
+      { id: "nfts", label: "NFTs" },
       { id: "creator-rewards", label: "Creator rewards" },
       { id: "liquidity-pools", label: "Liquidity pools" },
       { id: "history", label: "History and memory" },
@@ -115,7 +116,7 @@ const flowSteps = [
   {
     label: "05",
     title: "Choose the feature",
-    text: "The request is matched to a supported feature such as research, portfolio, buy, sell, transfer, burn, launch, liquidity, rewards, scheduling, confirmation, or cancellation.",
+    text: "The request is matched to a supported feature such as research, portfolio, buy, sell, transfer, burn, launch, NFTs, liquidity, rewards, scheduling, confirmation, or cancellation.",
   },
   {
     label: "06",
@@ -253,7 +254,7 @@ const commandDocs: CommandDoc[] = [
     examples: [
       "@linkrcash swap 0.25 SOL for USDC",
       "@linkrcash swap 25 USDC for SOL",
-      "Open /app/wallet and select SOL → USDC or USDC → SOL",
+      "Open /app/wallet and select SOL to USDC or USDC to SOL",
     ],
     checks: [
       "The direction and exact input amount are explicit; no token mint is required for this fixed native pair.",
@@ -264,9 +265,9 @@ const commandDocs: CommandDoc[] = [
     ],
     happens: [
       "Linkr requests an exact-input Jupiter quote for the canonical Solana USDC mint.",
-      "SOL → USDC uses the SOL buy cap; USDC → SOL calculates the requested share of the live USDC balance and enforces max sell percent.",
+      "SOL to USDC uses the SOL buy cap; USDC to SOL calculates the requested share of the live USDC balance and enforces max sell percent.",
       "The user's saved priority-fee cap is passed to Jupiter as a maximum, while slippage is taken from current Rules.",
-      "Linkr reserves the idempotency key before quoting, stores the deterministic signed transaction signature before broadcast, and refuses concurrent duplicate execution.",
+      "Duplicate protection prevents the same confirmed swap request from being broadcast twice.",
       "The confirmed swap, route, quote, minimum output, signature, and Solscan receipt are saved in transaction history.",
     ],
     edgeCases: [
@@ -293,7 +294,7 @@ const commandDocs: CommandDoc[] = [
       "The amount is an exact positive token-unit amount or the explicit word all, and fits the token's decimal precision.",
       "The matching Linkr wallet owns enough of the token at preparation and again at confirmation.",
       "Solana mints must use the SPL Token Program or Token-2022; only wallet-owned, unfrozen token accounts are used.",
-      "Robinhood Chain tokens need a verified ABI with the exact nonpayable holder burn(uint256) function and must successfully simulate it.",
+      "Robinhood Chain tokens must support the standard holder burn function and pass a simulation.",
     ],
     happens: [
       "Linkr performs a read-only preflight and simulation, freezes the exact base-unit amount, and creates a 15-minute pending action.",
@@ -381,6 +382,39 @@ const commandDocs: CommandDoc[] = [
     ],
     edgeCases: [
       "Launches not enabled for that chain, missing or ambiguous chain, chain/unit mismatch, bounded image generation failure, metadata upload failure, insufficient ETH or SOL, failed launch simulation, or a temporary chain issue that needs a safe retry.",
+    ],
+  },
+  {
+    id: "nfts",
+    title: "Mint Solana NFTs",
+    tag: "X + app gallery",
+    tone: "cyan",
+    confirmation:
+      "The current NFT flow runs from clear X mint requests after required details, media, wallet, and funding checks pass.",
+    purpose:
+      "Create a Solana NFT collection or mint an NFT into an existing collection from X, then review collections and mints in the app and public NFT gallery.",
+    examples: [
+      '@linkrcash mint nft collection called "My Punks" symbol PUNK',
+      '@linkrcash mint nft collection called "My Punks" symbol PUNK description "Pixel punks on Solana"',
+      "@linkrcash mint this nft to my collection My Punks",
+      '@linkrcash mint this nft into collection PUNK called "Punk #1"',
+    ],
+    checks: [
+      "The user has a Solana wallet linked to the Linkr account.",
+      "Collection creation needs a collection name, a symbol, and usable attached or referenced artwork.",
+      "Minting into a collection needs a confirmed collection owned by the user and usable artwork for the NFT.",
+      "The Solana wallet has enough SOL for minting and network fees.",
+      "Optional website, X/Twitter, and Telegram collection links must be clear public links.",
+    ],
+    happens: [
+      "Linkr validates and stores the artwork, generates a short collection description when needed, and mints through the Solana NFT flow.",
+      "Collection mints create a collection address and public collection page.",
+      "Individual NFT mints are attached to the selected collection and show up with their mint address and explorer link.",
+      "The authenticated NFTs page shows the user's own collections and minted NFTs.",
+      "The public NFT gallery shows confirmed Linkr NFT collections and recent mints.",
+    ],
+    edgeCases: [
+      "Missing image, collection not found, collection still pending, missing Solana wallet, insufficient SOL, unusable media, metadata upload failure, or temporary Solana mint failure.",
     ],
   },
   {
@@ -814,7 +848,7 @@ const edgeCases: EdgeCase[] = [
   },
   {
     case: "Insufficient ETH, SOL, or USDC",
-    affects: "Buy, transfer, SOL/USDC swap, launch dev buy",
+    affects: "Buy, transfer, SOL/USDC swap, launch dev buy, NFTs",
     behavior: "Linkr refuses or asks the user to fund the wallet.",
     userFix:
       "Deposit ETH to the EVM wallet or SOL/USDC to the Solana wallet. Keep some SOL available for Solana fees.",
@@ -870,10 +904,17 @@ const edgeCases: EdgeCase[] = [
   },
   {
     case: "No image attached",
-    affects: "Launch",
-    behavior: "Linkr cannot validate launch media.",
+    affects: "Launch, NFTs",
+    behavior: "Linkr cannot validate the launch or NFT artwork.",
     userFix:
-      "Attach the launch image to the X post or Telegram message, or upload it in the launch form.",
+      "Attach the launch or NFT image to the X post or Telegram message, or upload it in the launch form when launching a coin.",
+  },
+  {
+    case: "NFT collection not found",
+    affects: "NFT mint",
+    behavior: "Linkr does not mint into an unknown, unconfirmed, or different user's collection.",
+    userFix:
+      "Mint the collection first, then reference its exact name, symbol, or collection page.",
   },
   {
     case: "Chain or unit mismatch",
@@ -1023,7 +1064,7 @@ export function LinkrDocsPage() {
                 <FeatureCard
                   icon={<ExternalLink />}
                   title="App surfaces"
-                  text="The web app covers wallets, settings, pools, actions, history, website launches, public activity, public profiles, and coin pages."
+                  text="The web app covers wallets, settings, pools, actions, history, website launches, NFTs, public activity, public profiles, and coin pages."
                 />
                 <FeatureCard
                   icon={<Sparkles />}
@@ -1074,6 +1115,8 @@ export function LinkrDocsPage() {
                   "@linkrcash swap 25 USDC for SOL",
                   "@linkrcash buy 0.2 SOL of <Solana mint> in 2 hours",
                   "@linkrcash sell 100% of <contract or mint> if market cap goes above 170k",
+                  '@linkrcash mint nft collection called "My Punks" symbol PUNK',
+                  "@linkrcash mint this nft to my collection My Punks",
                   "@linkrcash what is this token?",
                   "@linkrcash what are people on X saying about $CASHCAT?",
                   "Message @LinkrCashBot: show my Solana portfolio",
@@ -1085,13 +1128,14 @@ export function LinkrDocsPage() {
                 Native ETH, SOL, and Solana USDC transfers, SOL/USDC swaps, full-address
                 Robinhood/Solana token swaps, separately confirmed fungible-token burns, balances,
                 portfolio, research, public X search, post explanations, creator reward claims,
-                scheduling, liquidity management, history, X launches, website launches, Telegram
-                DMs, and terminal confirmations are live. General token swap commands must use the
-                full EVM contract address or Solana mint; the fixed SOL/USDC pair does not require a
-                mint. Cashtags and symbols are research inputs only. Launch requests can target
-                Robinhood Chain or Solana/Pump.fun when launching is available for that chain. A
-                request must select exactly one chain; ambiguous or missing-chain requests pause for
-                clarification before preparation starts.
+                scheduling, liquidity management, Solana NFT collections and NFT mints, history, X
+                launches, website launches, Telegram DMs, and terminal confirmations are live.
+                General token swap commands must use the full EVM contract address or Solana mint;
+                the fixed SOL/USDC pair does not require a mint. Cashtags and symbols are research
+                inputs only. Launch requests can target Robinhood Chain or Solana/Pump.fun when
+                launching is available for that chain. A request must select exactly one chain;
+                ambiguous or missing-chain requests pause for clarification before preparation
+                starts.
               </Callout>
               <Callout tone="technical" title="Natural reply selection">
                 Linkr processes questions, requests, commands, small talk like how are you, and
@@ -1171,6 +1215,11 @@ export function LinkrDocsPage() {
                       "confirm swap",
                       "confirm burn",
                       "confirm launch",
+                      "confirm schedule",
+                      "confirm claim",
+                      "confirm add liquidity",
+                      "confirm remove liquidity",
+                      "confirm collect liquidity fees",
                       "cancel",
                     ]}
                     compact
@@ -1194,7 +1243,7 @@ export function LinkrDocsPage() {
                 <FeatureCard
                   icon={<Zap />}
                   title="Chain funding"
-                  text="Robinhood Chain actions and launches need ETH in the primary EVM wallet. Solana actions use SOL for transaction fees; USDC sends and USDC → SOL swaps also need native Solana USDC in that same wallet."
+                  text="Robinhood Chain actions and launches need ETH in the primary EVM wallet. Solana actions use SOL for transaction fees; USDC sends and USDC-to-SOL swaps also need native Solana USDC in that same wallet."
                 />
                 <FeatureCard
                   icon={<KeyRound />}
@@ -1219,14 +1268,15 @@ export function LinkrDocsPage() {
                   <CheckList
                     items={[
                       "Dashboard: overview cards, recent activity, wallet shortcuts, Explore, actions, and account state.",
-                      "Wallet: EVM and Solana addresses, ETH/SOL/USDC balances, deposits, primary-wallet selection, ETH/SOL/USDC sends, SOL ↔ USDC swaps, and authenticated private-key export.",
+                      "Wallet: EVM and Solana addresses, ETH/SOL/USDC balances, deposits, primary-wallet selection, ETH/SOL/USDC sends, SOL/USDC swaps, and authenticated private-key export.",
                       "Settings: slippage, ETH/SOL buy caps, ETH/SOL/USDC transfer caps, Solana swap priority-fee cap, ETH/SOL launch dev-buy caps, confirm-all, profile, terms, and display preferences.",
                       "Terminal: private natural-language chat with Linkr, richer account context, streamed replies, and confirmation cards for supported actions.",
                       "Launch: a guided website form for Robinhood Chain and Solana/Pump.fun launches with selected wallet, balances, metadata, image upload, dev buy, and creator rewards settings.",
-                      "Scheduler: timed buys, sells, transfers, and market-cap-triggered buys and sells, separated by trigger type and status.",
+                      "Scheduler: timed buys, sells, transfers, launches, creator-reward claims, liquidity actions, and market-cap-triggered buys and sells, separated by trigger type and status.",
                       "Earnings: view and claim eligible Robinhood Chain creator rewards and Solana Pump.fun fee-sharing rewards.",
+                      "NFTs: review Solana NFT collections and individual NFTs minted from X.",
                       "History and Actions: transaction receipts, launches, pending or completed actions, failures, and status checks.",
-                      "Pools and Explore: Robinhood Chain LP management plus the user's launch history across supported chains.",
+                      "Pools and Explore: Robinhood Chain and PumpSwap LP management plus the user's launch history across supported chains.",
                       "Agents: register and manage compatible automated agents connected to the user's account.",
                       "API Keys: scoped keys and request monitoring for users who use the separate Agent API.",
                       "Onboarding: connect X, review generated wallets, and reach the dashboard with the required account setup in place.",
@@ -1239,6 +1289,7 @@ export function LinkrDocsPage() {
                     items={[
                       "Home and Explore show public launch cards for Robinhood Chain and Solana/Pump.fun launches.",
                       "Website-launched coins can be distinguished from X-launched coins in public launch surfaces.",
+                      "NFT Gallery shows confirmed Solana NFT collections and recent NFT mints created through Linkr.",
                       "Activity shows public actions and receipts that are safe to display.",
                       "Coin pages show token identity, market data, launch context, chain links, and supported reward status.",
                       "User profiles show public launch and activity context for that user.",
@@ -1454,7 +1505,7 @@ export function LinkrDocsPage() {
                 <FeatureCard
                   icon={<CalendarClock />}
                   title="Timed actions"
-                  text="Buy, sell, or transfer later with phrases like in 2 hours. The action queues only after confirm schedule."
+                  text="Buy, sell, transfer, launch, claim rewards, or adjust liquidity later with phrases like in 2 hours. The action queues only after confirm schedule."
                 />
                 <FeatureCard
                   icon={<CalendarClock />}
@@ -1464,7 +1515,7 @@ export function LinkrDocsPage() {
                 <FeatureCard
                   icon={<ShieldCheck />}
                   title="Same execution path"
-                  text="When the trigger fires, Linkr uses the same Robinhood Chain or Solana swap and transfer helpers as immediate commands."
+                  text="When the trigger fires, Linkr uses the same Robinhood Chain or Solana action checks as immediate commands."
                 />
               </div>
               <div className="lkd-split">
@@ -1477,6 +1528,9 @@ export function LinkrDocsPage() {
                       "@linkrcash sell 100% of <contract or mint> in 2 hours",
                       "@linkrcash send 0.1 ETH to <recipient> in 2 hours",
                       "@linkrcash send 0.05 SOL to <Solana recipient> in 2 hours",
+                      "@linkrcash launch a coin called GREEN ticker GREEN on Solana in 2 hours",
+                      "@linkrcash claim my Pump.fun creator rewards tomorrow",
+                      "@linkrcash add liquidity to <Solana mint> every hour",
                     ]}
                     compact
                   />
@@ -1502,6 +1556,10 @@ export function LinkrDocsPage() {
                       "Buy schedules still need an explicit spend amount in ETH, SOL, or USD.",
                       "Sell schedules need all/100% or a percentage.",
                       "Timed transfers need a native ETH or SOL amount and the recipient in the same post.",
+                      "Timed launches need a token name, symbol, description, HTTPS image URL, and one explicit chain when created from the app or Agent API.",
+                      "Timed reward claims need a full launch address, Solana mint, latest-launch reference, or another unambiguous launch lookup.",
+                      "Timed liquidity schedules need enough token, position, amount, or percentage detail to quote the action before it is scheduled.",
+                      "Recurring schedules can be interval, daily, weekly, or recurring market-condition checks when the app or Agent API request includes recurrence settings.",
                       "Market-cap triggers apply to buys and sells only, not transfers.",
                     ]}
                   />
@@ -1512,6 +1570,7 @@ export function LinkrDocsPage() {
                       "Linkr replies with a schedule summary and asks for confirm schedule.",
                       "After confirmation, the scheduled action and its exact trigger appear in the Scheduler page.",
                       "The Scheduler page in the app separates timed actions from market-cap triggers and shows status, amount, chain, target, checks, errors, and transaction hashes.",
+                      "Recurring schedules track their next run and stop when their configured end condition is reached.",
                       "Linkr checks each action when it is ready or due.",
                       "A successful execution adds its receipt and changes the scheduled action to executed.",
                     ]}
@@ -1539,7 +1598,7 @@ export function LinkrDocsPage() {
               id="launches"
               eyebrow="Launches"
               title="Launches"
-              intro="X launch requests need a token name and one explicit chain. Linkr can generate a ticker, description, and image when they are omitted, defaults the dev buy to zero, and then deploys through the durable Robinhood Chain or Solana/Pump.fun pipeline."
+              intro="X launch requests need a token name and one explicit chain. Linkr can generate a ticker, description, and image when they are omitted, defaults the dev buy to zero, and then deploys through the supported Robinhood Chain or Solana/Pump.fun launch flow."
             >
               <div className="lkd-split">
                 <InfoPanel title="Robinhood Chain launches">
@@ -1630,7 +1689,7 @@ export function LinkrDocsPage() {
                   <CheckList
                     items={[
                       "Linkr records an accepted launch before submitting a deployment transaction, so the request remains traceable if a chain or service is temporarily unavailable.",
-                      "Idempotent work items, wallet fencing, and transaction fingerprints protect retries from creating duplicate launches.",
+                      "Duplicate protection and wallet checks protect retries from creating duplicate launches.",
                       "Robinhood Chain results include the token, pool, locked launch liquidity, dev buy, and Blockscout receipt details.",
                       "Solana results include the Pump.fun mint, Pump.fun and Solscan links, launch wallet, and initial-buy details.",
                       "Temporary failures can be retried safely; final success or failure remains visible in the user's launch history.",
@@ -1660,6 +1719,60 @@ export function LinkrDocsPage() {
                 immediately with a zero dev buy. Linkr fills only missing creative fields. If the
                 chain is absent or ambiguous, it asks Solana or Robinhood and creates no economic
                 action until the same verified user answers in that launch thread.
+              </Callout>
+            </DocsSection>
+
+            <DocsSection
+              id="nfts"
+              eyebrow="NFTs"
+              title="Solana NFT collections and mints"
+              intro="Users can mint Solana NFT collections and individual NFTs from X, then review their own mints in the app and browse confirmed public collections in the NFT gallery."
+            >
+              <div className="lkd-feature-grid">
+                <FeatureCard
+                  icon={<Sparkles />}
+                  title="Collection minting"
+                  text="A clear X command can create a Solana NFT collection with a name, symbol, artwork, optional description, and optional public links."
+                />
+                <FeatureCard
+                  icon={<FileText />}
+                  title="NFT submissions"
+                  text="After a collection exists, users can mint new NFTs into it by tagging Linkr under the image they want to use."
+                />
+                <FeatureCard
+                  icon={<Wallet />}
+                  title="Solana wallet"
+                  text="NFT mints use the user's Linkr Solana wallet and need enough SOL for minting and network fees."
+                />
+              </div>
+              <div className="lkd-split">
+                <InfoPanel title="X command examples">
+                  <CodeBlock
+                    id="nft-command-examples"
+                    lines={[
+                      '@linkrcash mint nft collection called "My Punks" symbol PUNK',
+                      '@linkrcash mint nft collection called "My Punks" symbol PUNK description "Pixel punks on Solana"',
+                      "@linkrcash mint this nft to my collection My Punks",
+                      '@linkrcash mint this nft into collection PUNK called "Punk #1"',
+                    ]}
+                    compact
+                  />
+                </InfoPanel>
+                <InfoPanel title="Where NFTs appear">
+                  <CheckList
+                    items={[
+                      "The authenticated NFTs page shows collections and individual NFTs owned by the logged-in user.",
+                      "Confirmed public collections and recent mints appear in the public NFT gallery.",
+                      "Each confirmed item can show a mint address and explorer link when available.",
+                      "Collection pages let viewers browse NFTs inside a collection.",
+                    ]}
+                  />
+                </InfoPanel>
+              </div>
+              <Callout tone="warning" title="NFT minting needs media">
+                Linkr needs usable artwork from the current X post or the referenced post. If no
+                image can be found, it asks the user to attach one instead of minting placeholder
+                art.
               </Callout>
             </DocsSection>
 
@@ -1874,6 +1987,7 @@ export function LinkrDocsPage() {
                       "recent transactions",
                       "transaction search",
                       "recent launches",
+                      "NFT collections and mints",
                       "launch notes",
                       "agent activity",
                       "recent replies",
@@ -1961,6 +2075,11 @@ export function LinkrDocsPage() {
                   Pump.fun liquidity commands require a full Solana mint with an existing canonical
                   PumpSwap token/SOL pool. Tokens that are still on the Pump.fun bonding curve
                   cannot receive PumpSwap LP deposits yet.
+                </Callout>
+                <Callout tone="technical" title="NFT minting is X-first">
+                  Solana NFT collections and NFT mints are created from X commands with usable
+                  artwork. The app shows the user's NFT history and public gallery pages, but NFT
+                  minting is not exposed through the Agent API.
                 </Callout>
                 <Callout tone="warning" title="Terminal actions still confirm">
                   Terminal can understand natural follow-ups and private account context, but
