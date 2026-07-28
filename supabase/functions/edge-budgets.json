@@ -1,0 +1,404 @@
+{
+  "schemaVersion": 1,
+  "functions": {
+    "agent-action-status": {
+      "classification": "api_no_growth",
+      "maxModules": 661,
+      "maxGraphBytes": 5819361
+    },
+    "agent-api-keys": {
+      "classification": "api_no_growth",
+      "maxModules": 660,
+      "maxGraphBytes": 5810606
+    },
+    "agent-burn-token": {
+      "classification": "api_no_growth",
+      "maxModules": 664,
+      "maxGraphBytes": 5876534
+    },
+    "agent-coin-info": {
+      "classification": "api_no_growth",
+      "maxModules": 675,
+      "maxGraphBytes": 5911724
+    },
+    "agent-coins-new": {
+      "classification": "api_no_growth",
+      "maxModules": 674,
+      "maxGraphBytes": 5906829
+    },
+    "agent-creator-rewards-claim": {
+      "classification": "api_no_growth",
+      "maxModules": 716,
+      "maxGraphBytes": 8028332
+    },
+    "agent-history": {
+      "classification": "api_no_growth",
+      "maxModules": 666,
+      "maxGraphBytes": 5849545
+    },
+    "agent-launch-token": {
+      "classification": "worker_strict",
+      "maxModules": 100,
+      "maxGraphBytes": 4194304,
+      "chain": "none"
+    },
+    "agent-liquidity-add": {
+      "classification": "api_no_growth",
+      "maxModules": 941,
+      "maxGraphBytes": 7721520
+    },
+    "agent-liquidity-collect-fees": {
+      "classification": "api_no_growth",
+      "maxModules": 941,
+      "maxGraphBytes": 7720217
+    },
+    "agent-liquidity-positions": {
+      "classification": "api_no_growth",
+      "maxModules": 663,
+      "maxGraphBytes": 5826410
+    },
+    "agent-liquidity-remove": {
+      "classification": "api_no_growth",
+      "maxModules": 941,
+      "maxGraphBytes": 7721584
+    },
+    "agent-me": {
+      "classification": "api_no_growth",
+      "maxModules": 661,
+      "maxGraphBytes": 5816959
+    },
+    "agent-onboarding-tokens": {
+      "classification": "api_no_growth",
+      "maxModules": 660,
+      "maxGraphBytes": 5806474
+    },
+    "agent-portfolio": {
+      "classification": "api_no_growth",
+      "maxModules": 665,
+      "maxGraphBytes": 6113047
+    },
+    "agent-register": {
+      "classification": "api_no_growth",
+      "maxModules": 660,
+      "maxGraphBytes": 5807071
+    },
+    "agent-trade": {
+      "classification": "api_no_growth",
+      "maxModules": 681,
+      "maxGraphBytes": 6182533
+    },
+    "agent-transfer": {
+      "classification": "api_no_growth",
+      "maxModules": 667,
+      "maxGraphBytes": 5848268
+    },
+    "agent-wallet": {
+      "classification": "api_no_growth",
+      "maxModules": 664,
+      "maxGraphBytes": 6108698
+    },
+    "create-add-liquidity-action": {
+      "classification": "api_no_growth",
+      "maxModules": 935,
+      "maxGraphBytes": 7654751
+    },
+    "create-remove-liquidity-action": {
+      "classification": "api_no_growth",
+      "maxModules": 935,
+      "maxGraphBytes": 7655512
+    },
+    "create-scheduled-action": {
+      "classification": "api_no_growth",
+      "maxModules": 669,
+      "maxGraphBytes": 6113600
+    },
+    "create-user-wallet": {
+      "classification": "api_no_growth",
+      "maxModules": 658,
+      "maxGraphBytes": 5798229
+    },
+    "creator-rewards-config": {
+      "classification": "api_no_growth",
+      "maxModules": 653,
+      "maxGraphBytes": 6955200
+    },
+    "creator-rewards-earnings": {
+      "classification": "api_no_growth",
+      "maxModules": 710,
+      "maxGraphBytes": 8006237
+    },
+    "cron-expire-pending-actions": {
+      "classification": "api_no_growth",
+      "maxModules": 63,
+      "maxGraphBytes": 1002624
+    },
+    "cron-fetch-mentions": {
+      "classification": "api_no_growth",
+      "maxModules": 672,
+      "maxGraphBytes": 5868694
+    },
+    "cron-post-replies": {
+      "classification": "api_no_growth",
+      "maxModules": 68,
+      "maxGraphBytes": 1041041
+    },
+    "cron-process-ai-tweets": {
+      "classification": "worker_strict",
+      "maxModules": 20,
+      "maxGraphBytes": 500000,
+      "chain": "none"
+    },
+    "cron-process-launches": {
+      "classification": "worker_strict",
+      "maxModules": 100,
+      "maxGraphBytes": 4194304,
+      "chain": "none"
+    },
+    "cron-process-scheduled-actions": {
+      "classification": "api_no_growth",
+      "maxModules": 694,
+      "maxGraphBytes": 6243255
+    },
+    "cron-process-tweets": {
+      "classification": "worker_strict",
+      "maxModules": 100,
+      "maxGraphBytes": 4194304,
+      "chain": "none"
+    },
+    "cron-refresh-home-cache": {
+      "classification": "api_no_growth",
+      "maxModules": 247,
+      "maxGraphBytes": 2033856
+    },
+    "cron-refresh-market-data": {
+      "classification": "api_no_growth",
+      "maxModules": 245,
+      "maxGraphBytes": 2031238
+    },
+    "ensure-user-bootstrap": {
+      "classification": "api_no_growth",
+      "maxModules": 658,
+      "maxGraphBytes": 5797745
+    },
+    "execute-liquidity-action": {
+      "classification": "api_no_growth",
+      "maxModules": 934,
+      "maxGraphBytes": 7650272
+    },
+    "export-wallet-private-key": {
+      "classification": "api_no_growth",
+      "maxModules": 657,
+      "maxGraphBytes": 5775214
+    },
+    "home-dashboard-data": {
+      "classification": "api_no_growth",
+      "maxModules": 245,
+      "maxGraphBytes": 2037123
+    },
+    "import-user-wallet": {
+      "classification": "api_no_growth",
+      "maxModules": 658,
+      "maxGraphBytes": 5798035
+    },
+    "liquidity-positions": {
+      "classification": "api_no_growth",
+      "maxModules": 235,
+      "maxGraphBytes": 1950295
+    },
+    "market-data": {
+      "classification": "api_no_growth",
+      "maxModules": 243,
+      "maxGraphBytes": 2027913
+    },
+    "quote-add-liquidity": {
+      "classification": "api_no_growth",
+      "maxModules": 934,
+      "maxGraphBytes": 7646822
+    },
+    "quote-remove-liquidity": {
+      "classification": "api_no_growth",
+      "maxModules": 934,
+      "maxGraphBytes": 7646964
+    },
+    "secretpanel": {
+      "classification": "api_no_growth",
+      "maxModules": 69,
+      "maxGraphBytes": 1041412
+    },
+    "solana-wallet-balance": {
+      "classification": "api_no_growth",
+      "maxModules": 496,
+      "maxGraphBytes": 4835339
+    },
+    "swap-sol-usdc": {
+      "classification": "api_no_growth",
+      "maxModules": 739,
+      "maxGraphBytes": 5644164
+    },
+    "telegram-verify": {
+      "classification": "api_no_growth",
+      "maxModules": 62,
+      "maxGraphBytes": 1032382
+    },
+    "telegram-webhook": {
+      "classification": "api_no_growth",
+      "maxModules": 1030,
+      "maxGraphBytes": 10477826
+    },
+    "terminal-action": {
+      "classification": "api_no_growth",
+      "maxModules": 996,
+      "maxGraphBytes": 10126526
+    },
+    "terminal-chat": {
+      "classification": "api_no_growth",
+      "maxModules": 1028,
+      "maxGraphBytes": 10422318
+    },
+    "terminal-conversations": {
+      "classification": "api_no_growth",
+      "maxModules": 60,
+      "maxGraphBytes": 999842
+    },
+    "terminal-messages": {
+      "classification": "api_no_growth",
+      "maxModules": 60,
+      "maxGraphBytes": 998589
+    },
+    "transfer-eth": {
+      "classification": "api_no_growth",
+      "maxModules": 237,
+      "maxGraphBytes": 1956966
+    },
+    "transfer-sol": {
+      "classification": "api_no_growth",
+      "maxModules": 499,
+      "maxGraphBytes": 4847249
+    },
+    "transfer-usdc": {
+      "classification": "api_no_growth",
+      "maxModules": 897,
+      "maxGraphBytes": 6585782
+    },
+    "update-user-settings": {
+      "classification": "api_no_growth",
+      "maxModules": 61,
+      "maxGraphBytes": 1000993
+    },
+    "user-profile-data": {
+      "classification": "api_no_growth",
+      "maxModules": 231,
+      "maxGraphBytes": 1947215
+    },
+    "wallet-balances": {
+      "classification": "api_no_growth",
+      "maxModules": 658,
+      "maxGraphBytes": 5767458
+    },
+    "web-launch-token": {
+      "classification": "worker_strict",
+      "maxModules": 100,
+      "maxGraphBytes": 4194304,
+      "chain": "none"
+    },
+    "worker-shadow-drainer": {
+      "classification": "worker_strict",
+      "maxModules": 100,
+      "maxGraphBytes": 1200000,
+      "chain": "none"
+    },
+    "worker-x-ingress": {
+      "classification": "worker_strict",
+      "maxModules": 100,
+      "maxGraphBytes": 4194304,
+      "chain": "none"
+    },
+    "worker-conversation-turn": {
+      "classification": "worker_strict",
+      "maxModules": 150,
+      "maxGraphBytes": 4194304,
+      "chain": "none"
+    },
+    "worker-command-prepare": {
+      "classification": "worker_strict",
+      "maxModules": 150,
+      "maxGraphBytes": 4194304,
+      "chain": "none"
+    },
+    "worker-launch-enrich": {
+      "classification": "worker_strict",
+      "maxModules": 150,
+      "maxGraphBytes": 4194304,
+      "chain": "none"
+    },
+    "worker-media-capture": {
+      "classification": "worker_strict",
+      "maxModules": 150,
+      "maxGraphBytes": 4194304,
+      "chain": "none"
+    },
+    "worker-image-generate": {
+      "classification": "worker_strict",
+      "maxModules": 150,
+      "maxGraphBytes": 4194304,
+      "chain": "none"
+    },
+    "worker-nft-solana": {
+      "classification": "worker_strict",
+      "maxModules": 500,
+      "maxGraphBytes": 4194304,
+      "chain": "solana"
+    },
+    "worker-reply-x": {
+      "classification": "worker_strict",
+      "maxModules": 100,
+      "maxGraphBytes": 4194304,
+      "chain": "none"
+    },
+    "worker-launch-robinhood": {
+      "classification": "worker_strict",
+      "maxModules": 300,
+      "maxGraphBytes": 4194304,
+      "chain": "robinhood"
+    },
+    "worker-confirm-robinhood": {
+      "classification": "worker_strict",
+      "maxModules": 100,
+      "maxGraphBytes": 4194304,
+      "chain": "none"
+    },
+    "worker-launch-solana": {
+      "classification": "worker_strict",
+      "maxModules": 500,
+      "maxGraphBytes": 4194304,
+      "chain": "solana"
+    },
+    "worker-confirm-solana": {
+      "classification": "worker_strict",
+      "maxModules": 100,
+      "maxGraphBytes": 4194304,
+      "chain": "none"
+    },
+    "worker-reconcile": {
+      "classification": "worker_strict",
+      "maxModules": 100,
+      "maxGraphBytes": 4194304,
+      "chain": "none"
+    },
+    "x-oauth": {
+      "classification": "api_no_growth",
+      "maxModules": 662,
+      "maxGraphBytes": 5858850
+    },
+    "x-refresh-token": {
+      "classification": "api_no_growth",
+      "maxModules": 64,
+      "maxGraphBytes": 1014268
+    },
+    "x-verify-posting-auth": {
+      "classification": "api_no_growth",
+      "maxModules": 64,
+      "maxGraphBytes": 1007788
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "name": "@sherwood/contracts",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "hardhat compile",
+    "test": "hardhat compile && node --import tsx --test \"test/**/*.test.ts\"",
+    "deploy:robinhood": "hardhat run scripts/deploy.ts --network robinhood",
+    "smoke:robinhood": "hardhat run scripts/smoke.ts --network robinhood"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-ethers": "^4.0.14",
+    "@openzeppelin/contracts": "^5.1.0",
+    "@types/node": "^22.10.2",
+    "dotenv": "^16.4.7",
+    "hardhat": "^3.9.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "dependencies": {
+    "@uniswap/v3-core": "^1.0.1",
+    "@uniswap/v3-periphery": "^1.4.4"
+  },
+  "overrides": {
+    "adm-zip": "^0.6.0"
+  }
+}

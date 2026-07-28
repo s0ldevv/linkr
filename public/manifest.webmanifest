@@ -1,0 +1,41 @@
+{
+  "id": "/",
+  "name": "Linkr",
+  "short_name": "Linkr",
+  "description": "Launch, trade, send, and manage your Linkr wallet from X.",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
+  "background_color": "#ffffff",
+  "theme_color": "#ccff00",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/linkr-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/linkr-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Open dashboard",
+      "short_name": "Dashboard",
+      "url": "/app?source=pwa-shortcut",
+      "icons": [
+        {
+          "src": "/linkr-icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ]
+}

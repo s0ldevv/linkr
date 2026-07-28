@@ -1,0 +1,226 @@
+import { ArrowRight } from "lucide-react";
+import { LaunchTokenGridPanel } from "@/components/linkr/LaunchTokenGridPanel";
+import type { PublicHomeData } from "@/lib/linkr/home-data";
+import {
+  launchTokenCardFromPublicToken,
+  type LaunchTokenCardData,
+} from "@/lib/linkr/launch-token-card";
+
+const PLACEHOLDER_LAUNCHES: LaunchTokenCardData[] = [
+  {
+    age: "2m ago",
+    chainLabel: "EVM",
+    chainTone: "robinhood",
+    href: "/explore",
+    id: "placeholder-nova",
+    isLive: true,
+    marketCap: "$84.2K",
+    mint: "0x8A1d4b4C7f8e0a7d9C1b2E3F4a5B6c7D8e9F0123",
+    name: "Nova Protocol",
+    placeholder: true,
+    sparkline: [18, 24, 20, 31, 26, 36, 33, 48, 44, 62, 58, 64],
+    status: "Live",
+    statusTone: "live",
+    symbol: "NOVA",
+  },
+  {
+    age: "4m ago",
+    chainLabel: "SOL",
+    chainTone: "solana",
+    href: "/explore",
+    id: "placeholder-rush",
+    isLive: true,
+    marketCap: "$41.6K",
+    mint: "6Mki4nLhYf1QKzZ42t8uFVY6S2PVm2JsxVxK5hH7pump",
+    name: "Rush AI",
+    placeholder: true,
+    sparkline: [22, 18, 26, 30, 28, 38, 36, 50, 58, 54, 49, 46],
+    status: "Live",
+    statusTone: "live",
+    symbol: "RUSH",
+  },
+  {
+    age: "5m ago",
+    chainLabel: "EVM",
+    chainTone: "robinhood",
+    href: "/explore",
+    id: "placeholder-pixel",
+    isLive: true,
+    marketCap: "$128.4K",
+    mint: "0x91C4E5d6A7B8c9D0E1f234567890abCDef123456",
+    name: "Pixel Power",
+    placeholder: true,
+    sparkline: [16, 18, 28, 25, 35, 42, 38, 56, 61, 68, 58, 63],
+    status: "Live",
+    statusTone: "live",
+    symbol: "PIXEL",
+  },
+  {
+    age: "7m ago",
+    chainLabel: "SOL",
+    chainTone: "solana",
+    href: "/explore",
+    id: "placeholder-swift",
+    isLive: true,
+    marketCap: "$92.3K",
+    mint: "7sKf3r8PzL9yQw2nT6vB4mH1cX5dE9aR2pJ8uV6kS3n",
+    name: "Swiftly Token",
+    placeholder: true,
+    sparkline: [28, 34, 37, 42, 50, 48, 61, 70, 64, 55, 50, 56],
+    status: "Live",
+    statusTone: "live",
+    symbol: "SWIFT",
+  },
+  {
+    age: "9m ago",
+    chainLabel: "EVM",
+    chainTone: "robinhood",
+    href: "/explore",
+    id: "placeholder-boost",
+    isLive: true,
+    marketCap: "$231.7K",
+    mint: "0x3E2d1C0b9A87654321fEDCBA9876543210aBcDEF",
+    name: "BoostCoin",
+    placeholder: true,
+    sparkline: [20, 24, 28, 38, 41, 48, 55, 62, 68, 74, 66, 71],
+    status: "Trending",
+    statusTone: "trending",
+    symbol: "BOOST",
+  },
+  {
+    age: "11m ago",
+    chainLabel: "SOL",
+    chainTone: "solana",
+    href: "/explore",
+    id: "placeholder-drift",
+    isLive: true,
+    marketCap: "$76.8K",
+    mint: "9rTn6bH4xQ2vM8pC5sL1eZ7aY3kD9wF6uJ2mN4qP8rS",
+    name: "Drift Token",
+    placeholder: true,
+    sparkline: [19, 23, 26, 33, 42, 50, 55, 58, 62, 52, 46, 49],
+    status: "Live",
+    statusTone: "live",
+    symbol: "DRIFT",
+  },
+  {
+    age: "13m ago",
+    chainLabel: "EVM",
+    chainTone: "robinhood",
+    href: "/explore",
+    id: "placeholder-ethai",
+    isLive: true,
+    marketCap: "$181.5K",
+    mint: "0xA4c95E7B71f2D6c9A8305471b3AaE2bF8910cE44",
+    name: "EthAI",
+    placeholder: true,
+    sparkline: [25, 31, 27, 42, 39, 51, 48, 60, 67, 73, 70, 76],
+    status: "Live",
+    statusTone: "live",
+    symbol: "ETHAI",
+  },
+  {
+    age: "15m ago",
+    chainLabel: "SOL",
+    chainTone: "solana",
+    href: "/explore",
+    id: "placeholder-lite",
+    isLive: true,
+    marketCap: "$66.4K",
+    mint: "4LsN8xQeY2vK9mT1pC7bH6rW3dJ5fZ8aS2uP4nM6yR",
+    name: "Litechain",
+    placeholder: true,
+    sparkline: [15, 22, 24, 31, 36, 33, 42, 50, 58, 54, 49, 55],
+    status: "New",
+    statusTone: "new",
+    symbol: "LITE",
+  },
+  {
+    age: "17m ago",
+    chainLabel: "EVM",
+    chainTone: "robinhood",
+    href: "/explore",
+    id: "placeholder-agent",
+    isLive: true,
+    marketCap: "$207.6K",
+    mint: "0xF1e2D3c4B5A697887766554433221100fFaAbBcC",
+    name: "AgentCoin",
+    placeholder: true,
+    sparkline: [36, 34, 42, 39, 47, 51, 49, 58, 56, 63, 61, 68],
+    status: "Trending",
+    statusTone: "trending",
+    symbol: "AGENT",
+  },
+  {
+    age: "19m ago",
+    chainLabel: "SOL",
+    chainTone: "solana",
+    href: "/explore",
+    id: "placeholder-meme",
+    isLive: true,
+    marketCap: "$54.1K",
+    mint: "8PzL3yQw7nT6vB4mH1cX5dE9aR2pJ8uV6kS3nF7rK",
+    name: "MemeCore",
+    placeholder: true,
+    sparkline: [21, 23, 20, 25, 31, 30, 36, 42, 46, 44, 39, 43],
+    status: "Live",
+    statusTone: "live",
+    symbol: "MEME",
+  },
+  {
+    age: "21m ago",
+    chainLabel: "EVM",
+    chainTone: "robinhood",
+    href: "/explore",
+    id: "placeholder-wave",
+    isLive: true,
+    marketCap: "$112.3K",
+    mint: "0xbB12cD34eF56a7890BC1234567890dEfA1234567",
+    name: "Waveform",
+    placeholder: true,
+    sparkline: [14, 26, 24, 34, 42, 46, 51, 59, 54, 48, 45, 52],
+    status: "Live",
+    statusTone: "live",
+    symbol: "WAVE",
+  },
+  {
+    age: "23m ago",
+    chainLabel: "SOL",
+    chainTone: "solana",
+    href: "/explore",
+    id: "placeholder-lens",
+    isLive: true,
+    marketCap: "$88.2K",
+    mint: "5hH7qT9rN6bH4xQ2vM8pC5sL1eZ7aY3kD9wF6uJ2m",
+    name: "Lens Protocol",
+    placeholder: true,
+    sparkline: [18, 21, 28, 32, 37, 44, 47, 55, 62, 59, 52, 57],
+    status: "New",
+    statusTone: "new",
+    symbol: "LENS",
+  },
+];
+
+export function HomeLaunchBoard({ data, loading }: { data?: PublicHomeData; loading?: boolean }) {
+  const liveTokens = [...(data?.topLaunchedTokens ?? [])]
+    .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+    .slice(0, 12)
+    .map(launchTokenCardFromPublicToken);
+  const launchCards = [...liveTokens, ...PLACEHOLDER_LAUNCHES].slice(0, 12);
+  const hasLiveLaunches = liveTokens.length > 0;
+
+  return (
+    <div className="sm-launch-board-shell" aria-busy={loading || undefined}>
+      <LaunchTokenGridPanel
+        action={
+          <a className="sm-launch-view-all" href="/explore">
+            Explore all
+            <ArrowRight aria-hidden="true" size={16} />
+          </a>
+        }
+        cards={launchCards}
+        hasLiveLaunches={hasLiveLaunches}
+      />
+    </div>
+  );
+}

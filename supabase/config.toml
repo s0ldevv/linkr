@@ -1,0 +1,235 @@
+project_id = "xnxdbcfcxaqukmsajjfm"
+
+[functions.create-user-wallet]
+verify_jwt = true
+
+[functions.ensure-user-bootstrap]
+verify_jwt = true
+
+[functions.update-user-settings]
+verify_jwt = true
+
+[functions.cron-fetch-mentions]
+verify_jwt = false
+
+[functions.cron-process-tweets]
+verify_jwt = false
+
+[functions.cron-process-ai-tweets]
+verify_jwt = false
+
+[functions.cron-post-replies]
+verify_jwt = false
+
+[functions.x-oauth]
+verify_jwt = false
+
+[functions.telegram-webhook]
+verify_jwt = false
+
+[functions.telegram-verify]
+verify_jwt = false
+
+[functions.x-refresh-token]
+verify_jwt = false
+
+[functions.x-verify-posting-auth]
+verify_jwt = false
+
+[functions.secretpanel]
+verify_jwt = true
+
+[functions.cron-expire-pending-actions]
+verify_jwt = false
+
+[functions.transfer-eth]
+verify_jwt = true
+
+[functions.transfer-sol]
+verify_jwt = true
+
+[functions.transfer-usdc]
+verify_jwt = true
+
+[functions.swap-sol-usdc]
+verify_jwt = true
+
+[functions.export-wallet-private-key]
+verify_jwt = true
+
+[functions.solana-wallet-balance]
+verify_jwt = true
+
+[functions.wallet-balances]
+verify_jwt = true
+
+[functions.home-dashboard-data]
+verify_jwt = false
+
+[functions.creator-rewards-config]
+verify_jwt = false
+
+[functions.creator-rewards-earnings]
+verify_jwt = true
+
+[functions.web-launch-token]
+verify_jwt = true
+
+[functions.market-data]
+verify_jwt = false
+
+[functions.cron-refresh-market-data]
+verify_jwt = false
+
+[functions.cron-refresh-home-cache]
+verify_jwt = false
+
+[functions.user-profile-data]
+verify_jwt = false
+
+[functions.cron-process-launches]
+verify_jwt = false
+
+[functions.cron-process-scheduled-actions]
+verify_jwt = false
+
+[functions.create-scheduled-action]
+verify_jwt = true
+
+[functions.liquidity-positions]
+verify_jwt = true
+
+[functions.quote-add-liquidity]
+verify_jwt = true
+
+[functions.quote-remove-liquidity]
+verify_jwt = true
+
+[functions.create-add-liquidity-action]
+verify_jwt = true
+
+[functions.create-remove-liquidity-action]
+verify_jwt = true
+
+[functions.execute-liquidity-action]
+verify_jwt = true
+
+[functions.agent-api-keys]
+verify_jwt = true
+
+[functions.agent-onboarding-tokens]
+verify_jwt = true
+
+[functions.agent-register]
+verify_jwt = false
+
+[functions.agent-me]
+verify_jwt = false
+
+[functions.agent-wallet]
+verify_jwt = false
+
+[functions.agent-portfolio]
+verify_jwt = false
+
+[functions.agent-history]
+verify_jwt = false
+
+[functions.agent-coins-new]
+verify_jwt = false
+
+[functions.agent-coin-info]
+verify_jwt = false
+
+[functions.agent-launch-token]
+verify_jwt = false
+
+[functions.agent-trade]
+verify_jwt = false
+
+[functions.agent-transfer]
+verify_jwt = false
+
+[functions.agent-burn-token]
+verify_jwt = false
+
+[functions.agent-creator-rewards-claim]
+verify_jwt = false
+
+[functions.agent-liquidity-add]
+verify_jwt = false
+
+[functions.agent-liquidity-remove]
+verify_jwt = false
+
+[functions.agent-liquidity-positions]
+verify_jwt = false
+
+[functions.agent-liquidity-collect-fees]
+verify_jwt = false
+
+[functions.agent-action-status]
+verify_jwt = false
+
+[functions.terminal-conversations]
+verify_jwt = true
+
+[functions.terminal-messages]
+verify_jwt = true
+
+[functions.terminal-chat]
+verify_jwt = true
+
+[functions.terminal-action]
+verify_jwt = true
+
+[functions.terminal-upload]
+verify_jwt = true
+
+[functions.import-user-wallet]
+verify_jwt = true
+
+[functions.worker-shadow-drainer]
+verify_jwt = false
+
+[functions.worker-x-ingress]
+verify_jwt = false
+
+[functions.worker-conversation-turn]
+verify_jwt = false
+
+[functions.worker-command-prepare]
+verify_jwt = false
+
+[functions.worker-launch-enrich]
+verify_jwt = false
+
+[functions.worker-media-capture]
+verify_jwt = false
+
+[functions.worker-image-generate]
+verify_jwt = false
+
+[functions.worker-nft-solana]
+verify_jwt = false
+
+[functions.worker-reply-x]
+verify_jwt = false
+
+[functions.worker-launch-robinhood]
+verify_jwt = false
+
+[functions.worker-confirm-robinhood]
+verify_jwt = false
+
+[functions.worker-launch-solana]
+verify_jwt = false
+
+[functions.worker-confirm-solana]
+verify_jwt = false
+
+[functions.worker-reconcile]
+verify_jwt = false
+
+[functions.linkr-agent-wallet-read]
+verify_jwt = false

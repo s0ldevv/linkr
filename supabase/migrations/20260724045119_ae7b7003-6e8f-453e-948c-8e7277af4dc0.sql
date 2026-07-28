@@ -1,0 +1,1 @@
+SELECT public.run_linkr_queue_controller_tick();

@@ -1,0 +1,3 @@
+SELECT stage, state, consecutive_failure_count, circuit_open_until, last_status_code, last_error_code, wake_generation, updated_at FROM public.linkr_dispatch_stage_state WHERE stage IN ('command_prepare','nft_solana') ORDER BY stage;
+SELECT route, request_type, state, count(*) FROM public.linkr_work_items WHERE route IN ('command.prepare','nft.solana') AND state NOT IN ('succeeded','rejected','cancelled','dead_letter') GROUP BY route, request_type, state ORDER BY route, request_type, state;
+SELECT route, request_type, state, result_ref, last_error_code, updated_at FROM public.linkr_work_items WHERE route IN ('command.prepare','nft.solana') ORDER BY updated_at DESC LIMIT 8;

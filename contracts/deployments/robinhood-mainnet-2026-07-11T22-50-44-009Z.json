@@ -1,0 +1,29 @@
+{
+  "network": "robinhood-mainnet",
+  "chainId": 4663,
+  "deployedAt": "2026-07-11T22:50:44.009Z",
+  "deployer": "0x8F6e202692FBE4f6aEeecDA83AfF4F488d9B7769",
+  "treasury": "0xB853B1F88f5246889E2433a6cc8f4BA2a0eb916a",
+  "locker": "0xcc40F74eeED9a41bC6f93F245F33868fe63ddC90",
+  "factory": "0xe9aEA913048b6353DD03421Ee8bCFF13e0e36104",
+  "launchFee": "0",
+  "launchDefaults": {
+    "tokenSupply": "1000000000000000000000000000",
+    "startingTick": "0",
+    "rangeWidth": "20000",
+    "creatorShareBps": "8000",
+    "minSupplyUsedBps": "9900",
+    "graduationWeth": "10000000000000000000",
+    "trading": "block-1-unrestricted"
+  },
+  "postDeployVerification": {
+    "verifiedAt": "2026-07-11T22:59:31.730Z",
+    "latestBlockNumber": 7321000,
+    "smokePassed": true,
+    "factoryCodeBytes": 11646,
+    "lockerCodeBytes": 2895,
+    "deployerBalanceEth": "0.00479678751324",
+    "treasuryBalanceEth": "0.001",
+    "note": "Deployment transaction hashes were not captured by the deploy script output; live bytecode and smoke checks passed."
+  }
+}

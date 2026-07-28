@@ -1,0 +1,323 @@
+@layer theme, base, components, utilities, app;
+
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+@import "./styles-home-polish.css" layer(app);
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ring-offset-background: var(--background);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-surface: var(--surface);
+  --color-surface-elevated: var(--surface-elevated);
+  --font-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: "Inter Tight", "Inter", system-ui, sans-serif;
+  --font-hero: "Inter Tight", "Inter", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", "JetBrains Mono", "SF Mono", Consolas, ui-monospace, monospace;
+}
+
+:root {
+  color-scheme: light;
+  --radius: 8px;
+  --linkr-lime: #ccff00;
+  --linkr-black: #0a0d0b;
+  --linkr-muted: #66706b;
+  --linkr-cream: #ffffff;
+  --background: #ffffff;
+  --foreground: #0a0d0b;
+  --surface: #fbfcfb;
+  --surface-elevated: #ffffff;
+  --card: #ffffff;
+  --card-foreground: #0a0d0b;
+  --popover: #ffffff;
+  --popover-foreground: #0a0d0b;
+  --primary: #ccff00;
+  --primary-foreground: #0a0d0b;
+  --secondary: #f4f7f5;
+  --secondary-foreground: #0a0d0b;
+  --muted: #f4f7f5;
+  --muted-foreground: #66706b;
+  --accent: #eaf8ee;
+  --accent-foreground: #2f8d40;
+  --destructive: #d84d4d;
+  --destructive-foreground: #ffffff;
+  --success: #ccff00;
+  --success-foreground: #0a0d0b;
+  --warning: #b7791f;
+  --warning-foreground: #0a0d0b;
+  --border: #e2e7e3;
+  --input: #d8dfda;
+  --ring: #ccff00;
+  --chart-1: #ccff00;
+  --chart-2: #0a0d0b;
+  --chart-3: #66706b;
+  --chart-4: #9ba59f;
+  --chart-5: #d9e5dc;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #0a0d0b;
+  --sidebar-primary: #ccff00;
+  --sidebar-primary-foreground: #0a0d0b;
+  --sidebar-accent: #f4f7f5;
+  --sidebar-accent-foreground: #0a0d0b;
+  --sidebar-border: #e2e7e3;
+  --sidebar-ring: #ccff00;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+    box-shadow: none;
+  }
+
+  html {
+    background: var(--color-background);
+    color: var(--color-foreground);
+    scroll-behavior: smooth;
+  }
+
+  body {
+    min-width: 320px;
+    margin: 0;
+    background: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11", "ss01";
+    letter-spacing: 0;
+    text-rendering: geometricprecision;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  p {
+    margin: 0;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    font-weight: 800;
+    letter-spacing: 0;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
+
+  ::selection {
+    background: var(--linkr-lime);
+    color: var(--linkr-black);
+  }
+}
+
+@layer components {
+  .sm-display {
+    font-family: var(--font-display);
+    font-weight: 800;
+    letter-spacing: 0;
+    line-height: 0.94;
+  }
+
+  .sm-mono,
+  code {
+    font-family: var(--font-mono);
+    font-feature-settings: "ss01", "zero";
+  }
+
+  .sm-card {
+    border: 2px solid var(--color-border);
+    background: var(--color-card);
+    color: var(--color-card-foreground);
+  }
+
+  .sm-grid-bg {
+    background: var(--color-background);
+  }
+
+  .sm-install-banner {
+    display: none;
+  }
+
+  .sm-install-banner button {
+    appearance: none;
+    border: 0;
+    font: inherit;
+  }
+
+  @media (max-width: 820px) {
+    .sm-install-banner {
+      position: relative;
+      z-index: 1000;
+      display: grid;
+      min-height: 46px;
+      grid-template-columns: minmax(0, 1fr) auto 34px;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid rgb(10 13 11 / 16%);
+      background: var(--linkr-lime);
+      color: var(--linkr-black);
+      padding: max(7px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) 7px
+        max(12px, env(safe-area-inset-left));
+      box-shadow: 0 1px 0 rgb(255 255 255 / 42%) inset;
+    }
+
+    .sm-install-banner-main {
+      display: grid;
+      min-width: 0;
+      min-height: 32px;
+      grid-template-columns: 24px minmax(0, 1fr);
+      align-items: center;
+      gap: 8px;
+      border-radius: 999px;
+      background: transparent;
+      color: inherit;
+      padding: 0;
+      text-align: left;
+    }
+
+    .sm-install-banner-icon,
+    .sm-install-banner-close {
+      display: inline-grid;
+      place-items: center;
+      color: var(--linkr-black);
+    }
+
+    .sm-install-banner-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      background: rgb(10 13 11 / 10%);
+    }
+
+    .sm-install-banner-copy {
+      display: grid;
+      min-width: 0;
+      gap: 1px;
+      line-height: 1.05;
+    }
+
+    .sm-install-banner-copy strong {
+      overflow: hidden;
+      color: inherit;
+      font-family: var(--font-sans);
+      font-size: clamp(0.76rem, 2.9vw, 0.86rem);
+      font-weight: 900;
+      letter-spacing: 0;
+      line-height: 1.1;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .sm-install-banner-copy small {
+      overflow: hidden;
+      color: rgb(10 13 11 / 68%);
+      font-size: 0.64rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      line-height: 1;
+      text-overflow: ellipsis;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .sm-install-banner-action {
+      display: inline-flex;
+      min-height: 32px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      background: var(--linkr-black);
+      color: var(--linkr-lime);
+      padding: 0 14px;
+      font-size: 0.68rem;
+      font-weight: 950;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .sm-install-banner-close {
+      width: 32px;
+      height: 32px;
+      border-radius: 999px;
+      background: rgb(10 13 11 / 10%);
+      padding: 0;
+    }
+  }
+
+  @media (max-width: 390px) {
+    .sm-install-banner {
+      grid-template-columns: minmax(0, 1fr) 30px;
+      gap: 6px;
+      padding-right: max(8px, env(safe-area-inset-right));
+    }
+
+    .sm-install-banner-action {
+      display: none;
+    }
+
+    .sm-install-banner-copy strong {
+      font-size: 0.74rem;
+    }
+  }
+}

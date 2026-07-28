@@ -1,0 +1,49 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+.output
+.vinxi
+.vercel
+.tanstack/**
+.nitro
+.chrome-*
+.tmp-cookie-notice-check*/
+*.local
+
+# Wrangler / Cloudflare
+.wrangler/
+.dev.vars
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Secrets and local runtime configuration
+.env
+.env.*
+!.env.example
+!.env.local.example
+!**/.env.example
+supabase/.temp/
+.linkr_internal_secret.tmp
+*.secret.tmp
+
+# Generated contract/build output
+contracts/artifacts/
+contracts/cache/

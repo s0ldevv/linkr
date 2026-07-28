@@ -1,0 +1,264 @@
+.agent-api-shell {
+  width: min(calc(100% - clamp(32px, 6vw, 96px)), 1417px);
+}
+
+.agent-api-masthead {
+  grid-template-columns: minmax(0, 660px) minmax(280px, 340px);
+  justify-content: center;
+  min-height: clamp(230px, 26vw, 330px);
+  padding-bottom: clamp(34px, 5vw, 54px);
+}
+
+.agent-api-masthead .lkd-masthead-main {
+  max-width: 660px;
+}
+
+.agent-api-masthead .lkd-masthead-main h1 {
+  max-width: 660px;
+}
+
+.agent-api-masthead .lkd-masthead-main p {
+  max-width: 600px;
+}
+
+.agent-api-signing-card {
+  justify-self: end;
+  width: 100%;
+  max-width: 340px;
+}
+
+.agent-api-signing-card code {
+  display: block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  border-radius: 14px;
+  background: rgb(250 247 246 / 7%);
+  color: var(--docs-paper);
+  font-family: var(--docs-mono);
+  font-size: 0.76rem;
+  line-height: 1.45;
+  padding: 12px 14px;
+}
+
+.agent-api-layout {
+  grid-template-columns: minmax(210px, 230px) minmax(0, 760px);
+  justify-content: center;
+  gap: clamp(28px, 4vw, 48px);
+}
+
+.agent-api-content {
+  max-width: 760px;
+  gap: clamp(70px, 8vw, 112px);
+}
+
+.agent-api-section {
+  min-width: 0;
+  scroll-margin-top: 120px;
+}
+
+.agent-api-section-body {
+  display: grid;
+  gap: 24px;
+}
+
+.agent-api-copy {
+  display: grid;
+  max-width: 700px;
+  gap: 18px;
+}
+
+.agent-api-copy p {
+  margin: 0;
+  color: var(--docs-muted);
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+.agent-api-flow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.agent-api-flow > div {
+  display: grid;
+  align-content: start;
+  gap: 9px;
+  min-width: 0;
+  border-radius: 24px;
+  background:
+    linear-gradient(180deg, rgb(250 247 246 / 6%), rgb(250 247 246 / 2%)), var(--docs-card);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 5%);
+  padding: 20px;
+}
+
+.agent-api-flow span {
+  color: var(--docs-lime);
+  font-family: var(--docs-display);
+  font-size: 1.24rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.agent-api-flow strong {
+  color: var(--docs-paper);
+  font-family: var(--docs-display);
+  font-size: 1.08rem;
+  font-weight: 800;
+  line-height: 1.08;
+}
+
+.agent-api-flow p {
+  margin: 0;
+  color: var(--docs-muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.agent-api-code-block {
+  max-width: 700px;
+}
+
+.agent-api-code-block pre,
+.agent-api-code-block.lkd-code-block-compact pre {
+  padding: 18px;
+}
+
+.agent-api-code-block code {
+  min-width: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.agent-api-endpoint-list {
+  display: grid;
+  gap: 14px;
+}
+
+.agent-api-endpoint-row {
+  display: grid;
+  grid-template-columns: 72px minmax(180px, 1fr) minmax(130px, 180px);
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  border-radius: 22px;
+  background:
+    linear-gradient(180deg, rgb(250 247 246 / 6%), rgb(250 247 246 / 2%)), var(--docs-card);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 5%);
+  padding: 15px 16px;
+}
+
+.agent-api-endpoint-row strong {
+  display: inline-flex;
+  min-height: 30px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--docs-lime);
+  color: #10110f;
+  font-size: 0.68rem;
+  font-weight: 950;
+}
+
+.agent-api-endpoint-row code {
+  min-width: 0;
+  color: var(--docs-paper);
+  font-family: var(--docs-mono);
+  font-size: 0.84rem;
+  overflow-wrap: anywhere;
+}
+
+.agent-api-endpoint-row span {
+  color: var(--docs-lime);
+  font-size: 0.72rem;
+  font-weight: 950;
+}
+
+.agent-api-endpoint-row p {
+  grid-column: 2 / -1;
+  margin: -4px 0 0;
+  color: var(--docs-muted);
+  font-size: 0.92rem;
+  line-height: 1.48;
+}
+
+.agent-api-endpoint-notes {
+  margin-top: 18px;
+}
+
+.agent-api-safety-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.agent-api-bottom-actions {
+  margin-top: 2px;
+}
+
+@media (max-width: 1240px) {
+  .agent-api-masthead {
+    grid-template-columns: minmax(0, 1fr);
+    justify-content: start;
+  }
+
+  .agent-api-signing-card {
+    justify-self: start;
+    max-width: 700px;
+  }
+
+  .agent-api-layout {
+    grid-template-columns: 220px minmax(0, 760px);
+    justify-content: center;
+    gap: 32px;
+  }
+}
+
+@media (max-width: 980px) {
+  .agent-api-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .agent-api-content {
+    max-width: 760px;
+    margin: 0 auto;
+  }
+
+  .agent-api-sidebar {
+    display: none;
+  }
+
+  .agent-api-safety-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .agent-api-flow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .agent-api-shell {
+    width: calc(100% - 32px);
+  }
+
+  .agent-api-endpoint-row {
+    grid-template-columns: 64px minmax(0, 1fr);
+    gap: 10px;
+    padding: 14px;
+  }
+
+  .agent-api-endpoint-row span,
+  .agent-api-endpoint-row p {
+    grid-column: 1 / -1;
+  }
+
+  .agent-api-endpoint-row p {
+    margin-top: 0;
+  }
+
+  .agent-api-flow {
+    grid-template-columns: 1fr;
+  }
+}
