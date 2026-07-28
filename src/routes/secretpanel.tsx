@@ -1,5 +1,5 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import {
   Ban,
@@ -146,6 +146,16 @@ type SecretPanelStatus = {
   };
 };
 
+type SecretPanelActionResult = SecretPanelStatus & {
+  setting?: unknown;
+};
+
+type SettingMutationInput = {
+  key: keyof SecretPanelSettings;
+  value: unknown;
+  reason?: string;
+};
+
 function supabaseFunctionsUrl(functionName: string) {
   const supabaseUrl =
     import.meta.env.VITE_SUPABASE_URL ||
@@ -173,7 +183,7 @@ async function fetchSecretPanel(): Promise<SecretPanelStatus> {
   return body as SecretPanelStatus;
 }
 
-async function postSecretPanel(body: Record<string, unknown>): Promise<SecretPanelStatus> {
+async function postSecretPanel(body: Record<string, unknown>): Promise<SecretPanelActionResult> {
   const token = await getSessionToken();
   const response = await fetch(supabaseFunctionsUrl("secretpanel"), {
     method: "POST",
@@ -187,7 +197,22 @@ async function postSecretPanel(body: Record<string, unknown>): Promise<SecretPan
   if (!response.ok) {
     throw new Error(data.message ?? data.error ?? "Secret panel action failed.");
   }
-  return data as SecretPanelStatus;
+  return data as SecretPanelActionResult;
+}
+
+function patchSecretPanelSetting(
+  status: SecretPanelStatus | undefined,
+  input: SettingMutationInput,
+  value: unknown = input.value,
+): SecretPanelStatus | undefined {
+  if (!status) return status;
+  return {
+    ...status,
+    settings: {
+      ...status.settings,
+      [input.key]: value,
+    } as SecretPanelSettings,
+  };
 }
 
 function formatDate(value: string | null | undefined) {
@@ -225,6 +250,7 @@ export const Route = createFileRoute("/secretpanel")({
 });
 
 function SecretPanelPage() {
+  const queryClient = useQueryClient();
   const [handle, setHandle] = useState("");
   const [reason, setReason] = useState("");
   const statusQuery = useQuery({
@@ -270,18 +296,33 @@ function SecretPanelPage() {
   });
 
   const settingMutation = useMutation({
-    mutationFn: (input: { key: keyof SecretPanelSettings; value: unknown; reason?: string }) =>
+    mutationFn: (input: SettingMutationInput) =>
       postSecretPanel({
         action: "update_admin_setting",
         key: input.key,
         value: input.value,
         reason: input.reason ?? "secretpanel policy update",
       }),
-    onSuccess: async () => {
-      toast.success("Policy saved");
-      await statusQuery.refetch();
+    onMutate: async (input) => {
+      await queryClient.cancelQueries({ queryKey: ["secretpanel"] });
+      const previousStatus = queryClient.getQueryData<SecretPanelStatus>(["secretpanel"]);
+      queryClient.setQueryData<SecretPanelStatus>(["secretpanel"], (current) =>
+        patchSecretPanelSetting(current, input),
+      );
+      return { previousStatus };
     },
-    onError: (error) => {
+    onSuccess: (data, input) => {
+      const savedValue = data.setting ?? data.settings?.[input.key] ?? input.value;
+      queryClient.setQueryData<SecretPanelStatus>(
+        ["secretpanel"],
+        patchSecretPanelSetting(data, input, savedValue),
+      );
+      toast.success("Policy saved");
+    },
+    onError: (error, _input, context) => {
+      if (context?.previousStatus) {
+        queryClient.setQueryData(["secretpanel"], context.previousStatus);
+      }
       toast.error(error instanceof Error ? error.message : "Could not save policy.");
     },
   });
