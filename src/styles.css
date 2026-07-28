@@ -253,8 +253,13 @@
     .sm-install-banner-copy {
       display: grid;
       min-width: 0;
+      align-self: center;
       gap: 1px;
       line-height: 1.05;
+    }
+
+    .sm-install-banner-copy--single {
+      align-items: center;
     }
 
     .sm-install-banner-copy strong {

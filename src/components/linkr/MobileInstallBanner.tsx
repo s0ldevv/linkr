@@ -76,6 +76,23 @@ function registerInstallServiceWorker() {
   window.addEventListener("load", register, { once: true });
 }
 
+async function openIosShareSheet(): Promise<boolean> {
+  if (typeof window === "undefined") return false;
+  if (typeof navigator.share !== "function") return false;
+
+  const shareData: ShareData = {
+    title: "Linkr",
+    url: new URL("/", window.location.href).toString(),
+  };
+
+  try {
+    await navigator.share(shareData);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function MobileInstallBanner() {
   const [platform, setPlatform] = useState<MobilePlatform | null>(null);
   const [visible, setVisible] = useState(false);
@@ -160,6 +177,7 @@ export function MobileInstallBanner() {
   if (!visible || !platform) return null;
 
   const Icon = platform === "ios" && showInstructions ? Share2 : Download;
+  const caption = platform === "ios" ? null : "Android install";
 
   async function handleInstallClick() {
     if (platform === "android" && deferredPrompt) {
@@ -177,6 +195,16 @@ export function MobileInstallBanner() {
     setShowInstructions(true);
   }
 
+  async function handleActionClick() {
+    if (platform === "ios") {
+      setShowInstructions(true);
+      await openIosShareSheet();
+      return;
+    }
+
+    await handleInstallClick();
+  }
+
   function handleDismiss() {
     rememberDismissed();
     setVisible(false);
@@ -188,12 +216,14 @@ export function MobileInstallBanner() {
         <span className="sm-install-banner-icon" aria-hidden="true">
           <Icon size={15} strokeWidth={2.5} />
         </span>
-        <span className="sm-install-banner-copy">
+        <span
+          className={`sm-install-banner-copy${caption ? "" : " sm-install-banner-copy--single"}`}
+        >
           <strong>{copy}</strong>
-          <small>{platform === "ios" ? "iOS shortcut" : "Android install"}</small>
+          {caption ? <small>{caption}</small> : null}
         </span>
       </button>
-      <button className="sm-install-banner-action" type="button" onClick={handleInstallClick}>
+      <button className="sm-install-banner-action" type="button" onClick={handleActionClick}>
         Add
       </button>
       <button
