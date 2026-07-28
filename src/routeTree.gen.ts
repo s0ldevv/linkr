@@ -27,6 +27,7 @@ import { Route as TelegramVerifyRouteImport } from './routes/telegram.verify'
 import { Route as TelegramAuthRouteImport } from './routes/telegram.auth'
 import { Route as NftsCollectionIdRouteImport } from './routes/nfts.$collectionId'
 import { Route as CoinMintRouteImport } from './routes/coin.$mint'
+import { Route as CliAuthRouteImport } from './routes/cli.auth'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AuthBannedRouteImport } from './routes/auth.banned'
 import { Route as AuthenticatedTerminalRouteImport } from './routes/_authenticated.terminal'
@@ -133,6 +134,11 @@ const NftsCollectionIdRoute = NftsCollectionIdRouteImport.update({
 const CoinMintRoute = CoinMintRouteImport.update({
   id: '/coin/$mint',
   path: '/coin/$mint',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CliAuthRoute = CliAuthRouteImport.update({
+  id: '/cli/auth',
+  path: '/cli/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
@@ -248,6 +254,7 @@ export interface FileRoutesByFullPath {
   '/terminal': typeof AuthenticatedTerminalRoute
   '/auth/banned': typeof AuthBannedRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/cli/auth': typeof CliAuthRoute
   '/coin/$mint': typeof CoinMintRoute
   '/nfts/$collectionId': typeof NftsCollectionIdRoute
   '/telegram/auth': typeof TelegramAuthRoute
@@ -284,6 +291,7 @@ export interface FileRoutesByTo {
   '/terminal': typeof AuthenticatedTerminalRoute
   '/auth/banned': typeof AuthBannedRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/cli/auth': typeof CliAuthRoute
   '/coin/$mint': typeof CoinMintRoute
   '/nfts/$collectionId': typeof NftsCollectionIdRoute
   '/telegram/auth': typeof TelegramAuthRoute
@@ -323,6 +331,7 @@ export interface FileRoutesById {
   '/_authenticated/terminal': typeof AuthenticatedTerminalRoute
   '/auth/banned': typeof AuthBannedRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/cli/auth': typeof CliAuthRoute
   '/coin/$mint': typeof CoinMintRoute
   '/nfts/$collectionId': typeof NftsCollectionIdRoute
   '/telegram/auth': typeof TelegramAuthRoute
@@ -362,6 +371,7 @@ export interface FileRouteTypes {
     | '/terminal'
     | '/auth/banned'
     | '/auth/callback'
+    | '/cli/auth'
     | '/coin/$mint'
     | '/nfts/$collectionId'
     | '/telegram/auth'
@@ -398,6 +408,7 @@ export interface FileRouteTypes {
     | '/terminal'
     | '/auth/banned'
     | '/auth/callback'
+    | '/cli/auth'
     | '/coin/$mint'
     | '/nfts/$collectionId'
     | '/telegram/auth'
@@ -436,6 +447,7 @@ export interface FileRouteTypes {
     | '/_authenticated/terminal'
     | '/auth/banned'
     | '/auth/callback'
+    | '/cli/auth'
     | '/coin/$mint'
     | '/nfts/$collectionId'
     | '/telegram/auth'
@@ -471,6 +483,7 @@ export interface RootRouteChildren {
   PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   SecretpanelRoute: typeof SecretpanelRoute
   TermsOfServiceRoute: typeof TermsOfServiceRoute
+  CliAuthRoute: typeof CliAuthRoute
   CoinMintRoute: typeof CoinMintRoute
   NftsCollectionIdRoute: typeof NftsCollectionIdRoute
   TelegramAuthRoute: typeof TelegramAuthRoute
@@ -605,6 +618,13 @@ declare module '@tanstack/react-router' {
       path: '/coin/$mint'
       fullPath: '/coin/$mint'
       preLoaderRoute: typeof CoinMintRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cli/auth': {
+      id: '/cli/auth'
+      path: '/cli/auth'
+      fullPath: '/cli/auth'
+      preLoaderRoute: typeof CliAuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/callback': {
@@ -812,6 +832,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyPolicyRoute: PrivacyPolicyRoute,
   SecretpanelRoute: SecretpanelRoute,
   TermsOfServiceRoute: TermsOfServiceRoute,
+  CliAuthRoute: CliAuthRoute,
   CoinMintRoute: CoinMintRoute,
   NftsCollectionIdRoute: NftsCollectionIdRoute,
   TelegramAuthRoute: TelegramAuthRoute,

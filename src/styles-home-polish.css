@@ -50174,6 +50174,153 @@ body .telegram-auth-callback-page .telegram-auth-loading p {
   }
 }
 
+/* CLI auth: compact one-time code handoff. */
+body .cli-auth-page .app-login-shell {
+  max-width: 1060px !important;
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 430px) !important;
+}
+
+body .cli-auth-page .cli-auth-copy {
+  max-width: 620px !important;
+}
+
+body .cli-auth-page .cli-auth-panel {
+  max-width: 430px !important;
+  gap: 16px !important;
+}
+
+body .cli-auth-page .cli-auth-panel-top {
+  gap: 10px !important;
+}
+
+body .cli-auth-page .cli-auth-state-icon {
+  display: inline-grid !important;
+  width: 42px !important;
+  height: 42px !important;
+  place-items: center !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  background: rgb(22 22 22 / 8%) !important;
+  color: var(--auth-ink) !important;
+  -webkit-text-fill-color: var(--auth-ink) !important;
+}
+
+body .cli-auth-page .cli-auth-state-icon[data-state="approved"] {
+  background: var(--auth-lime) !important;
+}
+
+body .cli-auth-page .cli-auth-state-icon[data-state="loading"] {
+  color: var(--auth-lavender) !important;
+  -webkit-text-fill-color: var(--auth-lavender) !important;
+}
+
+body .cli-auth-page .cli-auth-state-icon[data-state="error"] {
+  background: rgb(255 107 115 / 16%) !important;
+  color: #8f3037 !important;
+  -webkit-text-fill-color: #8f3037 !important;
+}
+
+body .cli-auth-page .cli-auth-code-card {
+  display: grid !important;
+  min-width: 0 !important;
+  gap: 10px !important;
+  border: 0 !important;
+  border-radius: 28px !important;
+  background: rgb(22 22 22 / 7%) !important;
+  padding: 14px !important;
+}
+
+body .cli-auth-page .cli-auth-code-groups {
+  display: grid !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  gap: 7px !important;
+}
+
+body .cli-auth-page .cli-auth-code-group {
+  display: grid !important;
+  width: min(100%, 236px) !important;
+  min-width: 0 !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  justify-self: center !important;
+  gap: 7px !important;
+}
+
+body .cli-auth-page .cli-auth-code-cell {
+  display: inline-grid !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  aspect-ratio: 1 / 1.16 !important;
+  place-items: center !important;
+  border: 0 !important;
+  border-radius: 13px !important;
+  background: var(--auth-paper) !important;
+  color: var(--auth-ink) !important;
+  -webkit-text-fill-color: var(--auth-ink) !important;
+  font-family: var(--font-mono, "IBM Plex Mono", ui-monospace, monospace) !important;
+  font-size: clamp(0.9rem, 1.7vw, 1.05rem) !important;
+  font-weight: 900 !important;
+  letter-spacing: 0 !important;
+  line-height: 1 !important;
+}
+
+body .cli-auth-page .cli-auth-copy-button[data-copied="true"] {
+  background: var(--auth-lime) !important;
+  color: var(--auth-ink) !important;
+  -webkit-text-fill-color: var(--auth-ink) !important;
+}
+
+body .cli-auth-page .cli-auth-status {
+  margin: 0 !important;
+}
+
+@media (max-width: 900px) {
+  body .cli-auth-page .app-login-shell {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  body .cli-auth-page .cli-auth-panel {
+    max-width: 100% !important;
+  }
+}
+
+@media (max-width: 560px) {
+  body .cli-auth-page .cli-auth-panel {
+    gap: 14px !important;
+  }
+
+  body .cli-auth-page .cli-auth-code-card {
+    border-radius: 22px !important;
+    padding: 12px !important;
+  }
+
+  body .cli-auth-page .cli-auth-code-groups,
+  body .cli-auth-page .cli-auth-code-group {
+    gap: 6px !important;
+  }
+
+  body .cli-auth-page .cli-auth-code-cell {
+    border-radius: 11px !important;
+    font-size: clamp(0.78rem, 3.4vw, 0.95rem) !important;
+  }
+}
+
+@media (max-width: 380px) {
+  body .cli-auth-page .cli-auth-code-card {
+    margin-inline: -4px !important;
+  }
+
+  body .cli-auth-page .cli-auth-code-groups,
+  body .cli-auth-page .cli-auth-code-group {
+    gap: 5px !important;
+  }
+
+  body .cli-auth-page .cli-auth-code-cell {
+    border-radius: 9px !important;
+    font-size: 0.75rem !important;
+  }
+}
+
 /* Telegram verification: Rayo-matched dark group gate. */
 body:has(.telegram-verify-page) {
   background: #111111 !important;
