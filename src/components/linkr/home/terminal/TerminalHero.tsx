@@ -13,13 +13,19 @@ import {
   ArrowUpRight,
   Bot,
   Braces,
+  CalendarClock,
   Check,
   ChevronLeft,
   ChevronRight,
+  Globe,
+  ImageIcon,
   Rocket,
   Send,
   ShieldCheck,
+  Smile,
+  Terminal,
   TrendingUp,
+  User,
   Wallet,
   WalletCards,
 } from "lucide-react";
@@ -52,7 +58,14 @@ const WALLET_ACTIONS = [
   { icon: WalletCards, label: "Wallets" },
 ] as const;
 
-const HERO_SCREENS = ["Command", "Actions", "Agent API", "Networks", "How it works"] as const;
+const HERO_SCREENS = [
+  "CLI",
+  "Command",
+  "Actions",
+  "Agent API",
+  "Networks",
+  "How it works",
+] as const;
 const SCREEN_DWELL_MS = 5600;
 const SCREEN_TRANSITION_MS = 850;
 
@@ -100,14 +113,114 @@ function buildCommandParts() {
   return parts;
 }
 
+function CliMovie() {
+  return (
+    <>
+      <div className="lkx-cli-movie" aria-hidden="true">
+        <div className="lkx-cli-window">
+          <div className="lkx-cli-titlebar">
+            <span className="lkx-cli-lights">
+              <i />
+              <i />
+              <i />
+            </span>
+            <span className="lkx-cli-title">
+              <Terminal aria-hidden="true" size={12} strokeWidth={2.4} />
+              linkr — zsh
+            </span>
+            <span className="lkx-cli-registry">npm</span>
+          </div>
+
+          <div className="lkx-cli-body">
+            <div className="lkx-cli-row">
+              <span className="lkx-cli-prompt">$</span>
+              <span className="lkx-cli-typed lkx-cli-typed--1">npm install -g @linkrcash/cli</span>
+            </div>
+
+            <div className="lkx-cli-install">
+              <span className="lkx-cli-progress">
+                <i />
+              </span>
+              <span className="lkx-cli-added">
+                <span className="lkx-cli-ok">
+                  <Check aria-hidden="true" size={11} strokeWidth={3} />
+                </span>
+                added <b>1 package</b> · linkr@1.4.0 in 1.2s
+              </span>
+            </div>
+
+            <div className="lkx-cli-row">
+              <span className="lkx-cli-prompt">$</span>
+              <span className="lkx-cli-typed lkx-cli-typed--2">linkr login</span>
+            </div>
+
+            <div className="lkx-cli-out lkx-cli-out--login">
+              <span className="lkx-cli-ok">
+                <Check aria-hidden="true" size={11} strokeWidth={3} />
+              </span>
+              Authorized · <b>@linkrcash</b>
+              <i className="lkx-cli-scope">read + write</i>
+            </div>
+
+            <div className="lkx-cli-row">
+              <span className="lkx-cli-prompt">$</span>
+              <span className="lkx-cli-typed lkx-cli-typed--3">
+                linkr chat "Launch MOON on Solana"
+              </span>
+              <i className="lkx-cli-caret" />
+            </div>
+          </div>
+        </div>
+
+        <div className="lkx-cli-result">
+          <span className="lkx-cli-result-run">
+            <i className="lkx-cli-spinner" />
+            Deploying MOON on Solana
+          </span>
+          <span className="lkx-cli-result-live">
+            <span className="lkx-cli-result-check">
+              <Check aria-hidden="true" size={13} strokeWidth={3} />
+            </span>
+            <span className="lkx-cli-result-copy">
+              <strong>MOON is live</strong>
+              <small>linkr · Solana launch</small>
+            </span>
+            <span className="lkx-cli-result-tx">
+              <SolanaLogo />
+              <code>7xQ4…9Pk2</code>
+            </span>
+          </span>
+        </div>
+      </div>
+      <span className="lkx-sr-only">
+        Install the Linkr CLI with npm, sign in with one command, then launch a coin called MOON on
+        Solana straight from your terminal. Linkr confirms the launch onchain.
+      </span>
+    </>
+  );
+}
+
 function CommandMovie() {
   return (
     <>
       <div className="lkx-cmd-movie" aria-hidden="true">
         <div className="lkx-cmd-console">
+          <div className="lkx-cmd-compose-head">
+            <span className="lkx-cmd-avatar">
+              <User aria-hidden="true" size={17} strokeWidth={2.2} />
+            </span>
+            <span className="lkx-cmd-compose-author">
+              <strong>You</strong>
+              <small>@you</small>
+            </span>
+            <span className="lkx-cmd-compose-badge">
+              <XLogo />
+            </span>
+          </div>
+
           <div className="lkx-cmd-entry">
-            <span className="lkx-terminal-prompt">&gt;</span>
             <span className="lkx-cmd-copy">
+              <span className="lkx-cmd-mention">@linkrcash</span>{" "}
               {COMMAND_PARTS.map((part, partIndex) => (
                 <span key={`${part.text}-${partIndex}`}>
                   {"breakBefore" in part && part.breakBefore ? <br /> : null}
@@ -155,6 +268,19 @@ function CommandMovie() {
               <small>Network</small> Solana <em>+ Robinhood</em>
             </span>
           </div>
+
+          <div className="lkx-cmd-compose-foot">
+            <span className="lkx-cmd-compose-reply">
+              <Globe aria-hidden="true" size={13} strokeWidth={2.3} />
+              Everyone can reply
+            </span>
+            <span className="lkx-cmd-compose-tools">
+              <ImageIcon aria-hidden="true" size={15} strokeWidth={2.2} />
+              <Smile aria-hidden="true" size={15} strokeWidth={2.2} />
+              <CalendarClock aria-hidden="true" size={15} strokeWidth={2.2} />
+            </span>
+            <span className="lkx-cmd-post">Post</span>
+          </div>
           <i className="lkx-cmd-scan" />
         </div>
 
@@ -174,8 +300,9 @@ function CommandMovie() {
         </div>
       </div>
       <span className="lkx-sr-only">
-        Example command: Launch a coin called MOON on Solana and Robinhood Chain. Linkr identifies
-        the asset and networks, then prepares the launch plan.
+        Composing a post on X that tags @linkrcash: Launch a coin called MOON on Solana and
+        Robinhood Chain. Linkr reads the post, identifies the asset and networks, then prepares the
+        launch plan.
       </span>
     </>
   );
@@ -908,8 +1035,8 @@ export function TerminalHero() {
           </span>
         </h1>
         <p className="lkx-hero-lede">
-          Launch tokens, send payments, swap, and manage wallets across Solana and Robinhood
-          Chain / <strong>@linkrcash</strong>.
+          Launch tokens, send payments, swap, and manage wallets across Solana and Robinhood Chain /{" "}
+          <strong>@linkrcash</strong>.
         </p>
 
         <ul className="lkx-hero-chips">
@@ -952,10 +1079,23 @@ export function TerminalHero() {
         <div className="lkx-showcase-stage">
           <div className="lkx-showcase-viewport">
             <article
-              className="lkx-screen lkx-screen--command"
+              className="lkx-screen lkx-screen--cli"
               data-state={screenState(0)}
               aria-hidden={activeScreen !== 0}
-              aria-label="1 of 5: Linkr command"
+              aria-label="1 of 6: Linkr CLI"
+            >
+              <header className="lkx-card-label">
+                <i className="lkt-dot" />
+                Linkr CLI
+              </header>
+              <CliMovie />
+            </article>
+
+            <article
+              className="lkx-screen lkx-screen--command"
+              data-state={screenState(1)}
+              aria-hidden={activeScreen !== 1}
+              aria-label="2 of 6: Linkr command"
             >
               <header className="lkx-card-label">
                 <i className="lkt-dot" />
@@ -966,9 +1106,9 @@ export function TerminalHero() {
 
             <article
               className="lkx-screen lkx-screen--actions"
-              data-state={screenState(1)}
-              aria-hidden={activeScreen !== 1}
-              aria-label="2 of 5: Wallet actions"
+              data-state={screenState(2)}
+              aria-hidden={activeScreen !== 2}
+              aria-label="3 of 6: Wallet actions"
             >
               <header className="lkx-card-label">
                 <i className="lkt-dot" />
@@ -979,9 +1119,9 @@ export function TerminalHero() {
 
             <article
               className="lkx-screen lkx-screen--api"
-              data-state={screenState(2)}
-              aria-hidden={activeScreen !== 2}
-              aria-label="3 of 5: Agent API"
+              data-state={screenState(3)}
+              aria-hidden={activeScreen !== 3}
+              aria-label="4 of 6: Agent API"
             >
               <header className="lkx-card-label">
                 <i className="lkt-dot" />
@@ -992,9 +1132,9 @@ export function TerminalHero() {
 
             <article
               className="lkx-screen lkx-screen--networks"
-              data-state={screenState(3)}
-              aria-hidden={activeScreen !== 3}
-              aria-label="4 of 5: Supported networks"
+              data-state={screenState(4)}
+              aria-hidden={activeScreen !== 4}
+              aria-label="5 of 6: Supported networks"
             >
               <header className="lkx-card-label">
                 <i className="lkt-dot" />
@@ -1005,9 +1145,9 @@ export function TerminalHero() {
 
             <article
               className="lkx-screen lkx-screen--steps"
-              data-state={screenState(4)}
-              aria-hidden={activeScreen !== 4}
-              aria-label="5 of 5: How it works"
+              data-state={screenState(5)}
+              aria-hidden={activeScreen !== 5}
+              aria-label="6 of 6: How it works"
             >
               <header className="lkx-card-label">
                 <i className="lkt-dot" />

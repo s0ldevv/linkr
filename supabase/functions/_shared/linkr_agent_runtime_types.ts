@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 // Channel-neutral Linkr runtime contracts.
 
-export type LinkrSurface = "terminal" | "telegram" | "x" | "cron" | "agent_api" | "future";
+export type LinkrSurface = "terminal" | "cli" | "telegram" | "x" | "cron" | "agent_api" | "future";
 
 export type LinkrStatusEvent =
   | "ack"
@@ -35,7 +35,7 @@ export interface LinkrTurnInput {
     display_name?: string | null;
   };
   transport: {
-    kind: "terminal_sse" | "telegram_reply" | "x_reply" | "cron_job" | "api";
+    kind: "terminal_sse" | "cli_sse" | "telegram_reply" | "x_reply" | "cron_job" | "api";
     public_output: boolean;
     supports_streaming: boolean;
     max_response_chars?: number;

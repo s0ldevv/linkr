@@ -1,7 +1,7 @@
 export const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, idempotency-key, x-linkr-timestamp, x-linkr-nonce, x-linkr-body-sha256, x-linkr-signature, x-linkr-canonical-path",
+    "authorization, x-client-info, apikey, content-type, idempotency-key, x-linkr-timestamp, x-linkr-nonce, x-linkr-body-sha256, x-linkr-signature, x-linkr-canonical-path, x-linkr-client-version, x-linkr-install-id",
   "Access-Control-Allow-Methods": "POST, GET, PATCH, DELETE, OPTIONS",
 };
 

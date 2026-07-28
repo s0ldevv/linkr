@@ -26,6 +26,7 @@ export interface LinkrToolDefinition {
 
 const ALL_SURFACES: LinkrSurface[] = [
   "terminal",
+  "cli",
   "telegram",
   "x",
   "cron",

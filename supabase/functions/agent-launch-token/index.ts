@@ -61,7 +61,9 @@ Deno.serve(async (req) => {
       imageUrl = await rehostLaunchImageUrl(admin, requestedImageUrl);
     } catch (error) {
       throw badRequest(
-        `image_unusable:${String((error as Error)?.message ?? error).slice(0, 80)}`,
+        `image_unusable:${
+          String((error as Error)?.message ?? error).slice(0, 80)
+        }`,
       );
     }
     const wallet = await selectWallet(admin, ctx, chain);
@@ -83,13 +85,26 @@ Deno.serve(async (req) => {
         : { dev_buy_eth: amount }),
       website_url: optionalHttps(ctx.body.website_url ?? ctx.body.website),
       twitter_url: optionalHttps(
-        ctx.body.twitter_url ?? ctx.body.twitter ?? ctx.body.x_url ?? ctx.body.x,
+        ctx.body.twitter_url ?? ctx.body.twitter ?? ctx.body.x_url ??
+          ctx.body.x,
       ),
       telegram_url: optionalHttps(ctx.body.telegram_url ?? ctx.body.telegram),
       source_url: optionalHttps(ctx.body.source_url),
     };
 
     if (ctx.body.dry_run === true) {
+      const solanaCost = chain === "solana"
+        ? await solanaLaunchDryRunCost({
+          wallet,
+          name,
+          symbol,
+          description,
+          imageUrl,
+          amount,
+          creatorRewardsConfig,
+          body: ctx.body,
+        })
+        : null;
       await recordAgentRequest(admin, ctx, req, 200);
       return agentJsonResponse({
         dry_run: true,
@@ -98,6 +113,7 @@ Deno.serve(async (req) => {
         wallet_id: wallet.id,
         wallet_address: wallet.address ?? wallet.public_key,
         initial_buy: amount,
+        ...(solanaCost ?? {}),
         execution_model: "durable_async_queue",
       });
     }
@@ -195,9 +211,76 @@ function enforceAmountCap(ctx: any, chain: LaunchChain, amount: number) {
     throw new AgentApiError(
       "launch_cap_exceeded",
       400,
-      `Initial buy exceeds the configured ${chain === "solana" ? "SOL" : "ETH"} limit.`,
+      `Initial buy exceeds the configured ${
+        chain === "solana" ? "SOL" : "ETH"
+      } limit.`,
       { maximum: allowed },
     );
+  }
+}
+
+async function solanaLaunchDryRunCost(args: {
+  wallet: any;
+  name: string;
+  symbol: string;
+  description: string;
+  imageUrl: string;
+  amount: number;
+  creatorRewardsConfig: any;
+  body: any;
+}): Promise<Record<string, unknown>> {
+  try {
+    const pump = await import("../_shared/solana_launch/pump_adapter.ts");
+    const estimate = await pump.estimatePumpFunLaunchFundingLamports(
+      {
+        launchId: "agent-api-dry-run",
+        name: args.name,
+        symbol: args.symbol,
+        description: args.description,
+        imageUrl: args.imageUrl,
+        initialBuySol: 0,
+        cashback: args.creatorRewardsConfig?.pump_cashback_enabled === true,
+        creatorRewardsConfig: args.creatorRewardsConfig ?? null,
+        websiteUrl: optionalHttps(args.body.website_url ?? args.body.website),
+        twitterUrl: optionalHttps(
+          args.body.twitter_url ?? args.body.twitter ?? args.body.x_url ??
+            args.body.x,
+        ),
+        telegramUrl: optionalHttps(
+          args.body.telegram_url ?? args.body.telegram,
+        ),
+        mayhemMode: Boolean(args.body.mayhem_mode),
+      },
+      {
+        creatorWalletAddress: String(
+          args.wallet.address ?? args.wallet.public_key ?? "",
+        ),
+      },
+    );
+    const initialBuyLamports = solToLamports(args.amount);
+    const requiredBalanceLamports = estimate.fundingTargetLamports +
+      initialBuyLamports;
+    return {
+      launch_cost_estimate_status: estimate.source,
+      launch_cost_estimator_version: estimate.estimatorVersion,
+      minimum_launch_cost_lamports: estimate.minimumLaunchLamports.toString(),
+      minimum_launch_cost_sol: lamportsToSol(estimate.minimumLaunchLamports),
+      funding_buffer_lamports: estimate.bufferLamports.toString(),
+      funding_target_lamports: estimate.fundingTargetLamports.toString(),
+      funding_target_sol: lamportsToSol(estimate.fundingTargetLamports),
+      initial_buy_lamports: initialBuyLamports.toString(),
+      required_balance_lamports: requiredBalanceLamports.toString(),
+      required_balance_sol: lamportsToSol(requiredBalanceLamports),
+      dev_buy_excluded_from_linkr_funding: true,
+    };
+  } catch (error) {
+    return {
+      launch_cost_estimate_status: "unavailable",
+      launch_cost_estimate_error: String(
+        error instanceof Error ? error.message : error,
+      ).slice(0, 160),
+      dev_buy_excluded_from_linkr_funding: true,
+    };
   }
 }
 
@@ -208,9 +291,10 @@ async function resolveCreatorRewards(
   body: any,
 ) {
   const creator = String(wallet.address ?? wallet.public_key ?? "").trim();
-  const mode = body.pump_cashback === true || body.pump_reward_mode === "cashback"
-    ? "cashback"
-    : "creator_rewards";
+  const mode =
+    body.pump_cashback === true || body.pump_reward_mode === "cashback"
+      ? "cashback"
+      : "creator_rewards";
   const target = String(
     body.creator_reward_recipient ?? body.creator_rewards_recipient ?? "",
   ).trim();
@@ -286,7 +370,12 @@ async function resolveSolanaRecipient(admin: any, target: string) {
   };
 }
 
-function rewardRow(address: string, shareBps: number, source: string, row: any) {
+function rewardRow(
+  address: string,
+  shareBps: number,
+  source: string,
+  row: any,
+) {
   return {
     address,
     label: source === "creator_wallet" ? "Creator" : "Shared creator rewards",
@@ -307,6 +396,17 @@ function boundedInteger(value: unknown, minimum: number, maximum: number) {
     throw badRequest("creator_reward_share_invalid");
   }
   return number;
+}
+
+function solToLamports(value: number): bigint {
+  const text = value.toFixed(9);
+  const [whole, fraction = ""] = text.split(".");
+  return BigInt(whole) * 1_000_000_000n +
+    BigInt((fraction + "0".repeat(9)).slice(0, 9));
+}
+
+function lamportsToSol(value: bigint): number {
+  return Number(value) / 1_000_000_000;
 }
 
 function requiredHttps(value: unknown, code: string): string {

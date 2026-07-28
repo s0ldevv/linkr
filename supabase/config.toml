@@ -186,6 +186,33 @@ verify_jwt = true
 [functions.terminal-upload]
 verify_jwt = true
 
+[functions.cli-auth-start]
+verify_jwt = false
+
+[functions.cli-auth-approve]
+verify_jwt = true
+
+[functions.cli-auth-complete]
+verify_jwt = false
+
+[functions.cli-conversations]
+verify_jwt = false
+
+[functions.cli-messages]
+verify_jwt = false
+
+[functions.cli-chat]
+verify_jwt = false
+
+[functions.cli-action]
+verify_jwt = false
+
+[functions.cli-upload]
+verify_jwt = false
+
+[functions.cli-revoke-current]
+verify_jwt = false
+
 [functions.import-user-wallet]
 verify_jwt = true
 

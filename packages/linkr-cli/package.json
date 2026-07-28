@@ -1,0 +1,48 @@
+{
+  "name": "@linkrcash/cli",
+  "version": "0.1.0",
+  "description": "Linkr command line chat client.",
+  "type": "module",
+  "bin": {
+    "linkr": "dist/bin/linkr.js"
+  },
+  "files": [
+    "dist",
+    "dist/**/*.js",
+    "dist/**/*.js.map",
+    "!dist/**/*.test.d.ts",
+    "!dist/**/*.test.js",
+    "!dist/**/*.test.js.map",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run build && node --test dist/**/*.test.js",
+    "prepublishOnly": "npm test"
+  },
+  "dependencies": {
+    "commander": "^12.1.0",
+    "open": "^10.1.0",
+    "prompts": "^2.4.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.16.5",
+    "@types/prompts": "^2.4.9",
+    "typescript": "^5.8.3"
+  },
+  "keywords": [
+    "linkr",
+    "cli",
+    "agent",
+    "terminal"
+  ],
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}

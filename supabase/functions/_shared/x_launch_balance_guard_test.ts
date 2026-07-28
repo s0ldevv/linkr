@@ -45,6 +45,17 @@ Deno.test("launch balance guard includes explicit dev buy in minimum", () => {
   );
 });
 
+Deno.test("launch balance guard uses a lighter Solana intake minimum by default", () => {
+  assertEquals(
+    minimumLaunchNativeRequirement(
+      "solana",
+      { name: "Test Token", chain: "solana" },
+      () => undefined,
+    ).toString(),
+    "8000000",
+  );
+});
+
 Deno.test("launch balance guard no-balance reply is explicit", () => {
   const reply = insufficientBalanceReply(
     "solana",

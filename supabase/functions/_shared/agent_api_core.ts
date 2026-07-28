@@ -7,6 +7,7 @@ export const AGENT_SCOPES = [
   "actions:read",
   "coins:read",
   "coin:read",
+  "chat:write",
   "launch:write",
   "trade:buy",
   "trade:sell",

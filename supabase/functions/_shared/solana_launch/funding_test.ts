@@ -2,6 +2,7 @@ import {
   classifyFundingSignatureStatus,
   firstLaunchFundingDeficit,
   SOL_FIRST_LAUNCH_FUNDING_LAMPORTS,
+  SOL_LAUNCH_FUNDING_CAP_LAMPORTS,
   validateStoredFundingTransaction,
 } from "./funding.ts";
 import {
@@ -21,6 +22,15 @@ Deno.test("first-launch funding covers only the exact confirmed deficit", () => 
   }
   if (firstLaunchFundingDeficit(25_000_000, 20_000_000) !== 0n) {
     throw new Error("funded wallet produced an unnecessary subsidy");
+  }
+  if (firstLaunchFundingDeficit(0, 7_690_000) !== 7_690_000n) {
+    throw new Error("dynamic launch target was not fully covered");
+  }
+  if (firstLaunchFundingDeficit(2_000_000, 7_690_000) !== 5_690_000n) {
+    throw new Error("partial balance was not deducted from dynamic target");
+  }
+  if (SOL_LAUNCH_FUNDING_CAP_LAMPORTS !== 20_000_000n) {
+    throw new Error("launch funding cap changed unexpectedly");
   }
   if (SOL_FIRST_LAUNCH_FUNDING_LAMPORTS !== 20_000_000n) {
     throw new Error("first-launch subsidy cap changed unexpectedly");

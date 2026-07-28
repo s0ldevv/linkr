@@ -80,8 +80,19 @@ function normalizeLimits(limits: any) {
     max_launch_initial_buy_eth: numberOrNull(
       limits?.max_launch_initial_buy_eth,
     ),
+    max_launch_initial_buy_sol: numberOrNull(
+      limits?.max_launch_initial_buy_sol,
+    ),
     max_liquidity_eth: numberOrNull(limits?.max_liquidity_eth),
+    daily_request_limit: integerOrNull(limits?.daily_request_limit),
+    daily_tx_limit: integerOrNull(limits?.daily_tx_limit),
   };
+}
+
+function integerOrNull(value: unknown) {
+  if (value == null || value === "") return null;
+  const n = Math.floor(Number(value));
+  return Number.isFinite(n) && n >= 0 ? n : null;
 }
 
 async function findPrimaryWallet(admin: any, userId: string) {
@@ -175,6 +186,7 @@ export async function createApiKeyForAgent(
     scopes?: AgentScope[];
     limits?: Record<string, number | null>;
     expiresAt?: string | null;
+    metadata?: Record<string, unknown>;
   },
 ) {
   const prefix = randomHex(5);
@@ -195,10 +207,11 @@ export async function createApiKeyForAgent(
       pepper_version: "v2",
       scopes,
       expires_at: args.expiresAt ?? null,
+      metadata: args.metadata ?? {},
       ...(args.limits ?? {}),
     })
     .select(
-      "id,agent_profile_id,user_id,wallet_id,name,key_prefix,scopes,status,require_hmac,max_buy_eth,max_buy_sol,max_sell_percent,max_transfer_eth,max_transfer_sol,max_launch_initial_buy_eth,max_liquidity_eth,expires_at,created_at",
+      "id,agent_profile_id,user_id,wallet_id,name,key_prefix,scopes,status,require_hmac,max_buy_eth,max_buy_sol,max_sell_percent,max_transfer_eth,max_transfer_sol,max_launch_initial_buy_eth,max_launch_initial_buy_sol,max_liquidity_eth,daily_request_limit,daily_tx_limit,expires_at,created_at",
     )
     .single();
   if (error) throw error;

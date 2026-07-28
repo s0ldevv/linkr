@@ -16,7 +16,9 @@ import {
 const BASE58_ALPHABET =
   "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 export const SOL_FIRST_LAUNCH_FUNDING_SOL = 0.02;
-export const SOL_FIRST_LAUNCH_FUNDING_LAMPORTS = 20_000_000n;
+export const SOL_LAUNCH_FUNDING_CAP_LAMPORTS = 20_000_000n;
+export const SOL_FIRST_LAUNCH_FUNDING_LAMPORTS =
+  SOL_LAUNCH_FUNDING_CAP_LAMPORTS;
 export type SolanaFundingKind =
   | "first_launch_minimum"
   | "per_launch_minimum";
@@ -83,6 +85,7 @@ export async function fundFirstSolanaLaunchIfNeeded(
     walletId: string;
     destinationAddress: string;
     amountLamports: bigint;
+    rawResult?: Record<string, unknown>;
   },
 ): Promise<SolanaFundingResult> {
   return await fundSolanaLaunchIfNeeded(admin, {
@@ -100,13 +103,14 @@ export async function fundSolanaLaunchIfNeeded(
     destinationAddress: string;
     amountLamports: bigint;
     fundingKind?: SolanaFundingKind;
+    rawResult?: Record<string, unknown>;
   },
 ): Promise<SolanaFundingResult> {
   const fundingKind = args.fundingKind ?? "first_launch_minimum";
   if (args.amountLamports <= 0n) {
     return noFunding("not_needed", null, 0n, null);
   }
-  if (args.amountLamports > SOL_FIRST_LAUNCH_FUNDING_LAMPORTS) {
+  if (args.amountLamports > SOL_LAUNCH_FUNDING_CAP_LAMPORTS) {
     return noFunding(
       "ineligible",
       "solana_first_launch_funding_cap_exceeded",
@@ -166,6 +170,13 @@ export async function fundSolanaLaunchIfNeeded(
     let event = claim.data?.event;
     if (!event?.id) throw new Error("solana_funding_event_missing");
     const eventAmount = bigintFromText(event.amount_wei) ?? args.amountLamports;
+    event = await refreshSolanaPendingFundingEvent(
+      admin,
+      event,
+      eventAmount,
+      fundingKind,
+      args.rawResult,
+    );
 
     if (event.status === "confirmed" && event.tx_hash) {
       return confirmedResult(eventAmount, event.tx_hash, sourceAddress);
@@ -334,6 +345,7 @@ async function claimSolanaFundingEvent(
     userId: string;
     walletId: string;
     amountLamports: bigint;
+    rawResult?: Record<string, unknown>;
   },
   sourceAddress: string,
   destinationAddress: string,
@@ -393,6 +405,7 @@ async function claimSolanaFundingEvent(
       existing,
       args.amountLamports,
       fundingKind,
+      args.rawResult,
     );
     await updateLaunchFundingFromEvent(admin, existing, fundingKind, false);
     return { data: { eligible: true, event: existing } };
@@ -413,6 +426,7 @@ async function claimSolanaFundingEvent(
       raw_result: {
         chain: "solana",
         policy: fundingPolicyName(fundingKind),
+        ...(recordObject(args.rawResult)),
         amount_lamports: args.amountLamports.toString(),
       },
     })
@@ -459,12 +473,36 @@ async function refreshSolanaPendingFundingAmount(
   event: any,
   amountLamports: bigint,
   fundingKind: SolanaFundingKind,
+  rawResult?: Record<string, unknown>,
 ) {
+  return await refreshSolanaPendingFundingEvent(
+    admin,
+    event,
+    amountLamports,
+    fundingKind,
+    rawResult,
+  );
+}
+
+async function refreshSolanaPendingFundingEvent(
+  admin: any,
+  event: any,
+  amountLamports: bigint,
+  fundingKind: SolanaFundingKind,
+  rawResult?: Record<string, unknown>,
+) {
+  const rawPatch = recordObject(rawResult);
+  const mergedRawResult = {
+    ...(recordObject(event.raw_result)),
+    ...rawPatch,
+    amount_lamports: amountLamports.toString(),
+  };
   if (
     event.status !== "pending" ||
     event.tx_hash ||
     event.signed_transaction_base64 ||
-    String(event.amount_wei) === amountLamports.toString()
+    (String(event.amount_wei) === amountLamports.toString() &&
+      Object.keys(rawPatch).length === 0)
   ) {
     return event;
   }
@@ -472,10 +510,7 @@ async function refreshSolanaPendingFundingAmount(
     .from("wallet_funding_events")
     .update({
       amount_wei: amountLamports.toString(),
-      raw_result: {
-        ...(recordObject(event.raw_result)),
-        amount_lamports: amountLamports.toString(),
-      },
+      raw_result: mergedRawResult,
       updated_at: new Date().toISOString(),
     })
     .eq("id", event.id)

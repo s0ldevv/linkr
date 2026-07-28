@@ -26,7 +26,7 @@ Key observation: `/app/terminal` currently authenticates with a Supabase user JW
 
 Build three layers:
 
-1. `@linkr/cli`: a Node CLI with login, logout, whoami, chat, conversation history, and action confirmation.
+1. `@linkrcash/cli`: a Node CLI with login, logout, whoami, chat, conversation history, and action confirmation.
 2. CLI auth bridge: a new browser-device login flow that creates a short-lived login session, asks the user to authenticate with X in the browser, shows a one-time code, and lets the CLI redeem that code for a dedicated API key.
 3. CLI chat API: new API-key-authenticated chat/conversation/action endpoints that reuse `processLinkrAgentTurn` and the existing terminal tables.
 
@@ -402,7 +402,7 @@ Recommended package:
 
 ```json
 {
-  "name": "@linkr/cli",
+  "name": "@linkrcash/cli",
   "version": "0.1.0",
   "type": "module",
   "bin": {
@@ -571,7 +571,7 @@ Required docs content:
 - Include install and first-run commands:
 
 ```text
-npm install -g @linkr/cli
+npm install -g @linkrcash/cli
 linkr login
 linkr chat
 ```
@@ -599,14 +599,14 @@ Docs quality requirements:
 6. Add `cli-chat` by adapting `terminal-chat` to API-key auth and `surface: "cli"`.
 7. Add `cli-action` by adapting terminal action confirmation to API-key auth and scope checks.
 8. Add `cli-conversations` and `cli-messages` for shared history.
-9. Build `@linkr/cli` with login/logout/whoami/chat/conversations.
+9. Build `@linkrcash/cli` with login/logout/whoami/chat/conversations.
 10. Add edge tests and CLI integration tests against local Supabase functions.
 11. Update `/docs` with the CLI section, navigation entry, install flow, login flow, command reference, action confirmation notes, troubleshooting, and metadata.
 12. Publish a beta package to npm.
 13. Document install:
 
 ```text
-npm install -g @linkr/cli
+npm install -g @linkrcash/cli
 linkr login
 linkr chat
 ```

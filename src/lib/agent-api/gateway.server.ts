@@ -30,6 +30,15 @@ const routeMap: Record<string, string> = {
   "/api/terminal/messages": "terminal-messages",
   "/api/terminal/action": "terminal-action",
   "/api/terminal/uploads": "terminal-upload",
+  "/api/cli/auth/start": "cli-auth-start",
+  "/api/cli/auth/approve": "cli-auth-approve",
+  "/api/cli/auth/complete": "cli-auth-complete",
+  "/api/cli/chat": "cli-chat",
+  "/api/cli/conversations": "cli-conversations",
+  "/api/cli/messages": "cli-messages",
+  "/api/cli/action": "cli-action",
+  "/api/cli/uploads": "cli-upload",
+  "/api/cli/revoke-current": "cli-revoke-current",
 };
 
 export async function handleAgentApiRequest(request: Request): Promise<Response> {
@@ -91,11 +100,15 @@ export async function handleAgentApiRequest(request: Request): Promise<Response>
   const headers = new Headers(request.headers);
   headers.set("apikey", supabaseApiKey);
   headers.set("X-Linkr-Canonical-Path", `${url.pathname}${url.search}`);
+  headers.set("X-Linkr-Public-Origin", publicOriginForRequest(request, url));
   headers.set("Accept-Encoding", "identity");
   headers.set("X-Request-ID", requestId);
-  headers.delete("host");
+  stripUnsafeProxyHeaders(headers);
 
-  const maxBodyBytes = url.pathname === "/api/terminal/uploads" ? 12 * 1024 * 1024 : 1024 * 1024;
+  const maxBodyBytes =
+    url.pathname === "/api/terminal/uploads" || url.pathname === "/api/cli/uploads"
+      ? 12 * 1024 * 1024
+      : 1024 * 1024;
   try {
     const body =
       request.method === "GET" || request.method === "HEAD"
@@ -113,7 +126,7 @@ export async function handleAgentApiRequest(request: Request): Promise<Response>
       timeoutMs,
     );
     const idleTimeoutMs =
-      url.pathname === "/api/terminal/chat"
+      url.pathname === "/api/terminal/chat" || url.pathname === "/api/cli/chat"
         ? positiveIntegerEnv("LINKR_GATEWAY_STREAM_IDLE_TIMEOUT_MS", 45_000)
         : positiveIntegerEnv("LINKR_GATEWAY_RESPONSE_IDLE_TIMEOUT_MS", 30_000);
     return normalizeUpstreamResponse(
@@ -160,6 +173,46 @@ function matchRoute(pathname: string): RouteMatch | null {
     return { functionName: "agent-action-status", actionId: actionMatch[1] };
   }
   return null;
+}
+
+function publicOriginForRequest(request: Request, url: URL): string {
+  const host =
+    firstHeaderValue(request.headers.get("x-forwarded-host")) ??
+    firstHeaderValue(request.headers.get("host")) ??
+    url.host;
+  const proto =
+    firstHeaderValue(request.headers.get("x-forwarded-proto")) ??
+    url.protocol.replace(":", "") ??
+    "https";
+  try {
+    const origin = new URL(`${proto}://${host}`).origin;
+    return /^https?:\/\//i.test(origin) ? origin : url.origin;
+  } catch {
+    return url.origin;
+  }
+}
+
+function firstHeaderValue(value: string | null): string | null {
+  const first = value?.split(",")[0]?.trim();
+  return first || null;
+}
+
+function stripUnsafeProxyHeaders(headers: Headers) {
+  for (const name of [
+    "host",
+    "connection",
+    "content-length",
+    "expect",
+    "keep-alive",
+    "proxy-authenticate",
+    "proxy-authorization",
+    "te",
+    "trailer",
+    "transfer-encoding",
+    "upgrade",
+  ]) {
+    headers.delete(name);
+  }
 }
 
 async function readRequestBodyWithLimit(request: Request, maxBytes: number): Promise<ArrayBuffer> {
@@ -225,7 +278,7 @@ function corsResponse(body: BodyInit | null, init: ResponseInit = {}): Response 
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
       "Access-Control-Allow-Headers":
-        "authorization, content-type, idempotency-key, x-linkr-timestamp, x-linkr-nonce, x-linkr-body-sha256, x-linkr-signature",
+        "authorization, content-type, idempotency-key, x-linkr-timestamp, x-linkr-nonce, x-linkr-body-sha256, x-linkr-signature, x-linkr-canonical-path, x-linkr-client-version, x-linkr-install-id",
       ...(init.headers ?? {}),
     },
   });

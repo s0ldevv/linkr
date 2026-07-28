@@ -70,12 +70,12 @@ export async function requireAgentApiKey(
   req: Request,
   admin: any,
   requiredScope: AgentScope,
-  options: { requireIdempotency?: boolean } = {},
+  options: { requireIdempotency?: boolean; maxBodyBytes?: number } = {},
 ): Promise<AgentAuthContext> {
   const startedAt = Date.now();
   const bodyText = req.method === "GET" || req.method === "HEAD"
     ? ""
-    : await readBoundedBodyText(req);
+    : await readBoundedBodyText(req, options.maxBodyBytes);
   const bodyHash = await sha256Hex(bodyText);
   const expectedBodyHash = (req.headers.get("X-Linkr-Body-SHA256") ?? "").trim()
     .toLowerCase();

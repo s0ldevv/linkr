@@ -16,7 +16,7 @@ import {
   firstLaunchFundingDeficit,
   fundFirstSolanaLaunchIfNeeded,
   fundSolanaLaunchIfNeeded,
-  SOL_FIRST_LAUNCH_FUNDING_LAMPORTS,
+  SOL_LAUNCH_FUNDING_CAP_LAMPORTS,
   type SolanaFundingKind,
 } from "../_shared/solana_launch/funding.ts";
 import { recordHealthEvent } from "../_shared/health.ts";
@@ -119,6 +119,7 @@ Deno.serve((req) =>
       let preparedSignature = "";
       let walletSecret: Uint8Array | null = null;
       try {
+        let launchMetadata = recordObject(launch.launch_metadata);
         const walletId = String(
           launch.solana_launch_wallet_id ?? launch.launch_signer_wallet_id ??
             "",
@@ -136,30 +137,91 @@ Deno.serve((req) =>
           0,
           5,
         );
-        const requiredSol = pump.estimatePumpFunLaunchRequiredSol(
-          initialBuySol,
+        const initialBuyLamports = solToLamports(initialBuySol);
+        const launchCost = await pump.estimatePumpFunLaunchFundingLamports(
           {
-            feeSharingEnabled: Boolean(
-              launch.creator_rewards_config?.should_update_on_chain,
-            ),
+            launchId: launch.id,
+            name: launch.name,
+            symbol: launch.symbol,
+            description: launch.description,
+            imageUrl: launch.stable_logo_url ?? launch.image_url ?? "",
+            initialBuySol: 0,
+            cashback:
+              launch.creator_rewards_config?.pump_cashback_enabled === true,
+            creatorRewardsConfig: launch.creator_rewards_config ?? null,
+            mayhemMode: Boolean(launch.mayhem_mode_requested ?? false),
           },
+          { creatorWalletAddress: walletIdentity.address },
         );
+        if (
+          launchCost.source === "fallback_reserve" &&
+          launchCost.raw?.dynamic_enabled === true
+        ) {
+          await recordHealthEvent(
+            admin,
+            "solana_launch_cost_estimate",
+            "down",
+            Date.now(),
+            {
+              launch_id: launch.id,
+              reason: String(launchCost.raw?.fallback_reason ?? "fallback"),
+            },
+          );
+        }
         const lamports = await walletModule.getSolBalanceLamports(
           walletIdentity.address,
         );
-        const requiredLamports = Math.ceil(requiredSol * 1_000_000_000);
-        if (lamports < requiredLamports) {
-          const deficit = firstLaunchFundingDeficit(lamports, requiredLamports);
+        const minimumLaunchLamports = launchCost.fundingTargetLamports;
+        const requiredLamports = minimumLaunchLamports + initialBuyLamports;
+        const requiredSol = lamportsToSol(requiredLamports);
+        let launchCostAudit = launchCostAuditRecord({
+          estimate: launchCost,
+          walletBalanceLamports: BigInt(lamports),
+          initialBuyLamports,
+          requiredLamports,
+          fundingDeficitLamports: null,
+        });
+        launchMetadata = {
+          ...launchMetadata,
+          launch_cost_estimate: launchCostAudit,
+        };
+        await updateLaunchCostEstimate(admin, launch.id, launchMetadata);
+        if (BigInt(lamports) < requiredLamports) {
+          const deficit = initialBuySol === 0
+            ? firstLaunchFundingDeficit(lamports, Number(minimumLaunchLamports))
+            : 0n;
+          launchCostAudit = {
+            ...launchCostAudit,
+            funding_deficit_lamports: deficit.toString(),
+          };
+          launchMetadata = {
+            ...launchMetadata,
+            launch_cost_estimate: launchCostAudit,
+          };
+          await updateLaunchCostEstimate(admin, launch.id, launchMetadata);
           const fundingPolicy = await readLaunchFundingPolicy(admin);
           if (
             fundingPolicy.mode !== "funding_disabled" &&
             initialBuySol === 0 &&
-            deficit <= SOL_FIRST_LAUNCH_FUNDING_LAMPORTS
+            deficit > 0n &&
+            deficit <= SOL_LAUNCH_FUNDING_CAP_LAMPORTS
           ) {
             const fundingKind: SolanaFundingKind =
               fundingPolicy.mode === "fund_every_eligible_launch"
                 ? "per_launch_minimum"
                 : "first_launch_minimum";
+            const fundingRawResult = {
+              launch_cost_estimate: launchCostAudit,
+              estimator_version: launchCost.estimatorVersion,
+              minimum_launch_lamports: launchCost.minimumLaunchLamports
+                .toString(),
+              funding_buffer_lamports: launchCost.bufferLamports.toString(),
+              funding_target_lamports: launchCost.fundingTargetLamports
+                .toString(),
+              wallet_balance_lamports: String(lamports),
+              funding_deficit_lamports: deficit.toString(),
+              dev_buy_excluded_from_linkr_funding: true,
+            };
             try {
               const subsidy = fundingKind === "first_launch_minimum"
                 ? await fundFirstSolanaLaunchIfNeeded(admin, {
@@ -168,6 +230,7 @@ Deno.serve((req) =>
                   walletId,
                   destinationAddress: walletIdentity.address,
                   amountLamports: deficit,
+                  rawResult: fundingRawResult,
                 })
                 : await fundSolanaLaunchIfNeeded(admin, {
                   launchId: launch.id,
@@ -176,6 +239,7 @@ Deno.serve((req) =>
                   destinationAddress: walletIdentity.address,
                   amountLamports: deficit,
                   fundingKind,
+                  rawResult: fundingRawResult,
                 });
               if (subsidy.funded) {
                 // Funding confirmation and launch signing are intentionally split
@@ -244,6 +308,8 @@ Deno.serve((req) =>
             text: fundsText,
             payload: {
               required_sol: requiredSol,
+              minimum_launch_sol: lamportsToSol(minimumLaunchLamports),
+              initial_buy_sol: initialBuySol,
               wallet_address: walletIdentity.address,
             },
           });
@@ -335,9 +401,11 @@ Deno.serve((req) =>
           blockhash: prepared.blockhash,
           lastValidBlockHeight: prepared.lastValidBlockHeight,
           predictedAddress: prepared.mint,
-          payloadHash: launch.launch_metadata?.image_sha256 ?? null,
+          payloadHash: stringOrNull(launchMetadata.image_sha256),
           gasPolicy: {
             required_sol: requiredSol,
+            minimum_launch_lamports: minimumLaunchLamports.toString(),
+            funding_buffer_lamports: launchCost.bufferLamports.toString(),
             initial_buy_sol: prepared.effectiveInitialBuySol,
           },
         });
@@ -362,7 +430,7 @@ Deno.serve((req) =>
           effective_initial_buy_lamports: prepared.effectiveInitialBuyLamports,
           pump_metadata_uri: prepared.metadataUri,
           launch_metadata: {
-            ...(launch.launch_metadata ?? {}),
+            ...launchMetadata,
             outbox_transaction_id: transactionId,
             signed_transaction_hash: persisted.signed_transaction_hash,
             blockhash: prepared.blockhash,
@@ -452,6 +520,44 @@ async function queueOnce(
   if (result.error) throw result.error;
 }
 
+async function updateLaunchCostEstimate(
+  admin: any,
+  launchId: string,
+  launchMetadata: Record<string, unknown>,
+) {
+  const result = await admin.from("coin_launches").update({
+    launch_metadata: launchMetadata,
+  }).eq("id", launchId);
+  if (result.error) throw result.error;
+}
+
+function launchCostAuditRecord(args: {
+  estimate: pump.PumpFunLaunchCostEstimate;
+  walletBalanceLamports: bigint;
+  initialBuyLamports: bigint;
+  requiredLamports: bigint;
+  fundingDeficitLamports: bigint | null;
+}): Record<string, unknown> {
+  return {
+    estimator_version: args.estimate.estimatorVersion,
+    source: args.estimate.source,
+    minimum_launch_lamports: args.estimate.minimumLaunchLamports.toString(),
+    buffer_lamports: args.estimate.bufferLamports.toString(),
+    funding_target_lamports: args.estimate.fundingTargetLamports.toString(),
+    fee_lamports: args.estimate.feeLamports.toString(),
+    payer_debit_lamports: args.estimate.payerDebitLamports.toString(),
+    simulation_units_consumed: args.estimate.simulationUnitsConsumed,
+    wallet_balance_lamports: args.walletBalanceLamports.toString(),
+    initial_buy_lamports: args.initialBuyLamports.toString(),
+    required_balance_lamports: args.requiredLamports.toString(),
+    funding_deficit_lamports: args.fundingDeficitLamports == null
+      ? null
+      : args.fundingDeficitLamports.toString(),
+    dev_buy_excluded_from_linkr_funding: true,
+    raw: args.estimate.raw,
+  };
+}
+
 function boundedNumber(
   value: unknown,
   minimum: number,
@@ -468,6 +574,28 @@ function readBoolean(name: string, fallback: boolean): boolean {
   if (/^(1|true|yes|on)$/i.test(raw)) return true;
   if (/^(0|false|no|off)$/i.test(raw)) return false;
   return fallback;
+}
+
+function solToLamports(value: number): bigint {
+  const text = value.toFixed(9);
+  const [whole, fraction = ""] = text.split(".");
+  return BigInt(whole) * 1_000_000_000n +
+    BigInt((fraction + "0".repeat(9)).slice(0, 9));
+}
+
+function lamportsToSol(value: bigint): number {
+  return Number(value) / 1_000_000_000;
+}
+
+function recordObject(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
+}
+
+function stringOrNull(value: unknown): string | null {
+  const text = String(value ?? "").trim();
+  return text || null;
 }
 
 function sanitizeError(error: unknown): string {

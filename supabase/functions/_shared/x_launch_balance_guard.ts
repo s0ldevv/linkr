@@ -11,8 +11,9 @@ import { isFirstLaunchSubsidyEligible } from "./first_launch_subsidy.ts";
 import type { LaunchFields } from "./x_launch_command.ts";
 
 export type XLaunchBalanceChain = "robinhood" | "solana";
-const SOLANA_LAUNCH_FUNDING_CAP_LAMPORTS = 20_000_000n;
+const SOL_LAUNCH_FUNDING_CAP_LAMPORTS = 20_000_000n;
 const DEFAULT_ROBINHOOD_LAUNCH_FUNDING_CAP_ETH = 0.005;
+const DEFAULT_SOLANA_LAUNCH_INTAKE_MINIMUM_SOL = 0.008;
 
 export type XLaunchBalanceGuardResult =
   | {
@@ -171,8 +172,9 @@ export function minimumLaunchNativeRequirement(
 ): bigint {
   if (chain === "solana") {
     const minimumSol = decimalOrFallback(
-      env("X_LAUNCH_MIN_BALANCE_SOL"),
-      0.02,
+      env("X_LAUNCH_MIN_BALANCE_SOL") ??
+        env("PUMP_FUN_LAUNCH_ESTIMATED_MINIMUM_SOL"),
+      DEFAULT_SOLANA_LAUNCH_INTAKE_MINIMUM_SOL,
     );
     return solToLamports(minimumSol) +
       solToLamports(devBuyAmount(fields, "SOL"));
@@ -253,7 +255,9 @@ function decimalOrFallback(
   value: string | undefined,
   fallback: number,
 ): number {
-  const number = Number(String(value ?? "").trim());
+  const text = String(value ?? "").trim();
+  if (!text) return fallback;
+  const number = Number(text);
   return Number.isFinite(number) && number >= 0 ? number : fallback;
 }
 
@@ -265,7 +269,7 @@ function maximumLaunchFundingDeficit(
   chain: XLaunchBalanceChain,
   env: (name: string) => string | undefined,
 ): bigint {
-  if (chain === "solana") return SOLANA_LAUNCH_FUNDING_CAP_LAMPORTS;
+  if (chain === "solana") return SOL_LAUNCH_FUNDING_CAP_LAMPORTS;
   const maxEth = decimalOrFallback(
     env("MAX_FIRST_LAUNCH_SUBSIDY_ETH"),
     DEFAULT_ROBINHOOD_LAUNCH_FUNDING_CAP_ETH,
