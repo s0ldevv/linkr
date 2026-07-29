@@ -1,5 +1,6 @@
 import {
   parseTelegramVerificationHandoffPayload,
+  sendTelegramPhoto,
   telegramLoginKeyboard,
   telegramLogoutKeyboard,
   telegramStartMenuKeyboard,
@@ -82,5 +83,64 @@ Deno.test("Telegram start menu keyboard links to Linkr surfaces and keeps login 
     login.text !== "Log in with X" || login.url !== "https://example.test/login"
   ) {
     throw new Error("Login button is not last in the start menu");
+  }
+});
+
+Deno.test("Telegram photo helper sends caption and keyboard payload", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalToken = Deno.env.get("TELEGRAM_BOT_TOKEN");
+  const calls: { input: string; init?: RequestInit }[] = [];
+
+  globalThis.fetch = ((input: URL | RequestInfo, init?: RequestInit) => {
+    calls.push({ input: String(input), init });
+    return Promise.resolve(
+      new Response(JSON.stringify({ ok: true, result: { message_id: 1 } }), {
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+  }) as typeof fetch;
+  Deno.env.set("TELEGRAM_BOT_TOKEN", "test-token");
+
+  try {
+    await sendTelegramPhoto({
+      chat_id: "123",
+      photo: "https://linkr.cash/linkr/linkr-tg-start-back.png",
+      caption: "Welcome to Linkr on Telegram.",
+      message_thread_id: "456",
+      reply_markup: telegramStartMenuKeyboard("https://example.test/login"),
+    });
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalToken === undefined) {
+      Deno.env.delete("TELEGRAM_BOT_TOKEN");
+    } else {
+      Deno.env.set("TELEGRAM_BOT_TOKEN", originalToken);
+    }
+  }
+
+  if (calls.length !== 1) throw new Error("Expected one Telegram API call");
+  if (!calls[0].input.endsWith("/bottest-token/sendPhoto")) {
+    throw new Error(`Unexpected Telegram photo endpoint: ${calls[0].input}`);
+  }
+  const body = JSON.parse(String(calls[0].init?.body ?? "{}"));
+  if (body.chat_id !== "123") throw new Error("Photo chat id changed");
+  if (
+    body.photo !== "https://linkr.cash/linkr/linkr-tg-start-back.png"
+  ) {
+    throw new Error("Photo URL changed");
+  }
+  if (body.caption !== "Welcome to Linkr on Telegram.") {
+    throw new Error("Photo caption changed");
+  }
+  if (body.message_thread_id !== "456") {
+    throw new Error("Photo thread id changed");
+  }
+  if (body.allow_sending_without_reply !== true) {
+    throw new Error("Photo helper must allow sending without reply");
+  }
+  if (
+    body.reply_markup?.inline_keyboard?.at(-1)?.[0]?.text !== "Log in with X"
+  ) {
+    throw new Error("Photo helper did not forward the keyboard");
   }
 });

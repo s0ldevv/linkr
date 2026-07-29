@@ -29,6 +29,7 @@ import {
   restrictTelegramChatMember,
   sendTelegramChatAction,
   sendTelegramMessage,
+  sendTelegramPhoto,
   type TelegramCallbackQuery,
   type TelegramChat,
   type TelegramChatJoinRequest,
@@ -54,6 +55,7 @@ import { getActiveBanForAuthUser } from "../_shared/x_bans.ts";
 
 const PRIVATE_ACTION_RE =
   /\b(wallet|balance|portfolio|history|buy|sell|send|transfer|launch|create coin|make a coin|liquidity|schedule|claim|creator rewards?|cashback|api key|private key|export)\b/i;
+const START_MENU_IMAGE_URL = "https://linkr.cash/linkr/linkr-tg-start-back.png";
 
 function jsonResponse(body: unknown, init: ResponseInit = {}): Response {
   const headers = new Headers(init.headers);
@@ -646,10 +648,11 @@ async function sendStartMenu(admin: any, message: TelegramMessage) {
   const loginUrl = await createTelegramCommandLoginUrl(admin, message);
   if (!chatId || !loginUrl) return;
 
-  await sendTelegramMessage({
+  await sendTelegramPhoto({
     chat_id: chatId,
+    photo: START_MENU_IMAGE_URL,
     message_thread_id: threadId(message),
-    text: startMenuText(),
+    caption: startMenuText(),
     reply_markup: telegramStartMenuKeyboard(loginUrl),
   });
 }

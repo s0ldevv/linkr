@@ -172,6 +172,25 @@ export async function sendTelegramMessage(args: {
   return last;
 }
 
+export async function sendTelegramPhoto(args: {
+  chat_id: string;
+  photo: string;
+  caption?: string | null;
+  message_thread_id?: string | null;
+  reply_to_message_id?: string | number | null;
+  reply_markup?: Record<string, unknown> | null;
+}) {
+  return await callTelegramApi("sendPhoto", {
+    chat_id: args.chat_id,
+    photo: args.photo,
+    caption: args.caption || undefined,
+    message_thread_id: args.message_thread_id || undefined,
+    reply_to_message_id: args.reply_to_message_id || undefined,
+    allow_sending_without_reply: true,
+    reply_markup: args.reply_markup || undefined,
+  });
+}
+
 export async function deleteTelegramMessage(
   args: { chat_id: string; message_id: string },
 ) {
