@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   BookOpen,
   Bot,
+  ChartCandlestick,
   Copy,
   Cpu,
   ExternalLink,
@@ -122,7 +123,7 @@ export const Route = createFileRoute("/links")({
       {
         name: "description",
         content:
-          "Official Linkr links for X, Telegram, Telegram bot, docs, Agent API, CLI, Discord, terminal, and the LINKR token CA.",
+          "Official Linkr links for X, Telegram, Telegram bot, Dexscreener, docs, Agent API, CLI, Discord, terminal, and the LINKR token CA.",
       },
       { property: "og:title", content: "Linkr Links" },
       {
@@ -156,6 +157,18 @@ function LinksPage() {
   });
 
   const linkrCa = linkrCaQuery.data ?? FALLBACK_LINKR_CA;
+  const dexscreenerUrl = `https://dexscreener.com/solana/${encodeURIComponent(linkrCa)}`;
+  const links: LinkItem[] = [
+    ...LINKS.slice(0, 1),
+    {
+      external: true,
+      href: dexscreenerUrl,
+      icon: ChartCandlestick,
+      label: "Dexscreener",
+      subtitle: "View $LINKR chart",
+    },
+    ...LINKS.slice(1),
+  ];
 
   async function copyTokenCa() {
     if (typeof navigator === "undefined" || !navigator.clipboard) return;
@@ -207,7 +220,7 @@ function LinksPage() {
         </section>
 
         <div className="linkr-links-list" aria-label="Official Linkr destinations">
-          {LINKS.map((item) => (
+          {links.map((item) => (
             <a
               className="linkr-links-item"
               data-accent={item.accent ?? "default"}

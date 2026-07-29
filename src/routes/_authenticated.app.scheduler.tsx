@@ -39,6 +39,24 @@ type TransferUnit = "eth" | "sol" | "usd";
 type SellMode = "all" | "percent";
 type TriggerDirection = "below" | "above";
 
+const ACTION_OPTIONS: Array<{ value: SchedulerActionType; label: string }> = [
+  { value: "buy", label: "Buy" },
+  { value: "sell", label: "Sell" },
+  { value: "transfer", label: "Transfer" },
+  { value: "launch_coin", label: "Launch" },
+  { value: "claim_creator_rewards", label: "Creator rewards" },
+  { value: "add_liquidity", label: "Add liquidity" },
+  { value: "remove_liquidity", label: "Remove liquidity" },
+  { value: "collect_liquidity_fees", label: "Collect fees" },
+];
+
+const SCHEDULE_KIND_OPTIONS: Array<{ value: ScheduleKind; label: string }> = [
+  { value: "one_time", label: "Once" },
+  { value: "interval", label: "Interval" },
+  { value: "daily", label: "Daily" },
+  { value: "weekly", label: "Weekly" },
+];
+
 type CreateScheduledActionResponse = {
   scheduled_action?: ScheduledAction | null;
   error?: string;
@@ -486,464 +504,479 @@ function SchedulerCreateForm({ onCreated }: { onCreated: () => void }) {
       </div>
 
       <form className="app-scheduler-form" onSubmit={submit}>
-        <div className="app-scheduler-control-row">
-          <SegmentedControl<SchedulerChain>
-            label="Network"
-            value={chain}
-            options={[
-              { value: "robinhood", label: "EVM" },
-              { value: "solana", label: "Solana" },
-            ]}
-            onChange={setChain}
-          />
-          <SegmentedControl<SchedulerActionType>
-            label="Action"
-            value={actionType}
-            options={[
-              { value: "buy", label: "Buy" },
-              { value: "sell", label: "Sell" },
-              { value: "transfer", label: "Transfer" },
-              { value: "launch_coin", label: "Launch" },
-              { value: "claim_creator_rewards", label: "Rewards" },
-              { value: "add_liquidity", label: "Add LP" },
-              { value: "remove_liquidity", label: "Remove LP" },
-              { value: "collect_liquidity_fees", label: "Fees" },
-            ]}
-            onChange={setActionType}
-          />
-          <SegmentedControl<SchedulerTriggerType>
-            label="Trigger"
-            value={triggerType}
-            options={[
-              { value: "time", label: "Time" },
-              ...(!marketTriggerAction(actionType)
-                ? []
-                : [{ value: "market_cap" as const, label: "Market cap" }]),
-            ]}
-            onChange={setTriggerType}
-          />
-        </div>
-
-        <div className="app-scheduler-form-grid">
-          {actionType === "launch_coin" ? (
-            <>
-              <Field label="Token name" htmlFor="launch-name">
-                <input
-                  id="launch-name"
-                  className="app-scheduler-input"
-                  value={launchName}
-                  onChange={(event) => setLaunchName(event.target.value)}
-                  placeholder="Testing"
-                />
-              </Field>
-              <Field label="Ticker" htmlFor="launch-symbol">
-                <input
-                  id="launch-symbol"
-                  className="app-scheduler-input"
-                  value={launchSymbol}
-                  onChange={(event) => setLaunchSymbol(event.target.value)}
-                  placeholder="TEST"
-                  autoComplete="off"
-                />
-              </Field>
-              <Field label="Image URL" htmlFor="launch-image">
-                <input
-                  id="launch-image"
-                  className="app-scheduler-input"
-                  value={launchImageUrl}
-                  onChange={(event) => setLaunchImageUrl(event.target.value)}
-                  placeholder="https://..."
-                  inputMode="url"
-                />
-              </Field>
-              <Field label="Description" htmlFor="launch-description">
-                <input
-                  id="launch-description"
-                  className="app-scheduler-input"
-                  value={launchDescription}
-                  onChange={(event) => setLaunchDescription(event.target.value)}
-                  placeholder="What the token is about"
-                />
-              </Field>
-              <Field label={`Initial buy (${nativeUnit.toUpperCase()})`} htmlFor="launch-buy">
-                <input
-                  id="launch-buy"
-                  className="app-scheduler-input"
-                  value={launchInitialBuy}
-                  onChange={(event) => setLaunchInitialBuy(event.target.value)}
-                  placeholder="0"
-                  inputMode="decimal"
-                />
-              </Field>
-              <Field label="Website URL" htmlFor="launch-website">
-                <input
-                  id="launch-website"
-                  className="app-scheduler-input"
-                  value={launchWebsiteUrl}
-                  onChange={(event) => setLaunchWebsiteUrl(event.target.value)}
-                  placeholder="https://linkr.cash/..."
-                  inputMode="url"
-                />
-              </Field>
-              <Field label="X URL" htmlFor="launch-twitter">
-                <input
-                  id="launch-twitter"
-                  className="app-scheduler-input"
-                  value={launchTwitterUrl}
-                  onChange={(event) => setLaunchTwitterUrl(event.target.value)}
-                  placeholder="https://x.com/..."
-                  inputMode="url"
-                />
-              </Field>
-              <Field label="Telegram URL" htmlFor="launch-telegram">
-                <input
-                  id="launch-telegram"
-                  className="app-scheduler-input"
-                  value={launchTelegramUrl}
-                  onChange={(event) => setLaunchTelegramUrl(event.target.value)}
-                  placeholder="https://t.me/..."
-                  inputMode="url"
-                />
-              </Field>
-            </>
-          ) : actionType === "transfer" ? (
-            <Field
-              label={chain === "solana" ? "Solana recipient" : "EVM recipient"}
-              htmlFor="recipient"
-            >
-              <input
-                id="recipient"
-                className="app-scheduler-input sm-mono"
-                value={recipient}
-                onChange={(event) => setRecipient(event.target.value)}
-                placeholder={
-                  chain === "solana"
-                    ? "So11111111111111111111111111111111111111112"
-                    : "0x0000000000000000000000000000000000000000"
-                }
-                autoComplete="off"
-                spellCheck={false}
+        <div className="app-scheduler-flow">
+          <SchedulerStep index={1} title="Action">
+            <div className="app-scheduler-choice-grid">
+              <SegmentedControl<SchedulerChain>
+                label="Network"
+                value={chain}
+                options={[
+                  { value: "robinhood", label: "EVM" },
+                  { value: "solana", label: "Solana" },
+                ]}
+                onChange={setChain}
               />
-            </Field>
-          ) : actionType === "claim_creator_rewards" ? (
-            <>
-              <label className="app-scheduler-field app-scheduler-check-field">
-                <span>Latest launch</span>
-                <input
-                  type="checkbox"
-                  checked={creatorRewardsLatest}
-                  onChange={(event) => setCreatorRewardsLatest(event.target.checked)}
-                />
-              </label>
-              <Field label="Launch ID" htmlFor="creator-rewards-launch">
-                <input
-                  id="creator-rewards-launch"
-                  className="app-scheduler-input sm-mono"
-                  value={creatorRewardsLaunchId}
-                  onChange={(event) => setCreatorRewardsLaunchId(event.target.value)}
-                  placeholder="optional"
-                  autoComplete="off"
-                  spellCheck={false}
-                />
+              <Field label="Action" htmlFor="scheduler-action-type">
+                <select
+                  id="scheduler-action-type"
+                  className="app-scheduler-input app-scheduler-select app-scheduler-action-select"
+                  value={actionType}
+                  onChange={(event) => setActionType(event.target.value as SchedulerActionType)}
+                >
+                  {ACTION_OPTIONS.map((option) => (
+                    <option value={option.value} key={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
               </Field>
-              <Field label={chain === "solana" ? "Mint" : "Token contract"} htmlFor="token">
-                <input
-                  id="token"
-                  className="app-scheduler-input sm-mono"
-                  value={tokenAddress}
-                  onChange={(event) => setTokenAddress(event.target.value)}
-                  placeholder="optional"
-                  autoComplete="off"
-                  spellCheck={false}
-                />
-              </Field>
-              <Field label="Symbol" htmlFor="creator-rewards-symbol">
-                <input
-                  id="creator-rewards-symbol"
-                  className="app-scheduler-input"
-                  value={creatorRewardsSymbol}
-                  onChange={(event) => setCreatorRewardsSymbol(event.target.value)}
-                  placeholder="optional"
-                />
-              </Field>
-            </>
-          ) : isLiquidityAction(actionType) ? (
-            <>
-              <Field label={chain === "solana" ? "Mint" : "Token contract"} htmlFor="token">
-                <input
-                  id="token"
-                  className="app-scheduler-input sm-mono"
-                  value={tokenAddress}
-                  onChange={(event) => setTokenAddress(event.target.value)}
-                  placeholder={
-                    chain === "solana"
-                      ? "So11111111111111111111111111111111111111112"
-                      : "0x0000000000000000000000000000000000000000"
-                  }
-                  autoComplete="off"
-                  spellCheck={false}
-                />
-              </Field>
-              {actionType === "add_liquidity" ? (
+              <SegmentedControl<SchedulerTriggerType>
+                label="Trigger"
+                value={triggerType}
+                options={[
+                  { value: "time", label: "Time" },
+                  ...(!marketTriggerAction(actionType)
+                    ? []
+                    : [{ value: "market_cap" as const, label: "Market cap" }]),
+                ]}
+                onChange={setTriggerType}
+              />
+            </div>
+          </SchedulerStep>
+
+          <SchedulerStep index={2} title="Details">
+            <div className="app-scheduler-form-grid app-scheduler-detail-grid">
+              {actionType === "launch_coin" ? (
                 <>
-                  {chain === "robinhood" && (
-                    <Field label="ETH amount" htmlFor="liquidity-native-amount">
-                      <input
-                        id="liquidity-native-amount"
-                        className="app-scheduler-input"
-                        value={liquidityNativeAmount}
-                        onChange={(event) => setLiquidityNativeAmount(event.target.value)}
-                        placeholder="0.01"
-                        inputMode="decimal"
-                      />
-                    </Field>
-                  )}
-                  <Field
-                    label={chain === "solana" ? "Token amount" : "Token amount optional"}
-                    htmlFor="liquidity-token-amount"
-                  >
+                  <Field label="Token name" htmlFor="launch-name">
                     <input
-                      id="liquidity-token-amount"
+                      id="launch-name"
                       className="app-scheduler-input"
-                      value={liquidityTokenAmount}
-                      onChange={(event) => setLiquidityTokenAmount(event.target.value)}
-                      placeholder={chain === "solana" ? "1000" : "auto"}
+                      value={launchName}
+                      onChange={(event) => setLaunchName(event.target.value)}
+                      placeholder="Testing"
+                    />
+                  </Field>
+                  <Field label="Ticker" htmlFor="launch-symbol">
+                    <input
+                      id="launch-symbol"
+                      className="app-scheduler-input"
+                      value={launchSymbol}
+                      onChange={(event) => setLaunchSymbol(event.target.value)}
+                      placeholder="TEST"
+                      autoComplete="off"
+                    />
+                  </Field>
+                  <Field label="Image URL" htmlFor="launch-image">
+                    <input
+                      id="launch-image"
+                      className="app-scheduler-input"
+                      value={launchImageUrl}
+                      onChange={(event) => setLaunchImageUrl(event.target.value)}
+                      placeholder="https://..."
+                      inputMode="url"
+                    />
+                  </Field>
+                  <Field label="Description" htmlFor="launch-description">
+                    <input
+                      id="launch-description"
+                      className="app-scheduler-input"
+                      value={launchDescription}
+                      onChange={(event) => setLaunchDescription(event.target.value)}
+                      placeholder="What the token is about"
+                    />
+                  </Field>
+                  <Field label={`Initial buy (${nativeUnit.toUpperCase()})`} htmlFor="launch-buy">
+                    <input
+                      id="launch-buy"
+                      className="app-scheduler-input"
+                      value={launchInitialBuy}
+                      onChange={(event) => setLaunchInitialBuy(event.target.value)}
+                      placeholder="0"
                       inputMode="decimal"
                     />
                   </Field>
-                </>
-              ) : (
-                <>
-                  <Field label="Position ID" htmlFor="liquidity-position">
+                  <Field label="Website URL" htmlFor="launch-website">
                     <input
-                      id="liquidity-position"
+                      id="launch-website"
+                      className="app-scheduler-input"
+                      value={launchWebsiteUrl}
+                      onChange={(event) => setLaunchWebsiteUrl(event.target.value)}
+                      placeholder="https://linkr.cash/..."
+                      inputMode="url"
+                    />
+                  </Field>
+                  <Field label="X URL" htmlFor="launch-twitter">
+                    <input
+                      id="launch-twitter"
+                      className="app-scheduler-input"
+                      value={launchTwitterUrl}
+                      onChange={(event) => setLaunchTwitterUrl(event.target.value)}
+                      placeholder="https://x.com/..."
+                      inputMode="url"
+                    />
+                  </Field>
+                  <Field label="Telegram URL" htmlFor="launch-telegram">
+                    <input
+                      id="launch-telegram"
+                      className="app-scheduler-input"
+                      value={launchTelegramUrl}
+                      onChange={(event) => setLaunchTelegramUrl(event.target.value)}
+                      placeholder="https://t.me/..."
+                      inputMode="url"
+                    />
+                  </Field>
+                </>
+              ) : actionType === "transfer" ? (
+                <Field
+                  label={chain === "solana" ? "Solana recipient" : "EVM recipient"}
+                  htmlFor="recipient"
+                >
+                  <input
+                    id="recipient"
+                    className="app-scheduler-input sm-mono"
+                    value={recipient}
+                    onChange={(event) => setRecipient(event.target.value)}
+                    placeholder={
+                      chain === "solana"
+                        ? "So11111111111111111111111111111111111111112"
+                        : "0x0000000000000000000000000000000000000000"
+                    }
+                    autoComplete="off"
+                    spellCheck={false}
+                  />
+                </Field>
+              ) : actionType === "claim_creator_rewards" ? (
+                <>
+                  <label className="app-scheduler-field app-scheduler-check-field">
+                    <span>Latest launch</span>
+                    <input
+                      type="checkbox"
+                      checked={creatorRewardsLatest}
+                      onChange={(event) => setCreatorRewardsLatest(event.target.checked)}
+                    />
+                  </label>
+                  <Field label="Launch ID" htmlFor="creator-rewards-launch">
+                    <input
+                      id="creator-rewards-launch"
                       className="app-scheduler-input sm-mono"
-                      value={liquidityPositionId}
-                      onChange={(event) => setLiquidityPositionId(event.target.value)}
-                      placeholder="optional if token is provided"
+                      value={creatorRewardsLaunchId}
+                      onChange={(event) => setCreatorRewardsLaunchId(event.target.value)}
+                      placeholder="optional"
                       autoComplete="off"
                       spellCheck={false}
                     />
                   </Field>
-                  {actionType === "remove_liquidity" && (
-                    <Field label="Percent" htmlFor="liquidity-percent">
+                  <Field label={chain === "solana" ? "Mint" : "Token contract"} htmlFor="token">
+                    <input
+                      id="token"
+                      className="app-scheduler-input sm-mono"
+                      value={tokenAddress}
+                      onChange={(event) => setTokenAddress(event.target.value)}
+                      placeholder="optional"
+                      autoComplete="off"
+                      spellCheck={false}
+                    />
+                  </Field>
+                  <Field label="Symbol" htmlFor="creator-rewards-symbol">
+                    <input
+                      id="creator-rewards-symbol"
+                      className="app-scheduler-input"
+                      value={creatorRewardsSymbol}
+                      onChange={(event) => setCreatorRewardsSymbol(event.target.value)}
+                      placeholder="optional"
+                    />
+                  </Field>
+                </>
+              ) : isLiquidityAction(actionType) ? (
+                <>
+                  <Field label={chain === "solana" ? "Mint" : "Token contract"} htmlFor="token">
+                    <input
+                      id="token"
+                      className="app-scheduler-input sm-mono"
+                      value={tokenAddress}
+                      onChange={(event) => setTokenAddress(event.target.value)}
+                      placeholder={
+                        chain === "solana"
+                          ? "So11111111111111111111111111111111111111112"
+                          : "0x0000000000000000000000000000000000000000"
+                      }
+                      autoComplete="off"
+                      spellCheck={false}
+                    />
+                  </Field>
+                  {actionType === "add_liquidity" ? (
+                    <>
+                      {chain === "robinhood" && (
+                        <Field label="ETH amount" htmlFor="liquidity-native-amount">
+                          <input
+                            id="liquidity-native-amount"
+                            className="app-scheduler-input"
+                            value={liquidityNativeAmount}
+                            onChange={(event) => setLiquidityNativeAmount(event.target.value)}
+                            placeholder="0.01"
+                            inputMode="decimal"
+                          />
+                        </Field>
+                      )}
+                      <Field
+                        label={chain === "solana" ? "Token amount" : "Token amount optional"}
+                        htmlFor="liquidity-token-amount"
+                      >
+                        <input
+                          id="liquidity-token-amount"
+                          className="app-scheduler-input"
+                          value={liquidityTokenAmount}
+                          onChange={(event) => setLiquidityTokenAmount(event.target.value)}
+                          placeholder={chain === "solana" ? "1000" : "auto"}
+                          inputMode="decimal"
+                        />
+                      </Field>
+                    </>
+                  ) : (
+                    <>
+                      <Field label="Position ID" htmlFor="liquidity-position">
+                        <input
+                          id="liquidity-position"
+                          className="app-scheduler-input sm-mono"
+                          value={liquidityPositionId}
+                          onChange={(event) => setLiquidityPositionId(event.target.value)}
+                          placeholder="optional if token is provided"
+                          autoComplete="off"
+                          spellCheck={false}
+                        />
+                      </Field>
+                      {actionType === "remove_liquidity" && (
+                        <Field label="Percent" htmlFor="liquidity-percent">
+                          <input
+                            id="liquidity-percent"
+                            className="app-scheduler-input"
+                            value={liquidityPercent}
+                            onChange={(event) => setLiquidityPercent(event.target.value)}
+                            placeholder="100"
+                            inputMode="decimal"
+                          />
+                        </Field>
+                      )}
+                    </>
+                  )}
+                </>
+              ) : (
+                <Field label={chain === "solana" ? "Solana mint" : "EVM contract"} htmlFor="token">
+                  <input
+                    id="token"
+                    className="app-scheduler-input sm-mono"
+                    value={tokenAddress}
+                    onChange={(event) => setTokenAddress(event.target.value)}
+                    placeholder={
+                      chain === "solana"
+                        ? "So11111111111111111111111111111111111111112"
+                        : "0x0000000000000000000000000000000000000000"
+                    }
+                    autoComplete="off"
+                    spellCheck={false}
+                  />
+                </Field>
+              )}
+
+              {actionType === "buy" ? (
+                <div className="app-scheduler-amount-pair">
+                  <Field label="Buy amount" htmlFor="buy-amount">
+                    <input
+                      id="buy-amount"
+                      className="app-scheduler-input"
+                      value={buyAmount}
+                      onChange={(event) => setBuyAmount(event.target.value)}
+                      placeholder={chain === "solana" ? "0.1" : "0.01"}
+                      inputMode="decimal"
+                    />
+                  </Field>
+                  <Field label="Unit" htmlFor="buy-unit">
+                    <select
+                      id="buy-unit"
+                      className="app-scheduler-input app-scheduler-select"
+                      value={buyUnit}
+                      onChange={(event) => setBuyUnit(event.target.value as BuyUnit)}
+                    >
+                      {buyUnitOptions.map((unit) => (
+                        <option value={unit} key={unit}>
+                          {unit.toUpperCase()}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                </div>
+              ) : actionType === "sell" ? (
+                <div className="app-scheduler-sell-box">
+                  <SegmentedControl<SellMode>
+                    label="Sell amount"
+                    value={sellMode}
+                    options={[
+                      { value: "all", label: "100%" },
+                      { value: "percent", label: "Custom %" },
+                    ]}
+                    onChange={setSellMode}
+                  />
+                  {sellMode === "percent" && (
+                    <Field label="Percent" htmlFor="sell-percent">
                       <input
-                        id="liquidity-percent"
+                        id="sell-percent"
                         className="app-scheduler-input"
-                        value={liquidityPercent}
-                        onChange={(event) => setLiquidityPercent(event.target.value)}
-                        placeholder="100"
+                        value={sellPercent}
+                        onChange={(event) => setSellPercent(event.target.value)}
+                        placeholder="50"
                         inputMode="decimal"
+                      />
+                    </Field>
+                  )}
+                </div>
+              ) : actionType === "transfer" ? (
+                <div className="app-scheduler-amount-pair">
+                  <Field label="Transfer amount" htmlFor="transfer-amount">
+                    <input
+                      id="transfer-amount"
+                      className="app-scheduler-input"
+                      value={transferAmount}
+                      onChange={(event) => setTransferAmount(event.target.value)}
+                      placeholder={chain === "solana" ? "0.1" : "0.01"}
+                      inputMode="decimal"
+                    />
+                  </Field>
+                  <Field label="Unit" htmlFor="transfer-unit">
+                    <select
+                      id="transfer-unit"
+                      className="app-scheduler-input app-scheduler-select"
+                      value={transferUnit}
+                      onChange={(event) => setTransferUnit(event.target.value as TransferUnit)}
+                    >
+                      {transferUnitOptions.map((unit) => (
+                        <option value={unit} key={unit}>
+                          {unit.toUpperCase()}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                </div>
+              ) : null}
+            </div>
+
+            {actionUsesTokenLookup(actionType) && tokenAddress.trim().length > 0 && (
+              <SchedulerTokenPreview
+                chain={chain}
+                error={tokenLookupQuery.error}
+                facts={tokenLookupQuery.data ?? null}
+                loading={tokenLookupQuery.isFetching}
+                status={tokenLookupStatus}
+                tokenAddress={tokenAddress}
+              />
+            )}
+          </SchedulerStep>
+
+          <SchedulerStep index={3} title={triggerType === "time" ? "Schedule" : "Market rule"}>
+            <div className="app-scheduler-form-grid app-scheduler-timing-grid">
+              {triggerType === "time" ? (
+                <>
+                  <Field label="Run at" htmlFor="scheduled-for">
+                    <input
+                      id="scheduled-for"
+                      className="app-scheduler-input"
+                      type="datetime-local"
+                      min={minScheduledFor}
+                      value={scheduledFor}
+                      onChange={(event) => setScheduledFor(event.target.value)}
+                    />
+                  </Field>
+                  <Field label="Repeat" htmlFor="schedule-kind">
+                    <select
+                      id="schedule-kind"
+                      className="app-scheduler-input app-scheduler-select"
+                      value={scheduleKind}
+                      onChange={(event) => setScheduleKind(event.target.value as ScheduleKind)}
+                    >
+                      {SCHEDULE_KIND_OPTIONS.map((option) => (
+                        <option value={option.value} key={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  {scheduleKind === "interval" && (
+                    <Field label="Every seconds" htmlFor="interval-seconds">
+                      <input
+                        id="interval-seconds"
+                        className="app-scheduler-input"
+                        value={intervalSeconds}
+                        onChange={(event) => setIntervalSeconds(event.target.value)}
+                        placeholder="3600"
+                        inputMode="numeric"
+                      />
+                    </Field>
+                  )}
+                </>
+              ) : (
+                <>
+                  <SegmentedControl<TriggerDirection>
+                    label="Condition"
+                    value={triggerDirection}
+                    options={[
+                      { value: "below", label: "Below" },
+                      { value: "above", label: "Above" },
+                    ]}
+                    onChange={setTriggerDirection}
+                  />
+                  <Field label="Market cap" htmlFor="market-cap">
+                    <input
+                      id="market-cap"
+                      className="app-scheduler-input"
+                      value={marketCap}
+                      onChange={(event) => setMarketCap(event.target.value)}
+                      placeholder="50000"
+                      inputMode="decimal"
+                    />
+                  </Field>
+                  <Field label="Repeat" htmlFor="market-schedule-kind">
+                    <select
+                      id="market-schedule-kind"
+                      className="app-scheduler-input app-scheduler-select"
+                      value={scheduleKind}
+                      onChange={(event) => setScheduleKind(event.target.value as ScheduleKind)}
+                    >
+                      {SCHEDULE_KIND_OPTIONS.map((option) => (
+                        <option value={option.value} key={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  {scheduleKind !== "one_time" && (
+                    <Field label="First check" htmlFor="market-starts-at">
+                      <input
+                        id="market-starts-at"
+                        className="app-scheduler-input"
+                        type="datetime-local"
+                        min={minScheduledFor}
+                        value={scheduledFor}
+                        onChange={(event) => setScheduledFor(event.target.value)}
+                      />
+                    </Field>
+                  )}
+                  {scheduleKind === "interval" && (
+                    <Field label="Repeat seconds" htmlFor="market-interval-seconds">
+                      <input
+                        id="market-interval-seconds"
+                        className="app-scheduler-input"
+                        value={intervalSeconds}
+                        onChange={(event) => setIntervalSeconds(event.target.value)}
+                        placeholder="3600"
+                        inputMode="numeric"
                       />
                     </Field>
                   )}
                 </>
               )}
-            </>
-          ) : (
-            <Field label={chain === "solana" ? "Solana mint" : "EVM contract"} htmlFor="token">
-              <input
-                id="token"
-                className="app-scheduler-input sm-mono"
-                value={tokenAddress}
-                onChange={(event) => setTokenAddress(event.target.value)}
-                placeholder={
-                  chain === "solana"
-                    ? "So11111111111111111111111111111111111111112"
-                    : "0x0000000000000000000000000000000000000000"
-                }
-                autoComplete="off"
-                spellCheck={false}
-              />
-            </Field>
-          )}
-
-          {actionType === "buy" ? (
-            <div className="app-scheduler-amount-pair">
-              <Field label="Buy amount" htmlFor="buy-amount">
-                <input
-                  id="buy-amount"
-                  className="app-scheduler-input"
-                  value={buyAmount}
-                  onChange={(event) => setBuyAmount(event.target.value)}
-                  placeholder={chain === "solana" ? "0.1" : "0.01"}
-                  inputMode="decimal"
-                />
-              </Field>
-              <Field label="Unit" htmlFor="buy-unit">
-                <select
-                  id="buy-unit"
-                  className="app-scheduler-input app-scheduler-select"
-                  value={buyUnit}
-                  onChange={(event) => setBuyUnit(event.target.value as BuyUnit)}
-                >
-                  {buyUnitOptions.map((unit) => (
-                    <option value={unit} key={unit}>
-                      {unit.toUpperCase()}
-                    </option>
-                  ))}
-                </select>
-              </Field>
             </div>
-          ) : actionType === "sell" ? (
-            <div className="app-scheduler-sell-box">
-              <SegmentedControl<SellMode>
-                label="Sell amount"
-                value={sellMode}
-                options={[
-                  { value: "all", label: "100%" },
-                  { value: "percent", label: "Custom %" },
-                ]}
-                onChange={setSellMode}
-              />
-              {sellMode === "percent" && (
-                <Field label="Percent" htmlFor="sell-percent">
-                  <input
-                    id="sell-percent"
-                    className="app-scheduler-input"
-                    value={sellPercent}
-                    onChange={(event) => setSellPercent(event.target.value)}
-                    placeholder="50"
-                    inputMode="decimal"
-                  />
-                </Field>
-              )}
-            </div>
-          ) : actionType === "transfer" ? (
-            <div className="app-scheduler-amount-pair">
-              <Field label="Transfer amount" htmlFor="transfer-amount">
-                <input
-                  id="transfer-amount"
-                  className="app-scheduler-input"
-                  value={transferAmount}
-                  onChange={(event) => setTransferAmount(event.target.value)}
-                  placeholder={chain === "solana" ? "0.1" : "0.01"}
-                  inputMode="decimal"
-                />
-              </Field>
-              <Field label="Unit" htmlFor="transfer-unit">
-                <select
-                  id="transfer-unit"
-                  className="app-scheduler-input app-scheduler-select"
-                  value={transferUnit}
-                  onChange={(event) => setTransferUnit(event.target.value as TransferUnit)}
-                >
-                  {transferUnitOptions.map((unit) => (
-                    <option value={unit} key={unit}>
-                      {unit.toUpperCase()}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-            </div>
-          ) : null}
-
-          {triggerType === "time" ? (
-            <>
-              <Field label="Run at" htmlFor="scheduled-for">
-                <input
-                  id="scheduled-for"
-                  className="app-scheduler-input"
-                  type="datetime-local"
-                  min={minScheduledFor}
-                  value={scheduledFor}
-                  onChange={(event) => setScheduledFor(event.target.value)}
-                />
-              </Field>
-              <SegmentedControl<ScheduleKind>
-                label="Repeat"
-                value={scheduleKind}
-                options={[
-                  { value: "one_time", label: "Once" },
-                  { value: "interval", label: "Interval" },
-                  { value: "daily", label: "Daily" },
-                  { value: "weekly", label: "Weekly" },
-                ]}
-                onChange={setScheduleKind}
-              />
-              {scheduleKind === "interval" && (
-                <Field label="Every seconds" htmlFor="interval-seconds">
-                  <input
-                    id="interval-seconds"
-                    className="app-scheduler-input"
-                    value={intervalSeconds}
-                    onChange={(event) => setIntervalSeconds(event.target.value)}
-                    placeholder="3600"
-                    inputMode="numeric"
-                  />
-                </Field>
-              )}
-            </>
-          ) : (
-            <>
-              <SegmentedControl<TriggerDirection>
-                label="Condition"
-                value={triggerDirection}
-                options={[
-                  { value: "below", label: "Below" },
-                  { value: "above", label: "Above" },
-                ]}
-                onChange={setTriggerDirection}
-              />
-              <Field label="Market cap" htmlFor="market-cap">
-                <input
-                  id="market-cap"
-                  className="app-scheduler-input"
-                  value={marketCap}
-                  onChange={(event) => setMarketCap(event.target.value)}
-                  placeholder="50000"
-                  inputMode="decimal"
-                />
-              </Field>
-              <SegmentedControl<ScheduleKind>
-                label="Repeat"
-                value={scheduleKind}
-                options={[
-                  { value: "one_time", label: "Once" },
-                  { value: "interval", label: "Interval" },
-                  { value: "daily", label: "Daily" },
-                  { value: "weekly", label: "Weekly" },
-                ]}
-                onChange={setScheduleKind}
-              />
-              {scheduleKind !== "one_time" && (
-                <Field label="First check" htmlFor="market-starts-at">
-                  <input
-                    id="market-starts-at"
-                    className="app-scheduler-input"
-                    type="datetime-local"
-                    min={minScheduledFor}
-                    value={scheduledFor}
-                    onChange={(event) => setScheduledFor(event.target.value)}
-                  />
-                </Field>
-              )}
-              {scheduleKind === "interval" && (
-                <Field label="Repeat seconds" htmlFor="market-interval-seconds">
-                  <input
-                    id="market-interval-seconds"
-                    className="app-scheduler-input"
-                    value={intervalSeconds}
-                    onChange={(event) => setIntervalSeconds(event.target.value)}
-                    placeholder="3600"
-                    inputMode="numeric"
-                  />
-                </Field>
-              )}
-            </>
-          )}
+          </SchedulerStep>
         </div>
-
-        {actionUsesTokenLookup(actionType) && tokenAddress.trim().length > 0 && (
-          <SchedulerTokenPreview
-            chain={chain}
-            error={tokenLookupQuery.error}
-            facts={tokenLookupQuery.data ?? null}
-            loading={tokenLookupQuery.isFetching}
-            status={tokenLookupStatus}
-            tokenAddress={tokenAddress}
-          />
-        )}
 
         <div className="app-scheduler-form-foot">
           {formError && <div className="app-scheduler-form-error">{formError}</div>}
@@ -1198,6 +1231,29 @@ function SchedulerRow({
         </div>
       </footer>
     </article>
+  );
+}
+
+function SchedulerStep({
+  children,
+  index,
+  title,
+}: {
+  children: ReactNode;
+  index: number;
+  title: string;
+}) {
+  const id = `scheduler-step-${index}`;
+  return (
+    <section className="app-scheduler-step" aria-labelledby={id}>
+      <div className="app-scheduler-step-head">
+        <span className="app-scheduler-step-number" aria-hidden="true">
+          {index}
+        </span>
+        <h3 id={id}>{title}</h3>
+      </div>
+      <div className="app-scheduler-step-content">{children}</div>
+    </section>
   );
 }
 
