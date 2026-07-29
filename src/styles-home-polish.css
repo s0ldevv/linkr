@@ -33017,7 +33017,7 @@ body .sm-app-home-link {
 }
 
 body .sm-app-home-link:hover {
-  border-color: rgb(0 82 255 / 22%) !important;
+  border-color: transparent !important;
   background: var(--app-blue-soft) !important;
   color: var(--app-blue) !important;
   -webkit-text-fill-color: var(--app-blue) !important;
@@ -33089,14 +33089,14 @@ body .sm-app-nav a span {
 
 body .sm-app-nav a[data-active="true"],
 body .sm-app-nav a:hover {
-  border-color: rgb(0 82 255 / 18%) !important;
+  border-color: transparent !important;
   background: var(--app-blue-soft) !important;
   color: var(--app-ink) !important;
 }
 
 body .sm-app-nav a[data-active="true"] span,
 body .sm-app-nav a:hover span {
-  border-color: rgb(0 82 255 / 22%) !important;
+  border-color: transparent !important;
   background: #ffffff !important;
   color: var(--app-blue) !important;
 }
@@ -33137,7 +33137,7 @@ body .sm-app-user button {
 }
 
 body .sm-app-user button:hover {
-  border-color: rgb(0 82 255 / 28%) !important;
+  border-color: transparent !important;
   background: var(--app-blue-soft) !important;
   color: var(--app-blue) !important;
 }
@@ -33279,7 +33279,7 @@ body .sm-app-content :where(button, .inline-flex, .app-live-link) {
 }
 
 body .sm-app-content :where(button, .inline-flex, .app-live-link):hover {
-  border-color: rgb(0 82 255 / 28%) !important;
+  border-color: transparent !important;
   background: var(--app-blue-soft) !important;
   color: var(--app-blue) !important;
   -webkit-text-fill-color: var(--app-blue) !important;
@@ -33870,7 +33870,7 @@ body .app-api-secret-card code {
   }
 
   body .sm-app-mobile-home-link:hover {
-    border-color: rgb(0 82 255 / 22%) !important;
+    border-color: transparent !important;
     background: var(--app-blue-soft) !important;
     color: var(--app-blue) !important;
     -webkit-text-fill-color: var(--app-blue) !important;
@@ -39228,7 +39228,7 @@ body .sm-app-home-link {
 }
 
 body .sm-app-home-link:hover {
-  border-color: var(--app-ink) !important;
+  border-color: transparent !important;
   background: var(--app-lime) !important;
   color: var(--app-ink) !important;
   -webkit-text-fill-color: var(--app-ink) !important;
@@ -39375,7 +39375,7 @@ body .sm-app-user button {
 }
 
 body .sm-app-user button:hover {
-  border-color: var(--app-ink) !important;
+  border-color: transparent !important;
   background: var(--app-lime) !important;
   color: var(--app-ink) !important;
 }
@@ -39544,7 +39544,7 @@ body .sm-app-content :where(button, .inline-flex, .app-live-link) {
 }
 
 body .sm-app-content :where(button, .inline-flex, .app-live-link):hover {
-  border-color: var(--app-ink) !important;
+  border-color: transparent !important;
   background: var(--app-lime) !important;
   color: var(--app-ink) !important;
   -webkit-text-fill-color: var(--app-ink) !important;
@@ -40146,7 +40146,7 @@ body .sm-app-shell .sm-app-content .app-nft-card-link svg {
   }
 
   body .sm-app-mobile-home-link:hover {
-    border-color: var(--app-ink) !important;
+    border-color: transparent !important;
     background: var(--app-lime) !important;
     color: var(--app-ink) !important;
     -webkit-text-fill-color: var(--app-ink) !important;
@@ -40656,7 +40656,7 @@ body .app-pools-dialog-footer button:hover,
 body .app-pools-percent-grid button:hover,
 body .app-pools-percent-grid button.app-pools-percent-option:not([class*="border-input"]),
 body .app-pools-dialog-primary {
-  border-color: var(--app-lime) !important;
+  border-color: transparent !important;
   background: var(--app-lime) !important;
   color: var(--app-ink) !important;
   -webkit-text-fill-color: var(--app-ink) !important;
@@ -41192,7 +41192,7 @@ body[data-dashboard-theme="dark"]
   button.app-pools-percent-option:not([class*="border-input"]),
 body[data-dashboard-theme="dark"] .app-pools-dialog-primary,
 body[data-dashboard-theme="dark"] .app-pools-ack button[role="checkbox"][data-state="checked"] {
-  border-color: var(--app-lime) !important;
+  border-color: transparent !important;
   background: var(--app-lime) !important;
   color: #111111 !important;
   -webkit-text-fill-color: #111111 !important;
@@ -41289,7 +41289,7 @@ body[data-dashboard-theme="dark"]
 body[data-dashboard-theme="dark"]
   :where([role="dialog"], [role="alertdialog"])
   :where(button, a[role="button"]):hover {
-  border-color: var(--app-lime) !important;
+  border-color: transparent !important;
   background: var(--app-lime) !important;
   color: #111111 !important;
   -webkit-text-fill-color: #111111 !important;
@@ -45949,8 +45949,24 @@ body .sm-app-content .app-scheduler-select-trigger svg {
   opacity: 1 !important;
 }
 
+body .sm-app-content .app-scheduler-select-trigger[data-active="true"],
+body .sm-app-content .app-scheduler-select-trigger[data-selected="true"],
 body .sm-app-content .app-scheduler-select-trigger[data-state="open"] {
-  background: color-mix(in srgb, var(--app-lime) 18%, var(--app-panel)) !important;
+  border-color: transparent !important;
+  background: var(--app-lime) !important;
+  background-color: var(--app-lime) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+body .sm-app-content .app-scheduler-select-trigger[data-active="true"] > span,
+body .sm-app-content .app-scheduler-select-trigger[data-selected="true"] > span,
+body .sm-app-content .app-scheduler-select-trigger[data-state="open"] > span,
+body .sm-app-content .app-scheduler-select-trigger[data-active="true"] svg,
+body .sm-app-content .app-scheduler-select-trigger[data-selected="true"] svg,
+body .sm-app-content .app-scheduler-select-trigger[data-state="open"] svg {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
 }
 
 body .app-scheduler-select-content {
@@ -46009,15 +46025,15 @@ body .app-scheduler-select-item + .app-scheduler-select-item {
 }
 
 body .app-scheduler-select-item[data-highlighted] {
-  background: color-mix(in srgb, var(--app-lime) 28%, var(--app-panel)) !important;
-  color: #111111 !important;
-  -webkit-text-fill-color: #111111 !important;
+  background: var(--app-lime) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
 }
 
 body .app-scheduler-select-item[data-state="checked"] {
   background: var(--app-lime) !important;
-  color: #111111 !important;
-  -webkit-text-fill-color: #111111 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
 }
 
 body .app-scheduler-select-item span {
@@ -46069,14 +46085,12 @@ body .sm-app-content .app-scheduler-segment button {
 }
 
 body .sm-app-content .app-scheduler-segment button:is(:hover, :focus-visible) {
-  border-color: var(--app-ink) !important;
+  border-color: transparent !important;
   background: var(--app-lime) !important;
   background-color: var(--app-lime) !important;
-  color: #111111 !important;
-  -webkit-text-fill-color: #111111 !important;
-  box-shadow:
-    inset 0 0 0 1px rgb(17 17 17 / 14%),
-    0 6px 14px rgb(17 17 17 / 8%) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  box-shadow: none !important;
   transform: translateY(-1px) !important;
 }
 
@@ -46085,14 +46099,12 @@ body .sm-app-content .app-scheduler-segment button[data-active="true"],
 body .sm-app-content .app-scheduler-segment button[data-selected="true"],
 body .sm-app-content .app-scheduler-segment button[data-state="active"],
 body .sm-app-content .app-scheduler-segment button[aria-pressed="true"] {
-  border-color: var(--app-ink) !important;
+  border-color: transparent !important;
   background: var(--app-lime) !important;
   background-color: var(--app-lime) !important;
-  color: #111111 !important;
-  -webkit-text-fill-color: #111111 !important;
-  box-shadow:
-    inset 0 0 0 1px rgb(17 17 17 / 14%),
-    0 6px 14px rgb(17 17 17 / 8%) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  box-shadow: none !important;
   transform: translateY(-1px) !important;
 }
 
@@ -46101,14 +46113,12 @@ body .sm-app-content .app-scheduler-segment button[data-active="true"]:is(:hover
 body .sm-app-content .app-scheduler-segment button[data-selected="true"]:is(:hover, :focus-visible),
 body .sm-app-content .app-scheduler-segment button[data-state="active"]:is(:hover, :focus-visible),
 body .sm-app-content .app-scheduler-segment button[aria-pressed="true"]:is(:hover, :focus-visible) {
-  border-color: var(--app-ink) !important;
+  border-color: transparent !important;
   background: var(--app-lime) !important;
   background-color: var(--app-lime) !important;
-  color: #111111 !important;
-  -webkit-text-fill-color: #111111 !important;
-  box-shadow:
-    inset 0 0 0 1px rgb(17 17 17 / 14%),
-    0 6px 14px rgb(17 17 17 / 8%) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  box-shadow: none !important;
   transform: translateY(-1px) !important;
 }
 
@@ -46130,14 +46140,12 @@ body[data-dashboard-theme="dark"]
   .sm-app-content
   .app-scheduler-segment
   button[aria-pressed="true"] {
-  border-color: var(--app-ink) !important;
+  border-color: transparent !important;
   background: var(--app-lime) !important;
   background-color: var(--app-lime) !important;
-  color: #111111 !important;
-  -webkit-text-fill-color: #111111 !important;
-  box-shadow:
-    inset 0 0 0 1px rgb(17 17 17 / 16%),
-    0 6px 14px rgb(0 0 0 / 24%) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  box-shadow: none !important;
   transform: translateY(-1px) !important;
 }
 
@@ -54274,4 +54282,8 @@ body .sm-profile-comment-card .sm-profile-chip-row span {
 .cc-name-link:hover,
 .cc-handle-link:hover {
   text-decoration: underline;
+}
+
+body .sm-app-shell :where(button, a, [role="button"]):is(:hover, :focus-visible) {
+  border-color: transparent !important;
 }

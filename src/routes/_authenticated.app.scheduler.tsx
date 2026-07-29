@@ -1278,6 +1278,8 @@ function SchedulerSelect<T extends string>({
       <SelectTrigger
         id={id}
         type="button"
+        data-active="true"
+        data-selected="true"
         className={["app-scheduler-input app-scheduler-select-trigger", triggerClassName]
           .filter(Boolean)
           .join(" ")}
