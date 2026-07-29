@@ -1454,7 +1454,7 @@ export function LinkrDocsPage() {
                       "linkr login --no-browser",
                       "linkr login --read-only",
                       "linkr login --full",
-                      "linkr login --api-url https://www.linkr.cash",
+                      "linkr login --api-url https://linkr.cash",
                     ]}
                     compact
                   />

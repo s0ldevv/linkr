@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/use-auth";
 export const Route = createFileRoute("/_authenticated/app/nfts")({
   head: () => ({
     meta: [
-      { title: "NFTs — SOLMate" },
+      { title: "NFTs - Linkr" },
       {
         name: "description",
         content: "Mint Solana NFT collections and NFTs directly from X by tagging @linkrcash.",

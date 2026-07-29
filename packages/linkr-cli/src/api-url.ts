@@ -1,4 +1,4 @@
-export const DEFAULT_API_URL = "https://www.linkr.cash";
+export const DEFAULT_API_URL = "https://linkr.cash";
 
 export type ApiUrlSource = "default" | "option" | "env" | "credentials";
 
@@ -9,10 +9,12 @@ export type ApiUrlResolution = {
   normalizedFrom?: string;
 };
 
-export function resolveApiUrl(options: {
-  apiUrl?: string | null;
-  env?: { LINKR_API_URL?: string };
-} = {}): ApiUrlResolution {
+export function resolveApiUrl(
+  options: {
+    apiUrl?: string | null;
+    env?: { LINKR_API_URL?: string };
+  } = {},
+): ApiUrlResolution {
   const optionValue = options.apiUrl?.trim();
   if (optionValue) return normalizeApiUrl(optionValue, "option");
 

@@ -5,9 +5,9 @@ import {
   xPostingAuthorization,
 } from "../_shared/x_posting_auth.ts";
 import {
+  isCryptoAddressBlockedFailure,
   isDefinitiveReplyTargetFailure,
   isRetryableXPostFailure,
-  isCryptoAddressBlockedFailure,
   stripCryptoAddresses,
 } from "../_shared/x_reply_delivery.ts";
 
@@ -198,7 +198,11 @@ Deno.serve((req) =>
         last_error_code: failureCode,
       });
       if (cryptoBlocked) {
-        await emitAddressFreeFallback(admin, claim.work_item, claimedReply.data);
+        await emitAddressFreeFallback(
+          admin,
+          claim.work_item,
+          claimedReply.data,
+        );
         return {
           kind: "complete",
           state: "rejected",
@@ -213,7 +217,7 @@ Deno.serve((req) =>
         }
         : { kind: "dead_letter", reasonCode: `x_post_${response.status}` };
     },
-  }),
+  })
 );
 
 async function emitAddressFreeFallback(
@@ -222,10 +226,12 @@ async function emitAddressFreeFallback(
   originalReply: any,
 ) {
   try {
-    const sanitized = stripCryptoAddresses(String(originalReply?.reply_text ?? ""));
+    const sanitized = stripCryptoAddresses(
+      String(originalReply?.reply_text ?? ""),
+    );
     const fallback = sanitized && sanitized.length > 6
       ? sanitized
-      : "Done ✅ Check your dashboard on solmate.live for details.";
+      : "Done ✅ Check your dashboard on https://linkr.cash/app for details.";
     const kind = String(originalReply?.kind ?? "reply") + "_no_address";
     // Idempotent: don't re-emit if a sibling fallback already exists for this parent.
     const existing = await admin.from("twitter_replies").select("id")
@@ -240,7 +246,10 @@ async function emitAddressFreeFallback(
     });
     if (result.error) throw result.error;
   } catch (error) {
-    console.error("x-reply-fallback-failed", String((error as Error)?.message ?? error));
+    console.error(
+      "x-reply-fallback-failed",
+      String((error as Error)?.message ?? error),
+    );
   }
 }
 

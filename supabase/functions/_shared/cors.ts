@@ -7,9 +7,6 @@ export const corsHeaders = {
 
 const DEFAULT_BROWSER_ORIGINS = [
   "https://linkr.cash",
-  "https://www.linkr.cash",
-  "https://linkr.bot",
-  "https://www.linkr.bot",
   "http://localhost:3000",
   "http://localhost:5173",
   "http://127.0.0.1:3000",
@@ -23,7 +20,7 @@ export function sensitiveCorsHeaders(req: Request): Record<string, string> {
   const configured = (Deno.env.get("LINKR_BROWSER_ORIGINS") ?? "")
     .split(",")
     .map((value) => value.trim())
-    .filter(Boolean);
+    .filter(isTrustedBrowserOrigin);
   const allowed = new Set([...DEFAULT_BROWSER_ORIGINS, ...configured]);
   const headers: Record<string, string> = {
     "Access-Control-Allow-Headers":
@@ -50,6 +47,18 @@ export function withSensitiveCors(req: Request, response: Response): Response {
     statusText: response.statusText,
     headers,
   });
+}
+
+function isTrustedBrowserOrigin(origin: string): boolean {
+  try {
+    const url = new URL(origin);
+    const host = url.hostname.toLowerCase();
+    return origin === "https://linkr.cash" ||
+      ((host === "localhost" || host === "127.0.0.1") &&
+        ["http:", "https:"].includes(url.protocol));
+  } catch (_) {
+    return false;
+  }
 }
 
 export function jsonResponse(body: unknown, init: ResponseInit = {}): Response {

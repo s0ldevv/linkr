@@ -151,7 +151,7 @@ export async function executeXNftCommand(
       ok: false,
       replyKind: "nft_wallet_missing",
       replyText:
-        "You need a Solana wallet linked to mint NFTs. Set one up in the SOLMate dashboard.",
+        "You need a Solana wallet linked to mint NFTs. Set one up in the Linkr dashboard.",
     };
   }
 
@@ -206,7 +206,7 @@ export async function executeXNftCommand(
         replyText: trim(
           `Minted collection ${
             existingCollection.name ?? input.command.name
-          } ✅ https://solmate.live/nfts/${existingCollection.id}`,
+          } ✅ https://linkr.cash/nfts/${existingCollection.id}`,
         ),
       };
     }
@@ -284,7 +284,7 @@ export async function executeXNftCommand(
         ok: true,
         replyKind: "nft_collection_minted",
         replyText: trim(
-          `Minted collection ${input.command.name} ✅ https://solmate.live/nfts/${collectionRowId}`,
+          `Minted collection ${input.command.name} ✅ https://linkr.cash/nfts/${collectionRowId}`,
         ),
       };
     } catch (error) {
@@ -360,7 +360,7 @@ export async function executeXNftCommand(
       ok: true,
       replyKind: "nft_minted",
       replyText: trim(
-        `Minted NFT into ${collection.name} ✅ https://solmate.live/nfts/${collection.id}`,
+        `Minted NFT into ${collection.name} ✅ https://linkr.cash/nfts/${collection.id}`,
       ),
     };
   }
@@ -431,7 +431,7 @@ export async function executeXNftCommand(
       ok: true,
       replyKind: "nft_minted",
       replyText: trim(
-        `Minted NFT into ${collection.name} ✅ https://solmate.live/nfts/${collection.id}`,
+        `Minted NFT into ${collection.name} ✅ https://linkr.cash/nfts/${collection.id}`,
       ),
     };
   } catch (error) {

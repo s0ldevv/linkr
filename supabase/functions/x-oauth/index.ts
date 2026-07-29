@@ -1,5 +1,9 @@
 // deno-lint-ignore-file no-explicit-any
-import { corsHeaders, jsonResponse, withSensitiveCors } from "../_shared/cors.ts";
+import {
+  corsHeaders,
+  jsonResponse,
+  withSensitiveCors,
+} from "../_shared/cors.ts";
 import { readJsonBody } from "../_shared/http.ts";
 import { serviceClient } from "../_shared/supabase.ts";
 import { decryptXToken, encryptXToken } from "../_shared/x_token_crypto.ts";
@@ -7,7 +11,10 @@ import { recordXTokenEvent } from "../_shared/x_tokens.ts";
 import { ensureProvisionedXUser } from "../_shared/provisioning.ts";
 import { getActiveXBan } from "../_shared/x_bans.ts";
 import { evaluateXUserGating } from "../_shared/admin_settings.ts";
-import { completeTelegramLinkToken, sendTelegramMessage } from "../_shared/telegram.ts";
+import {
+  completeTelegramLinkToken,
+  sendTelegramMessage,
+} from "../_shared/telegram.ts";
 
 const COOKIE_NAME = "linkr_x_pkce";
 const ACCOUNT_KEY = "linkrcash";
@@ -16,11 +23,12 @@ const BOT_SCOPES = "tweet.read tweet.write users.read offline.access";
 const USER_SCOPES = "tweet.read users.read";
 const X_AUTHORIZE_URL = "https://twitter.com/i/oauth2/authorize";
 const X_TOKEN_URL = "https://api.x.com/2/oauth2/token";
-const X_ME_URL = "https://api.x.com/2/users/me?user.fields=profile_image_url,public_metrics";
-const FALLBACK_APP_CALLBACK = "https://www.linkr.cash/auth/callback";
+const X_ME_URL =
+  "https://api.x.com/2/users/me?user.fields=profile_image_url,public_metrics";
+const CANONICAL_APP_ORIGIN = "https://linkr.cash";
+const FALLBACK_APP_CALLBACK = `${CANONICAL_APP_ORIGIN}/auth/callback`;
 const STATIC_ALLOWED_APP_CALLBACK_ORIGINS = [
-  "https://www.linkr.cash",
-  "https://linkr.cash",
+  CANONICAL_APP_ORIGIN,
   "http://localhost:3000",
   "http://127.0.0.1:3000",
   "http://localhost:5173",
@@ -78,12 +86,17 @@ function randomBase64Url(byteLength = 32): string {
 }
 
 async function pkceChallenge(verifier: string): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier));
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(verifier),
+  );
   return base64Url(new Uint8Array(digest));
 }
 
 function redirectUri(): string {
-  return `${requiredEnv("SUPABASE_URL").replace(/\/+$/g, "")}/functions/v1/x-oauth/callback`;
+  return `${
+    requiredEnv("SUPABASE_URL").replace(/\/+$/g, "")
+  }/functions/v1/x-oauth/callback`;
 }
 
 function parseCookies(header: string | null): Record<string, string> {
@@ -135,7 +148,11 @@ function escapeHtml(value: unknown): string {
     .replace(/'/g, "&#039;");
 }
 
-function htmlResponse(title: string, body: string, init: ResponseInit = {}): Response {
+function htmlResponse(
+  title: string,
+  body: string,
+  init: ResponseInit = {},
+): Response {
   return new Response(
     `<!doctype html>
 <html>
@@ -179,7 +196,10 @@ function oauthErrorRedirectUrl(
 ): string {
   const target = new URL(sanitizeRedirectTo(redirectTo ?? null));
   target.searchParams.set("error", code || "oauth_error");
-  target.searchParams.set("error_description", message || "X login did not finish.");
+  target.searchParams.set(
+    "error_description",
+    message || "X login did not finish.",
+  );
   target.hash = "";
   return target.toString();
 }
@@ -213,7 +233,9 @@ function configuredUrlValues(names: string[]): string[] {
   return values;
 }
 
-function originFromConfiguredUrl(raw: string | null | undefined): string | null {
+function originFromConfiguredUrl(
+  raw: string | null | undefined,
+): string | null {
   if (!raw) return null;
   const value = raw.trim();
   if (!value) return null;
@@ -226,31 +248,49 @@ function originFromConfiguredUrl(raw: string | null | undefined): string | null 
 }
 
 function defaultAppCallback(): string {
-  for (const value of configuredUrlValues([
-    "APP_ORIGIN",
-    "PUBLIC_SITE_URL",
-    "LINKR_APP_URL",
-    "SITE_URL",
-  ])) {
+  for (
+    const value of configuredUrlValues([
+      "APP_ORIGIN",
+      "PUBLIC_SITE_URL",
+      "LINKR_APP_URL",
+      "SITE_URL",
+    ])
+  ) {
     const origin = originFromConfiguredUrl(value);
-    if (origin) return `${origin}/auth/callback`;
+    if (origin && isAllowedAppCallbackOrigin(origin)) {
+      return `${origin}/auth/callback`;
+    }
   }
   return FALLBACK_APP_CALLBACK;
 }
 
 function allowedAppCallbackOrigins(): Set<string> {
   const origins = new Set(STATIC_ALLOWED_APP_CALLBACK_ORIGINS);
-  for (const value of configuredUrlValues([
-    "APP_ORIGIN",
-    "PUBLIC_SITE_URL",
-    "LINKR_APP_URL",
-    "SITE_URL",
-    "LINKR_BROWSER_ORIGINS",
-  ])) {
+  for (
+    const value of configuredUrlValues([
+      "APP_ORIGIN",
+      "PUBLIC_SITE_URL",
+      "LINKR_APP_URL",
+      "SITE_URL",
+      "LINKR_BROWSER_ORIGINS",
+    ])
+  ) {
     const origin = originFromConfiguredUrl(value);
-    if (origin) origins.add(origin);
+    if (origin && isAllowedAppCallbackOrigin(origin)) origins.add(origin);
   }
   return origins;
+}
+
+function isAllowedAppCallbackOrigin(origin: string): boolean {
+  try {
+    const url = new URL(origin);
+    const host = url.hostname.toLowerCase();
+    return origin === CANONICAL_APP_ORIGIN ||
+      ((host === "localhost" || host === "127.0.0.1") &&
+        ["http:", "https:"].includes(url.protocol));
+  } catch (_) {
+    return false;
+  }
 }
 
 function sanitizeRedirectTo(raw: string | null): string {
@@ -360,11 +400,18 @@ async function exchangeAuthHandoff(req: Request): Promise<Response> {
 }
 
 async function sha256Hex(value: string): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
-  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(value),
+  );
+  return [...new Uint8Array(digest)].map((byte) =>
+    byte.toString(16).padStart(2, "0")
+  ).join("");
 }
 
-function telegramLinkTokenFromRedirect(redirectTo: string | undefined): string | null {
+function telegramLinkTokenFromRedirect(
+  redirectTo: string | undefined,
+): string | null {
   if (!redirectTo) return null;
   try {
     return new URL(redirectTo).searchParams.get("telegram_link");
@@ -410,9 +457,14 @@ async function createSessionForProvisionedXUser(
     email,
   });
   if (generated.error) {
-    throw new Error(`Could not prepare Linkr session: ${generated.error.message}`);
+    throw new Error(
+      `Could not prepare Linkr session: ${generated.error.message}`,
+    );
   }
-  if (generated.data.user?.id !== userId || !generated.data.properties?.hashed_token) {
+  if (
+    generated.data.user?.id !== userId ||
+    !generated.data.properties?.hashed_token
+  ) {
     throw new Error("Supabase did not return a valid Linkr session token.");
   }
 
@@ -434,7 +486,9 @@ async function createSessionForProvisionedXUser(
 
   if (!response.ok) {
     throw new Error(
-      `Could not create Linkr session (${response.status}): ${JSON.stringify(body).slice(0, 300)}`,
+      `Could not create Linkr session (${response.status}): ${
+        JSON.stringify(body).slice(0, 300)
+      }`,
     );
   }
 
@@ -463,7 +517,11 @@ async function ensureStartAuthorized(url: URL): Promise<void> {
   if (!consumed.data) throw new Error("Unauthorized OAuth start request");
 }
 
-async function authorize(req: Request, url: URL, mode: "bot" | "user"): Promise<Response> {
+async function authorize(
+  req: Request,
+  url: URL,
+  mode: "bot" | "user",
+): Promise<Response> {
   if (req.method !== "GET") {
     return jsonResponse({ error: "Method not allowed" }, { status: 405 });
   }
@@ -472,30 +530,32 @@ async function authorize(req: Request, url: URL, mode: "bot" | "user"): Promise<
   const verifier = randomBase64Url(64);
   const state = randomBase64Url(32);
   const challenge = await pkceChallenge(verifier);
-  const redirectTo =
-    mode === "user" ? sanitizeRedirectTo(url.searchParams.get("redirect_to")) : undefined;
+  const redirectTo = mode === "user"
+    ? sanitizeRedirectTo(url.searchParams.get("redirect_to"))
+    : undefined;
   const redirectUrl = redirectTo ? new URL(redirectTo) : null;
-  const authPopup =
-    mode === "user" &&
+  const authPopup = mode === "user" &&
     (url.searchParams.get("auth_popup") === "1" ||
       redirectUrl?.searchParams.get("auth_popup") === "1");
-  const authFlowId =
-    mode === "user"
-      ? normalizeAuthFlowId(
-          url.searchParams.get("auth_flow") ?? redirectUrl?.searchParams.get("auth_flow") ?? null,
-        )
-      : undefined;
+  const authFlowId = mode === "user"
+    ? normalizeAuthFlowId(
+      url.searchParams.get("auth_flow") ??
+        redirectUrl?.searchParams.get("auth_flow") ?? null,
+    )
+    : undefined;
   const finalRedirectTo = redirectTo
     ? withAuthPopupMetadata(redirectTo, authPopup, authFlowId)
     : undefined;
-  const rawExpectedUserId = mode === "user" ? url.searchParams.get("expected_user_id") : null;
-  const expectedUserId =
-    rawExpectedUserId &&
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-      rawExpectedUserId,
-    )
-      ? rawExpectedUserId.toLowerCase()
-      : undefined;
+  const rawExpectedUserId = mode === "user"
+    ? url.searchParams.get("expected_user_id")
+    : null;
+  const expectedUserId = rawExpectedUserId &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+        .test(
+          rawExpectedUserId,
+        )
+    ? rawExpectedUserId.toLowerCase()
+    : undefined;
   const params = new URLSearchParams({
     response_type: "code",
     client_id: requiredEnv("X_CLIENT_ID"),
@@ -534,9 +594,15 @@ async function callback(req: Request, url: URL): Promise<Response> {
 
   const providerError = url.searchParams.get("error");
   if (providerError) {
-    const description = url.searchParams.get("error_description") ?? "X rejected the login.";
+    const description = url.searchParams.get("error_description") ??
+      "X rejected the login.";
     if (pkce && (!state || timingSafeEqual(state, pkce.state))) {
-      return userOauthError(pkce, `${providerError}: ${description}`, 400, providerError);
+      return userOauthError(
+        pkce,
+        `${providerError}: ${description}`,
+        400,
+        providerError,
+      );
     }
     return oauthError(`${providerError}: ${description}`);
   }
@@ -547,7 +613,9 @@ async function callback(req: Request, url: URL): Promise<Response> {
   }
 
   if (!pkce) {
-    return oauthError("Missing or expired OAuth cookie. Start the login again.");
+    return oauthError(
+      "Missing or expired OAuth cookie. Start the login again.",
+    );
   }
   if (!timingSafeEqual(state, pkce.state)) {
     return oauthError("OAuth state mismatch. Start the login again.");
@@ -576,15 +644,19 @@ async function callback(req: Request, url: URL): Promise<Response> {
   if (!tokenResponse.ok) {
     return userOauthError(
       pkce,
-      `X token exchange failed (${tokenResponse.status}). ${JSON.stringify(tokenBody).slice(
-        0,
-        500,
-      )}`,
+      `X token exchange failed (${tokenResponse.status}). ${
+        JSON.stringify(tokenBody).slice(
+          0,
+          500,
+        )
+      }`,
       400,
       "token_exchange_failed",
     );
   }
-  if (!tokenBody?.access_token || (mode === "bot" && !tokenBody?.refresh_token)) {
+  if (
+    !tokenBody?.access_token || (mode === "bot" && !tokenBody?.refresh_token)
+  ) {
     return userOauthError(
       pkce,
       mode === "bot"
@@ -602,7 +674,9 @@ async function callback(req: Request, url: URL): Promise<Response> {
   if (!meResponse.ok) {
     return userOauthError(
       pkce,
-      `Could not verify X account (${meResponse.status}). ${JSON.stringify(meBody).slice(0, 500)}`,
+      `Could not verify X account (${meResponse.status}). ${
+        JSON.stringify(meBody).slice(0, 500)
+      }`,
       400,
       "profile_lookup_failed",
     );
@@ -614,7 +688,12 @@ async function callback(req: Request, url: URL): Promise<Response> {
 
   if (mode === "user") {
     if (!user?.id || !username) {
-      return userOauthError(pkce, "X did not return a valid user profile.", 400, "invalid_profile");
+      return userOauthError(
+        pkce,
+        "X did not return a valid user profile.",
+        400,
+        "invalid_profile",
+      );
     }
 
     const activeBan = await getActiveXBan(admin, user.id);
@@ -709,7 +788,10 @@ async function callback(req: Request, url: URL): Promise<Response> {
           "account_check_failed",
         );
       }
-      if (!expectedProfile || String(expectedProfile.twitter_id ?? "") !== String(user.id)) {
+      if (
+        !expectedProfile ||
+        String(expectedProfile.twitter_id ?? "") !== String(user.id)
+      ) {
         await recordXTokenEvent(admin, {
           accountKey: "user-login",
           eventType: "oauth_reauthentication_mismatch",
@@ -738,7 +820,10 @@ async function callback(req: Request, url: URL): Promise<Response> {
       source: "x_login",
     });
 
-    if (pkce.expectedUserId && provisioned.userId.toLowerCase() !== pkce.expectedUserId) {
+    if (
+      pkce.expectedUserId &&
+      provisioned.userId.toLowerCase() !== pkce.expectedUserId
+    ) {
       await recordXTokenEvent(admin, {
         accountKey: "user-login",
         eventType: "oauth_reauthentication_mismatch",
@@ -781,10 +866,17 @@ async function callback(req: Request, url: URL): Promise<Response> {
           text: `Connected @${username}. You can chat with Linkr here now.`,
         }).catch(() => null);
       } catch (error) {
-        telegramLinkError = error instanceof Error ? error.message : String(error);
+        telegramLinkError = error instanceof Error
+          ? error.message
+          : String(error);
       }
     }
-    const actionLink = await sessionRedirectUrl(admin, provisioned.userId, redirectTo, session);
+    const actionLink = await sessionRedirectUrl(
+      admin,
+      provisioned.userId,
+      redirectTo,
+      session,
+    );
 
     await recordXTokenEvent(admin, {
       accountKey: "user-login",
@@ -821,7 +913,9 @@ async function callback(req: Request, url: URL): Promise<Response> {
 
   if (username !== EXPECTED_HANDLE) {
     return oauthError(
-      `Logged in as @${username || "unknown"}, but this app requires @${EXPECTED_HANDLE}.`,
+      `Logged in as @${
+        username || "unknown"
+      }, but this app requires @${EXPECTED_HANDLE}.`,
     );
   }
 
@@ -859,7 +953,10 @@ async function callback(req: Request, url: URL): Promise<Response> {
   );
 
   if (upsertError) {
-    return oauthError(`Could not store X token metadata: ${upsertError.message}`, 500);
+    return oauthError(
+      `Could not store X token metadata: ${upsertError.message}`,
+      500,
+    );
   }
 
   await recordXTokenEvent(admin, {
@@ -878,7 +975,9 @@ async function callback(req: Request, url: URL): Promise<Response> {
   return htmlResponse(
     "X OAuth Connected",
     `<h1>X OAuth Connected</h1>
-<p><code>@${escapeHtml(EXPECTED_HANDLE)}</code> is connected for Linkr reply posting.</p>
+<p><code>@${
+      escapeHtml(EXPECTED_HANDLE)
+    }</code> is connected for Linkr reply posting.</p>
 <p>X user id: <code>${escapeHtml(user.id)}</code></p>
 <p>Token expires at: <code>${escapeHtml(expiresAt)}</code></p>
 <p>You can close this tab.</p>`,
@@ -900,7 +999,9 @@ async function handleRequest(req: Request): Promise<Response> {
     }
     if (url.pathname.endsWith("/callback")) return await callback(req, url);
     const mode =
-      url.pathname.endsWith("/user") || url.searchParams.get("mode") === "user" ? "user" : "bot";
+      url.pathname.endsWith("/user") || url.searchParams.get("mode") === "user"
+        ? "user"
+        : "bot";
     return await authorize(req, url, mode);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

@@ -275,7 +275,7 @@ export async function editTelegramMessageReplyMarkup(args: {
 export async function setTelegramBotCommands() {
   return await callTelegramApi("setMyCommands", {
     commands: [
-      { command: "start", description: "Start Linkr on Telegram" },
+      { command: "start", description: "Show the Linkr welcome menu" },
       { command: "login", description: "Connect your X account" },
       { command: "logout", description: "Disconnect your X account" },
       { command: "status", description: "Show connection status" },
@@ -360,11 +360,10 @@ export async function unlinkTelegramAccount(
   if (!account?.user_id) return { unlinked: false, account: account ?? null };
 
   const now = new Date().toISOString();
-  const metadata =
-    account.metadata && typeof account.metadata === "object" &&
+  const metadata = account.metadata && typeof account.metadata === "object" &&
       !Array.isArray(account.metadata)
-      ? account.metadata
-      : {};
+    ? account.metadata
+    : {};
 
   const expiredTokens = await admin
     .from("telegram_link_tokens")
@@ -612,7 +611,20 @@ export function bestTelegramPhoto(
 
 export function telegramLoginKeyboard(url: string) {
   return {
-    inline_keyboard: [[{ text: "Connect X account", url }]],
+    inline_keyboard: [[{ text: "Log in with X", url }]],
+  };
+}
+
+export function telegramStartMenuKeyboard(loginUrl: string) {
+  return {
+    inline_keyboard: [
+      [
+        { text: "Website", url: "https://linkr.cash" },
+        { text: "Terminal", url: "https://linkr.cash/app/terminal" },
+      ],
+      [{ text: "X", url: "https://x.com/linkrcash" }],
+      [{ text: "Log in with X", url: loginUrl }],
+    ],
   };
 }
 
@@ -708,12 +720,24 @@ export async function hashTelegramToken(token: string): Promise<string> {
 }
 
 function appOrigin(): string {
-  return String(
-    Deno.env.get("LINKR_APP_URL") ??
-      Deno.env.get("PUBLIC_SITE_URL") ??
-      Deno.env.get("APP_ORIGIN") ??
-      "https://www.linkr.cash",
-  ).replace(/\/+$/g, "");
+  const canonical = "https://linkr.cash";
+  for (
+    const name of [
+      "LINKR_APP_URL",
+      "PUBLIC_SITE_URL",
+      "APP_ORIGIN",
+    ]
+  ) {
+    const value = Deno.env.get(name);
+    if (!value) continue;
+    try {
+      const url = new URL(value.includes("://") ? value : `https://${value}`);
+      if (url.origin === canonical) return canonical;
+    } catch (_) {
+      // Ignore invalid configured app origins and fall back to production.
+    }
+  }
+  return canonical;
 }
 
 function requiredEnv(name: string): string {

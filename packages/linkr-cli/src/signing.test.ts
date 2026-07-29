@@ -5,7 +5,7 @@ import { signRequest, sha256Hex } from "./signing.js";
 
 test("signRequest creates the Linkr canonical HMAC headers", () => {
   const apiKey = "linkr_live_0123456789_" + "a".repeat(64);
-  const url = new URL("https://www.linkr.cash/api/cli/chat?x=1");
+  const url = new URL("https://linkr.cash/api/cli/chat?x=1");
   const signed = signRequest({
     apiKey,
     method: "POST",

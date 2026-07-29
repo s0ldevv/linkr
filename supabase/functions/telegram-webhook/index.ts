@@ -37,6 +37,7 @@ import {
   telegramLogoutKeyboard,
   type TelegramMessage,
   telegramPendingActionKeyboard,
+  telegramStartMenuKeyboard,
   type TelegramUpdate,
   type TelegramUser,
   telegramVerificationKeyboard,
@@ -214,12 +215,12 @@ async function handleUpdate(
     if (await sendVerificationHandoffPrompt(admin, message, payload)) {
       return true;
     }
-    await sendLoginPrompt(admin, message, payload);
+    await sendStartMenu(admin, message);
     return true;
   }
 
   if (command === "login") {
-    await sendLoginPrompt(admin, message, null);
+    await sendLoginPrompt(admin, message);
     return true;
   }
 
@@ -249,7 +250,7 @@ async function handleUpdate(
   }
 
   if (!linked?.user_id) {
-    await sendLoginPrompt(admin, message, null);
+    await sendLoginPrompt(admin, message);
     return true;
   }
 
@@ -624,20 +625,64 @@ function recordMetadata(value: unknown): Record<string, unknown> {
     : {};
 }
 
-async function sendLoginPrompt(
+async function createTelegramCommandLoginUrl(
   admin: any,
   message: TelegramMessage,
-  _payload: string | null,
-) {
+): Promise<string | null> {
   const chatId = telegramId(message.chat?.id);
   const telegramUserId = telegramId(message.from?.id);
-  if (!chatId || !telegramUserId) return;
+  if (!chatId || !telegramUserId) return null;
   const login = await createTelegramLoginLink(admin, {
     telegramUserId,
     telegramChatId: chatId,
     messageThreadId: threadId(message),
     source: "telegram_command",
   });
+  return login.url;
+}
+
+async function sendStartMenu(admin: any, message: TelegramMessage) {
+  const chatId = telegramId(message.chat?.id);
+  const loginUrl = await createTelegramCommandLoginUrl(admin, message);
+  if (!chatId || !loginUrl) return;
+
+  await sendTelegramMessage({
+    chat_id: chatId,
+    message_thread_id: threadId(message),
+    text: startMenuText(),
+    reply_markup: telegramStartMenuKeyboard(loginUrl),
+  });
+}
+
+function startMenuText(): string {
+  return [
+    "Welcome to Linkr on Telegram.",
+    "",
+    "What Linkr can do:",
+    "- Research tokens, explain charts, liquidity, volume, activity, and public X posts.",
+    "- Read your Linkr wallet, portfolio, launches, transactions, pending actions, and history.",
+    "- Prepare buys, sells, ETH/SOL transfers, token launches, Solana NFT collections/mints, liquidity actions, creator-reward claims, and schedules.",
+    "- Work on Robinhood Chain and Solana/Pump.fun/PumpSwap.",
+    "",
+    "How to use it:",
+    "- Tap the login button below and connect your X account.",
+    '- Then send a normal message, like "what is my SOL balance?", "research this token", or "launch a Solana coin called ...".',
+    "- Linkr will ask for missing details. Anything that moves value requires an explicit confirmation before it runs.",
+    "",
+    "Slash commands:",
+    "/start - show this menu",
+    "/login - connect your X account",
+    "/logout - disconnect Telegram from your Linkr account",
+    "/status - show whether Telegram is connected",
+    "/help - show a quick command and capability summary",
+  ].join("\n");
+}
+
+async function sendLoginPrompt(admin: any, message: TelegramMessage) {
+  const chatId = telegramId(message.chat?.id);
+  const loginUrl = await createTelegramCommandLoginUrl(admin, message);
+  if (!chatId || !loginUrl) return;
+
   await sendTelegramMessage({
     chat_id: chatId,
     message_thread_id: threadId(message),
@@ -646,7 +691,7 @@ async function sendLoginPrompt(
       "After that you can chat privately, prepare launches, transfers, swaps, irreversible token burns, liquidity actions, schedules, and creator-reward claims.",
       "Anything that moves value still requires an explicit confirmation.",
     ].join("\n\n"),
-    reply_markup: telegramLoginKeyboard(login.url),
+    reply_markup: telegramLoginKeyboard(loginUrl),
   });
 }
 
@@ -1742,6 +1787,7 @@ function helpText(chatType: string): string {
   }
   return [
     "Linkr Telegram commands:",
+    "/start - show the welcome menu and login button",
     "/login - connect your X account",
     "/logout - disconnect Telegram from your Linkr account",
     "/status - show connection status",

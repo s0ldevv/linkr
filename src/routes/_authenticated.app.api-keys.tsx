@@ -195,7 +195,7 @@ function AgentsPage() {
         <div className="app-agents-hero-actions">
           <a
             className="app-agents-docs-link"
-            href="https://www.linkr.cash/agent-api"
+            href="https://linkr.cash/agent-api"
             target="_blank"
             rel="noreferrer"
           >

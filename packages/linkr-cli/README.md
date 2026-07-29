@@ -2,7 +2,7 @@
 
 `@linkrcash/cli` installs the `linkr` command, a terminal client for chatting with Linkr from your own computer. It gives users the private `/app/terminal` experience from a local shell: sign in with X, ask account or market questions, continue conversations, attach images, and confirm supported Linkr actions without opening the web terminal.
 
-The CLI talks to the production Linkr API at `https://www.linkr.cash` by default.
+The CLI talks to the production Linkr API at `https://linkr.cash` by default.
 
 ## Requirements
 
@@ -60,13 +60,13 @@ Useful login options:
 linkr login --no-browser
 linkr login --read-only
 linkr login --full
-linkr login --api-url https://www.linkr.cash
+linkr login --api-url https://linkr.cash
 ```
 
 `--no-browser` prints the login URL without trying to open it automatically.
 
 `--api-url` should be the Linkr site origin, not an API path. Use
-`https://www.linkr.cash`, not `https://www.linkr.cash/api`. The CLI normalizes common
+`https://linkr.cash`, not `https://linkr.cash/api`. The CLI normalizes common
 `/api` mistakes before it calls the login endpoint.
 
 `--read-only` requests the default chat and read scopes. This is the normal mode for asking questions, viewing account data, researching tokens, and chatting.
@@ -76,7 +76,7 @@ linkr login --api-url https://www.linkr.cash
 You can also override the default API URL with:
 
 ```sh
-LINKR_API_URL=https://www.linkr.cash linkr login
+LINKR_API_URL=https://linkr.cash linkr login
 ```
 
 ## Commands
@@ -293,7 +293,7 @@ Then copy the printed URL into your browser manually.
 Check the API URL you passed to `--api-url` or `LINKR_API_URL`. It should be the site origin:
 
 ```sh
-linkr login --api-url https://www.linkr.cash
+linkr login --api-url https://linkr.cash
 ```
 
 Do not include `/api`; the CLI adds `/api/cli/...` automatically. You can also run:

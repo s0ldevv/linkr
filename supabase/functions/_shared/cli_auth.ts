@@ -2,7 +2,7 @@
 import { type AgentScope, normalizeScopes } from "./agent_api_core.ts";
 
 const BASE32_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
-const DEFAULT_APP_ORIGIN = "https://www.linkr.cash";
+const DEFAULT_APP_ORIGIN = "https://linkr.cash";
 export const CLI_AUTH_RECENT_X_AUTH_MAX_AGE_MS = 5 * 60 * 1000;
 const CLI_AUTH_REQUEST_CLOCK_SKEW_MS = 30 * 1000;
 
@@ -153,7 +153,7 @@ export function cliVerificationOrigin(req?: Request): string {
     ]
   ) {
     const origin = originFromValue(Deno.env.get(name));
-    if (origin) return origin;
+    if (origin && isTrustedPublicOrigin(origin)) return origin;
   }
   return DEFAULT_APP_ORIGIN;
 }
@@ -237,9 +237,6 @@ function isTrustedPublicOrigin(origin: string): boolean {
     if (!["http:", "https:"].includes(protocol)) return false;
     const host = hostname.toLowerCase();
     return host === "linkr.cash" ||
-      host === "www.linkr.cash" ||
-      host === "linkr-new.vercel.app" ||
-      host.endsWith(".vercel.app") ||
       host === "localhost" ||
       host === "127.0.0.1";
   } catch {

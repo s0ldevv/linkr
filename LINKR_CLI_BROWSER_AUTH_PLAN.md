@@ -36,7 +36,7 @@ Request path:
 User terminal
   linkr login
     -> POST /api/cli/auth/start
-    -> browser opens https://www.linkr.cash/cli/auth?request=<browser_request_code>
+    -> browser opens https://linkr.cash/cli/auth?request=<browser_request_code>
     -> existing X login if needed
     -> page shows only LINKR-XXXX-XXXX
     -> user pastes code into CLI
@@ -91,7 +91,7 @@ Server behavior:
 ```json
 {
   "device_code": "<opaque high entropy secret>",
-  "verification_url": "https://www.linkr.cash/cli/auth?request=<browser_request_code>",
+  "verification_url": "https://linkr.cash/cli/auth?request=<browser_request_code>",
   "expires_at": "2026-07-28T19:00:00.000Z"
 }
 ```
@@ -453,7 +453,7 @@ Shape:
 ```json
 {
   "apiKey": "linkr_live_...",
-  "apiUrl": "https://www.linkr.cash",
+  "apiUrl": "https://linkr.cash",
   "keyPrefix": "...",
   "agentProfileId": "...",
   "installId": "...",

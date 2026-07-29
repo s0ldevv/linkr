@@ -14,25 +14,25 @@ function withEnv(name: string, value: string | undefined, run: () => void) {
   }
 }
 
-Deno.test("sensitive CORS reflects exact allowed origins only", () => {
-  withEnv("LINKR_BROWSER_ORIGINS", "https://staging.linkr.cash", () => {
+Deno.test("sensitive CORS reflects exact canonical origins only", () => {
+  withEnv("LINKR_BROWSER_ORIGINS", "https://preview.example", () => {
     const allowed = sensitiveCorsHeaders(
       new Request("https://edge.test", {
-        headers: { Origin: "https://staging.linkr.cash" },
+        headers: { Origin: "https://linkr.cash" },
       }),
     );
     assertEquals(
       allowed["Access-Control-Allow-Origin"],
-      "https://staging.linkr.cash",
+      "https://linkr.cash",
     );
     assertEquals(allowed.Vary, "Origin");
 
-    const lookalike = sensitiveCorsHeaders(
+    const legacy = sensitiveCorsHeaders(
       new Request("https://edge.test", {
-        headers: { Origin: "https://staging.linkr.cash.evil" },
+        headers: { Origin: "https://preview.example" },
       }),
     );
-    assertFalse("Access-Control-Allow-Origin" in lookalike);
+    assertFalse("Access-Control-Allow-Origin" in legacy);
   });
 });
 
