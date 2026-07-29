@@ -37327,6 +37327,30 @@ body .sm-launch-token-market span {
   white-space: nowrap !important;
 }
 
+body .sm-launch-token-launcher {
+  overflow: hidden !important;
+  width: max-content !important;
+  max-width: 100% !important;
+  color: rgb(250 247 246 / 66%) !important;
+  font-family: var(--font-mono, monospace) !important;
+  font-size: 0.68rem !important;
+  font-weight: 760 !important;
+  line-height: 1.1 !important;
+  text-decoration: none !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+body .sm-launch-token-launcher:hover,
+body .sm-launch-token-launcher:focus-visible {
+  color: var(--rayo-accent, #ccff00) !important;
+}
+
+body .sm-launch-token-launcher:focus-visible {
+  outline: 2px solid rgb(203 255 0 / 62%) !important;
+  outline-offset: 2px !important;
+}
+
 body .sm-token-mint-copy {
   display: inline-flex !important;
   max-width: 100% !important;

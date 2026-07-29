@@ -4,9 +4,12 @@ import { Link } from "@tanstack/react-router";
 import { ChainPill } from "@/components/linkr/ChainPill";
 import { TokenMintCopy } from "@/components/linkr/TokenMintCopy";
 import type { LaunchTokenCardData } from "@/lib/linkr/launch-token-card";
+import { normalizeProfileHandle } from "@/lib/linkr/profile-links";
 import { xIntent } from "@/lib/linkr/home-data";
 
 export function LaunchTokenCard({ coin, index }: { coin: LaunchTokenCardData; index: number }) {
+  const launcherUsername = normalizeProfileHandle(coin.launcherHandle);
+
   return (
     <article
       className="sm-launch-token-card"
@@ -20,6 +23,15 @@ export function LaunchTokenCard({ coin, index }: { coin: LaunchTokenCardData; in
         <span className="sm-launch-token-name">
           <strong>${coin.symbol}</strong>
           <small>{coin.name}</small>
+          {launcherUsername && (
+            <Link
+              className="sm-launch-token-launcher"
+              to="/u/$username"
+              params={{ username: launcherUsername }}
+            >
+              by @{launcherUsername}
+            </Link>
+          )}
           <TokenMintCopy mint={coin.mint} />
         </span>
         <ChainPill chain={coin.chainTone} iconOnly label={coin.chainLabel} />

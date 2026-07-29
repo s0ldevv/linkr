@@ -1,9 +1,10 @@
-import { useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { type KeyboardEvent, type MouseEvent, useEffect, useRef, useState } from "react";
 import type { PublicTokenRank } from "@/lib/linkr/home-data";
 import { formatCompactUsd } from "@/lib/linkr/home-data";
 import { chainPresentationForRecord } from "@/lib/linkr/chain-presentation";
 import { shortAddress } from "@/lib/linkr/format";
+import { normalizeProfileHandle } from "@/lib/linkr/profile-links";
 import { ChainPill } from "@/components/linkr/ChainPill";
 import { Sparkline } from "./Sparkline";
 import { badgeForToken } from "./terminal-data";
@@ -63,6 +64,7 @@ export function TerminalCoinCard({ isDemo, token }: { isDemo: boolean; token: Pu
   const sparkColor = badge === "trending" ? "purple" : "lime";
   const ageLabel = useLiveRelativeAge(token.createdAt);
   const truncatedMint = token.mint ? shortAddress(token.mint, 5, 5) : null;
+  const launcherUsername = normalizeProfileHandle(token.launcherHandle);
   const [copiedMint, setCopiedMint] = useState(false);
   const copyResetTimeout = useRef<number | null>(null);
 
@@ -92,6 +94,12 @@ export function TerminalCoinCard({ isDemo, token }: { isDemo: boolean; token: Pu
     copyResetTimeout.current = window.setTimeout(() => {
       setCopiedMint(false);
     }, 1200);
+  };
+
+  const stopNestedProfileNavigation = (
+    event: KeyboardEvent<HTMLAnchorElement> | MouseEvent<HTMLAnchorElement>,
+  ) => {
+    event.stopPropagation();
   };
 
   useEffect(() => {
@@ -125,6 +133,18 @@ export function TerminalCoinCard({ isDemo, token }: { isDemo: boolean; token: Pu
         <div className="lkt-coin-id">
           <span className="lkt-coin-symbol">${token.symbol}</span>
           <span className="lkt-coin-name">{token.name}</span>
+          {launcherUsername && (
+            <Link
+              className="lkt-coin-launcher"
+              to="/u/$username"
+              params={{ username: launcherUsername }}
+              onClick={stopNestedProfileNavigation}
+              onKeyDown={stopNestedProfileNavigation}
+            >
+              <span>by</span>
+              <strong>@{launcherUsername}</strong>
+            </Link>
+          )}
           <div className="lkt-coin-meta-row">
             <span className="lkt-coin-mint">
               {truncatedMint ? (

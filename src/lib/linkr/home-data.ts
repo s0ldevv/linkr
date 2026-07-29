@@ -69,6 +69,8 @@ export type PublicTokenRank = {
   liquidityUsd: number | null;
   marketCapUsd: number | null;
   mint: string | null;
+  launcherHandle?: string | null;
+  launchSource?: string | null;
   name: string;
   pairUrl: string | null;
   priceChange24h: number | null;

@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, Rocket } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { TerminalCoinCard } from "@/components/linkr/home/terminal/TerminalCoinCard";
@@ -13,30 +13,8 @@ import { useHomeDashboardData } from "@/hooks/use-home-dashboard-data";
 import { supabase } from "@/integrations/supabase/client";
 import { isSolanaRecord } from "@/lib/linkr/chain-presentation";
 import type { PublicTokenRank } from "@/lib/linkr/home-data";
-import type { Tables } from "@/integrations/supabase/types";
 import "@/components/linkr/home/terminal/terminal-home.css";
 
-type Launch = Tables<"coin_launches">;
-type LaunchPreview = Pick<
-  Launch,
-  | "id"
-  | "created_at"
-  | "description"
-  | "chain"
-  | "launch_platform"
-  | "launch_origin"
-  | "launch_source"
-  | "dev_buy_eth"
-  | "dev_buy_sol"
-  | "dev_buy_usd"
-  | "image_url"
-  | "mint"
-  | "name"
-  | "status"
-  | "symbol"
-  | "token_address"
-  | "tx_signature"
->;
 type ChainFilter = PublicChainFilterValue;
 type LaunchCardRow = {
   isDemo: boolean;
@@ -59,26 +37,12 @@ function PublicExplorePage() {
   const [chainFilter, setChainFilter] = useState<ChainFilter>("all");
   const [cardsPerRow, setCardsPerRow] = useState(DEFAULT_CARDS_PER_ROW);
   const [visibleCardRows, setVisibleCardRows] = useState(INITIAL_VISIBLE_CARD_ROWS);
-  const homeQuery = useHomeDashboardData();
-
-  const launchesQuery = useQuery({
-    queryKey: ["public-live-launches"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("coin_launches")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(60);
-      if (error) throw error;
-      return data ?? [];
-    },
-  });
+  const homeQuery = useHomeDashboardData({ publicLaunchLimit: 60 });
 
   useEffect(() => {
     const channel = supabase
       .channel("public-live-launches")
       .on("postgres_changes", { event: "*", schema: "public", table: "coin_launches" }, () => {
-        queryClient.invalidateQueries({ queryKey: ["public-live-launches"] });
         queryClient.invalidateQueries({ queryKey: ["home-dashboard-data"] });
       })
       .subscribe();
@@ -88,10 +52,6 @@ function PublicExplorePage() {
     };
   }, [queryClient]);
 
-  const realLaunches = useMemo<LaunchPreview[]>(
-    () => launchesQuery.data ?? [],
-    [launchesQuery.data],
-  );
   const homeTokens = useMemo(
     () =>
       [...(homeQuery.data?.public.topLaunchedTokens ?? [])].sort(
@@ -99,33 +59,17 @@ function PublicExplorePage() {
       ),
     [homeQuery.data?.public.topLaunchedTokens],
   );
-  const homeTokenLookup = useMemo(() => {
-    const lookup = new Map<string, PublicTokenRank>();
-    homeTokens.forEach((token) => {
-      lookup.set(token.id, token);
-      if (token.mint) lookup.set(token.mint.toLowerCase(), token);
-    });
-    return lookup;
-  }, [homeTokens]);
   const launchRows = useMemo<LaunchCardRow[]>(() => {
-    if (realLaunches.length > 0) {
-      return realLaunches.map((launch) => {
-        const tokenAddress = launch.token_address ?? launch.mint;
-        const token =
-          homeTokenLookup.get(launch.id) ??
-          (tokenAddress ? homeTokenLookup.get(tokenAddress.toLowerCase()) : undefined) ??
-          publicTokenFromLaunch(launch);
-
-        return { isDemo: false, launchSource: launch.launch_source, token };
-      });
-    }
-
     if (homeTokens.length > 0) {
-      return homeTokens.map((token) => ({ isDemo: false, token }));
+      return homeTokens.map((token) => ({
+        isDemo: false,
+        launchSource: token.launchSource,
+        token,
+      }));
     }
 
     return PLACEHOLDER_TOKENS.map((token) => ({ isDemo: true, token }));
-  }, [homeTokenLookup, homeTokens, realLaunches]);
+  }, [homeTokens]);
   const visibleRows = useMemo(
     () => filterRowsByChain(launchRows, chainFilter),
     [chainFilter, launchRows],
@@ -194,7 +138,7 @@ function PublicExplorePage() {
 
         <section
           className="sm-public-board-shell sm-public-launch-card-section lkt-section-narrow"
-          aria-busy={launchesQuery.isLoading || homeQuery.isLoading || undefined}
+          aria-busy={homeQuery.isLoading || undefined}
           aria-label="Explore token cards"
         >
           <div className="lkt-coin-grid" ref={coinGridRef}>
@@ -230,61 +174,6 @@ function PublicExplorePage() {
       </main>
     </div>
   );
-}
-
-function publicTokenFromLaunch(launch: LaunchPreview): PublicTokenRank {
-  const tokenAddress = launch.token_address ?? launch.mint;
-
-  return {
-    chain: launch.chain,
-    createdAt: launch.created_at,
-    description: launch.description,
-    devBuyEth: launch.dev_buy_eth,
-    devBuySol: launch.dev_buy_sol,
-    devBuyUsd: launch.dev_buy_usd,
-    id: launch.id,
-    imageUrl: launch.image_url,
-    launchPlatform: launch.launch_platform,
-    liquidityUsd: null,
-    marketCapUsd: null,
-    mint: tokenAddress,
-    name: launch.name,
-    pairUrl: null,
-    priceChange24h: null,
-    status: tokenStatusFromLaunchStatus(launch.status),
-    symbol: launch.symbol,
-    txSignature: launch.tx_signature,
-  };
-}
-
-function tokenStatusFromLaunchStatus(status: string | null): PublicTokenRank["status"] {
-  const normalized = (status ?? "").toLowerCase();
-  // Only show as "new" if actually processing/pending
-  if (
-    ["processing", "pending", "queued", "created", "new"].some((value) =>
-      normalized.includes(value),
-    )
-  ) {
-    return "new";
-  }
-  // Only show as "live" if confirmed/completed successfully
-  if (
-    ["confirmed", "completed", "success", "live", "submitted", "posted"].some((value) =>
-      normalized.includes(value),
-    )
-  ) {
-    return "live";
-  }
-  // For failed/cancelled/expired, return the actual status so UI can handle appropriately
-  if (
-    ["failed", "cancelled", "expired", "error", "rejected"].some((value) =>
-      normalized.includes(value),
-    )
-  ) {
-    return normalized as PublicTokenRank["status"];
-  }
-  // Default to the normalized status
-  return normalized as PublicTokenRank["status"];
 }
 
 function filterRowsByChain(rows: LaunchCardRow[], chainFilter: ChainFilter) {

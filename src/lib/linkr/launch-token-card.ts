@@ -10,6 +10,7 @@ export type LaunchTokenCardData = {
   id: string;
   imageUrl?: string | null;
   isLive: boolean;
+  launcherHandle?: string | null;
   marketCap: string;
   mint?: string | null;
   name: string;
@@ -33,6 +34,7 @@ export function launchTokenCardFromPublicToken(token: PublicTokenRank): LaunchTo
     id: token.id,
     imageUrl: token.imageUrl,
     isLive: status.isLive,
+    launcherHandle: token.launcherHandle,
     marketCap:
       token.marketCapUsd != null
         ? formatCompactUsd(token.marketCapUsd)

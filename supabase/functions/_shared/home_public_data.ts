@@ -2,7 +2,20 @@
 
 import { getMarketDataBundle } from "./market_data/index.ts";
 
-export async function loadPublicHomeData(admin: any) {
+const DEFAULT_PUBLIC_LAUNCH_LIMIT = 12;
+const MAX_PUBLIC_LAUNCH_LIMIT = 100;
+const PUBLIC_HOME_CACHE_KEY = "public_home_v2";
+
+type PublicHomeDataOptions = {
+  launchLimit?: number;
+};
+
+export async function loadPublicHomeData(admin: any, options: PublicHomeDataOptions = {}) {
+  const launchLimit = clampPositiveInt(
+    options.launchLimit,
+    DEFAULT_PUBLIC_LAUNCH_LIMIT,
+    MAX_PUBLIC_LAUNCH_LIMIT,
+  );
   const [
     liveFeedResult,
     topTradersResult,
@@ -20,11 +33,11 @@ export async function loadPublicHomeData(admin: any) {
     admin
       .from("coin_launches")
       .select(
-        "id,name,symbol,description,image_url,mint,token_address,tx_signature,dev_buy_eth,dev_buy_sol,dev_buy_usd,status,created_at,chain,launch_platform",
+        "id,user_id,name,symbol,description,image_url,mint,token_address,tx_signature,dev_buy_eth,dev_buy_sol,dev_buy_usd,status,created_at,chain,launch_platform,launch_source",
       )
       .neq("status", "failed")
       .order("created_at", { ascending: false })
-      .limit(12),
+      .limit(launchLimit),
     admin
       .from("public_achievements")
       .select("id,kind,title,detail,metric_value,threshold,achieved_at,metadata")
@@ -38,6 +51,8 @@ export async function loadPublicHomeData(admin: any) {
   throwIfSupabaseError(topTradersResult.error);
   throwIfSupabaseError(launchesResult.error);
   throwIfSupabaseError(achievementsResult.error);
+
+  const launcherHandles = await loadLauncherHandles(admin, launchesResult.data ?? []);
 
   const topLaunchedTokens = await Promise.all(
     (launchesResult.data ?? []).map(async (launch: any) => {
@@ -65,6 +80,8 @@ export async function loadPublicHomeData(admin: any) {
         tokenAddress: marketAddress,
         chain: launch.chain ?? "robinhood",
         launchPlatform: launch.launch_platform ?? null,
+        launchSource: launch.launch_source ?? null,
+        launcherHandle: launcherHandles.get(launch.user_id) ?? null,
         txSignature: launch.tx_signature,
         devBuyEth: numberOrNull(launch.dev_buy_eth),
         devBuySol: numberOrNull(launch.dev_buy_sol),
@@ -107,6 +124,31 @@ export async function loadPublicHomeData(admin: any) {
   };
 }
 
+async function loadLauncherHandles(admin: any, launches: any[]): Promise<Map<string, string>> {
+  const userIds = Array.from(
+    new Set(
+      launches
+        .map((launch) => launch.user_id)
+        .filter((userId): userId is string => typeof userId === "string" && userId.length > 0),
+    ),
+  );
+
+  if (userIds.length === 0) return new Map();
+
+  const { data, error } = await admin
+    .from("profiles")
+    .select("user_id,twitter_username")
+    .in("user_id", userIds);
+
+  if (error) return new Map();
+
+  return new Map(
+    (data ?? [])
+      .filter((profile: any) => isTwitterUsername(profile.twitter_username))
+      .map((profile: any) => [profile.user_id, profile.twitter_username]),
+  );
+}
+
 export async function readPublicHomeCache(
   admin: any,
   options: { allowStale?: boolean } = {},
@@ -115,7 +157,7 @@ export async function readPublicHomeCache(
   let query = admin
     .from("home_metrics_cache")
     .select("data,generated_at,expires_at,build_status,error")
-    .eq("cache_key", "public_home_v1")
+    .eq("cache_key", PUBLIC_HOME_CACHE_KEY)
     .order("generated_at", { ascending: false })
     .limit(1);
 
@@ -149,7 +191,7 @@ export async function writePublicHomeCache(
   const expiresAt = new Date(generatedAt.getTime() + ttlSeconds * 1000);
   const { error } = await admin.from("home_metrics_cache").upsert(
     {
-      cache_key: "public_home_v1",
+      cache_key: PUBLIC_HOME_CACHE_KEY,
       data,
       generated_at: generatedAt.toISOString(),
       expires_at: expiresAt.toISOString(),
@@ -166,6 +208,16 @@ function numberOrNull(value: unknown): number | null {
   if (value == null) return null;
   const number = Number(value);
   return Number.isFinite(number) ? number : null;
+}
+
+function clampPositiveInt(value: unknown, fallback: number, max: number): number {
+  const number = Number(value);
+  if (!Number.isFinite(number) || number <= 0) return fallback;
+  return Math.max(1, Math.min(Math.floor(number), max));
+}
+
+function isTwitterUsername(value: unknown): value is string {
+  return typeof value === "string" && /^[A-Za-z0-9_]{1,15}$/.test(value.replace(/^@/, ""));
 }
 
 function throwIfSupabaseError(error: unknown) {

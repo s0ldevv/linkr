@@ -7317,6 +7317,60 @@
   white-space: nowrap;
 }
 
+.lkt-coin-launcher {
+  align-items: center;
+  border-radius: 999px;
+  color: rgb(250 247 246 / 54%);
+  display: inline-flex;
+  font-size: 0.7rem;
+  font-weight: 800;
+  gap: 4px;
+  line-height: 1;
+  margin-top: 7px;
+  max-width: 100%;
+  min-height: 22px;
+  padding: 0 7px 0 0;
+  text-decoration: none;
+  transition:
+    background 0.16s ease,
+    color 0.16s ease;
+}
+
+.lkt-coin-launcher span {
+  color: rgb(250 247 246 / 38%);
+  font-size: 0.64rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.lkt-coin-launcher strong {
+  color: rgb(250 247 246 / 78%);
+  font-family: var(--lkt-mono);
+  font-size: 0.7rem;
+  font-weight: 800;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lkt-coin-launcher:hover,
+.lkt-coin-launcher:focus-visible {
+  background: rgb(250 247 246 / 7%);
+  color: var(--lkt-lime);
+}
+
+.lkt-coin-launcher:focus-visible {
+  outline: 2px solid rgb(203 255 0 / 62%);
+  outline-offset: 2px;
+}
+
+.lkt-coin-launcher:hover strong,
+.lkt-coin-launcher:focus-visible strong {
+  color: var(--lkt-lime);
+}
+
 .lkt-coin-meta-row {
   align-items: center;
   display: flex;

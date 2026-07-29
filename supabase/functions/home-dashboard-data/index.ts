@@ -15,6 +15,9 @@ import {
   writePublicHomeCache,
 } from "../_shared/home_public_data.ts";
 
+const DEFAULT_PUBLIC_LAUNCH_LIMIT = 12;
+const MAX_PUBLIC_LAUNCH_LIMIT = 100;
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "GET") return jsonResponse({ error: "method_not_allowed" }, { status: 405 });
@@ -22,9 +25,15 @@ Deno.serve(async (req) => {
   const admin = serviceClient();
 
   try {
+    const url = new URL(req.url);
+    const publicLaunchLimit = readPositiveInt(
+      url.searchParams.get("launch_limit"),
+      DEFAULT_PUBLIC_LAUNCH_LIMIT,
+      MAX_PUBLIC_LAUNCH_LIMIT,
+    );
     const userId = await getCallerUserId(req);
     const [publicData, viewer] = await Promise.all([
-      loadCachedPublicHomeData(admin),
+      loadCachedPublicHomeData(admin, { launchLimit: publicLaunchLimit }),
       userId ? loadViewerHomeData(admin, userId) : Promise.resolve(null),
     ]);
 
@@ -37,16 +46,26 @@ Deno.serve(async (req) => {
   }
 });
 
-async function loadCachedPublicHomeData(admin: any) {
-  if (readBoolean("LINKR_HOME_CACHE_READ_ENABLED", true)) {
+async function loadCachedPublicHomeData(
+  admin: any,
+  options: { launchLimit?: number } = {},
+) {
+  const launchLimit = options.launchLimit ?? DEFAULT_PUBLIC_LAUNCH_LIMIT;
+  const canUseCache = launchLimit === DEFAULT_PUBLIC_LAUNCH_LIMIT;
+
+  if (canUseCache && readBoolean("LINKR_HOME_CACHE_READ_ENABLED", true)) {
     const fresh = await safe(() => readPublicHomeCache(admin), null);
     if (fresh) return fresh;
   }
 
-  const stale = await safe(() => readPublicHomeCache(admin, { allowStale: true }), null);
+  const stale = canUseCache
+    ? await safe(() => readPublicHomeCache(admin, { allowStale: true }), null)
+    : null;
   try {
-    const live = await loadPublicHomeData(admin);
-    await safe(() => writePublicHomeCache(admin, live), null);
+    const live = await loadPublicHomeData(admin, { launchLimit });
+    if (canUseCache) {
+      await safe(() => writePublicHomeCache(admin, live), null);
+    }
     return live;
   } catch (error) {
     if (stale) return stale;
@@ -210,6 +229,13 @@ function readBoolean(name: string, fallback: boolean) {
   if (/^(1|true|yes|on)$/i.test(raw)) return true;
   if (/^(0|false|no|off)$/i.test(raw)) return false;
   return fallback;
+}
+
+function readPositiveInt(raw: string | null, fallback: number, max: number) {
+  if (raw == null || raw.trim() === "") return fallback;
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+  return Math.max(1, Math.min(Math.floor(parsed), max));
 }
 
 async function safe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {

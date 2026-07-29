@@ -3,11 +3,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import type { HomeDashboardData } from "@/lib/linkr/home-data";
 
-export function useHomeDashboardData() {
+type UseHomeDashboardDataOptions = {
+  publicLaunchLimit?: number;
+};
+
+export function useHomeDashboardData(options: UseHomeDashboardDataOptions = {}) {
   const { user } = useAuth();
+  const publicLaunchLimit = options.publicLaunchLimit;
 
   return useQuery({
-    queryKey: ["home-dashboard-data", user?.id ?? "anon"],
+    queryKey: ["home-dashboard-data", user?.id ?? "anon", publicLaunchLimit ?? "default"],
     refetchInterval: 120_000,
     retry: 1,
     staleTime: 60_000,
@@ -20,7 +25,12 @@ export function useHomeDashboardData() {
         throw new Error("Missing Supabase URL");
       }
 
-      const response = await fetch(`${supabaseUrl}/functions/v1/home-dashboard-data`, {
+      const requestUrl = new URL(`${supabaseUrl}/functions/v1/home-dashboard-data`);
+      if (publicLaunchLimit) {
+        requestUrl.searchParams.set("launch_limit", String(publicLaunchLimit));
+      }
+
+      const response = await fetch(requestUrl.toString(), {
         method: "GET",
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
