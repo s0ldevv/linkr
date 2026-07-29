@@ -10,7 +10,7 @@ import {
   TrendingUp,
   WalletCards,
 } from "lucide-react";
-import { RobinhoodLogo, SolanaLogo } from "@/components/linkr/ChainLogos";
+import { ChainPill } from "@/components/linkr/ChainPill";
 import { MarketingHeader } from "@/components/linkr/MarketingHeader";
 import { ProfileHandleLink, ProfileLinkedText } from "@/components/linkr/ProfileHandleLink";
 import {
@@ -360,7 +360,7 @@ function ActivityRow({ item }: { item: PublicActivity }) {
               {!hasConversation && (
                 <>
                   <i aria-hidden="true" />
-                  {chain && <ChainMark chain={chain.chain} label={chain.label} />}
+                  {chain && <ChainMark chain={chain.chain} />}
                 </>
               )}
             </small>
@@ -368,7 +368,7 @@ function ActivityRow({ item }: { item: PublicActivity }) {
         </div>
 
         <div className="sm-public-activity-head-actions">
-          {hasConversation && chain && <ChainMark chain={chain.chain} label={chain.label} />}
+          {hasConversation && chain && <ChainMark chain={chain.chain} />}
           <span className={"sm-public-status sm-public-status-" + (item.status ?? "unknown")}>
             {statusLabel(item.status)}
           </span>
@@ -530,12 +530,13 @@ function ActivityIcon({ kind }: { kind: string }) {
   return <WalletCards />;
 }
 
-function ChainMark({ chain, label }: { chain: "robinhood" | "solana"; label: string }) {
+function ChainMark({ chain }: { chain: "robinhood" | "solana" }) {
   return (
-    <span className="sm-public-activity-chain" title={label}>
-      {chain === "solana" ? <SolanaLogo /> : <RobinhoodLogo />}
-      <span>{chain === "solana" ? "Solana" : "Robinhood"}</span>
-    </span>
+    <ChainPill
+      chain={chain}
+      className="sm-public-activity-chain"
+      label={chain === "solana" ? "Solana" : "Robinhood"}
+    />
   );
 }
 

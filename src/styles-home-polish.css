@@ -37798,6 +37798,8 @@ body .sm-profile-copy .sm-profile-bio {
 }
 
 body .sm-chain-pill {
+  --sm-chain-mark-bg: var(--public-lime, #ccff00);
+  --sm-chain-mark-fg: #111111;
   display: inline-flex !important;
   width: max-content !important;
   max-width: 100% !important;
@@ -37825,7 +37827,12 @@ body .sm-chain-pill-image {
   height: 22px !important;
   flex: 0 0 auto !important;
   border-radius: 999px !important;
+  background: var(--sm-chain-mark-bg) !important;
+  box-sizing: border-box !important;
+  color: var(--sm-chain-mark-fg) !important;
+  -webkit-text-fill-color: var(--sm-chain-mark-fg) !important;
   object-fit: contain !important;
+  padding: 5px !important;
 }
 
 body .sm-chain-pill-text {
@@ -37849,6 +37856,8 @@ body .sm-chain-pill-icon-only .sm-chain-pill-image {
 }
 
 body .sm-chain-pill[data-chain="robinhood"] {
+  --sm-chain-mark-bg: var(--public-lime, #ccff00);
+  --sm-chain-mark-fg: #111111;
   border-color: transparent !important;
   background: transparent !important;
   color: #5f7600 !important;
@@ -37856,6 +37865,8 @@ body .sm-chain-pill[data-chain="robinhood"] {
 }
 
 body .sm-chain-pill[data-chain="solana"] {
+  --sm-chain-mark-bg: linear-gradient(135deg, #9945ff 0%, #14f195 100%);
+  --sm-chain-mark-fg: #ffffff;
   border-color: transparent !important;
   background: transparent !important;
   color: #5f4fc4 !important;
@@ -43802,21 +43813,22 @@ body .app-wallet-stat-portfolio-mark {
   -webkit-text-fill-color: var(--app-ink) !important;
 }
 
-body .app-wallet-stat-card .app-wallet-asset-mark[data-asset="eth"],
+body .app-wallet-stat-card .app-wallet-asset-mark.sm-chain-pill {
+  background: transparent !important;
+  color: inherit !important;
+  -webkit-text-fill-color: inherit !important;
+}
+
+body .app-wallet-stat-card .app-wallet-asset-mark.sm-chain-pill .sm-chain-pill-image {
+  width: 30px !important;
+  height: 30px !important;
+  border-radius: 10px !important;
+}
+
 body .app-wallet-stat-portfolio-mark {
   background: var(--app-lime) !important;
   color: #111111 !important;
   -webkit-text-fill-color: #111111 !important;
-}
-
-body .app-wallet-stat-card .app-wallet-asset-mark[data-asset="eth"] svg {
-  width: 10px !important;
-  height: 16px !important;
-}
-
-body .app-wallet-stat-card .app-wallet-asset-mark[data-asset="sol"] svg {
-  width: 18px !important;
-  height: 15px !important;
 }
 
 body .app-wallet-stat-card .app-wallet-asset-mark[data-asset="usdc"] img,
@@ -43909,34 +43921,6 @@ body .app-wallet-balance-card-head {
   min-width: 0 !important;
   align-items: center !important;
   gap: 10px !important;
-}
-
-body .app-wallet-balance-chain-icon {
-  display: inline-grid !important;
-  width: 38px !important;
-  height: 38px !important;
-  place-items: center !important;
-  border-radius: 12px !important;
-  background: var(--app-panel-soft) !important;
-}
-
-body .app-wallet-balance-chain-icon-evm {
-  background: var(--app-lime) !important;
-  color: #111111 !important;
-}
-
-body .app-wallet-balance-chain-icon-evm svg {
-  width: 14px !important;
-  height: 21px !important;
-}
-
-body .app-wallet-balance-chain-icon-solana {
-  color: #9f8be7 !important;
-}
-
-body .app-wallet-balance-chain-icon-solana svg {
-  width: 23px !important;
-  height: 20px !important;
 }
 
 body .app-wallet-balance-identity {
@@ -44192,6 +44176,18 @@ body .app-wallet-chain-icon-solana {
 body .app-wallet-chain-icon-solana svg {
   width: 25px !important;
   height: 22px !important;
+}
+
+body .app-wallet-chain-icon.sm-chain-pill {
+  background: transparent !important;
+  color: inherit !important;
+  -webkit-text-fill-color: inherit !important;
+}
+
+body .app-wallet-chain-icon.sm-chain-pill .sm-chain-pill-image {
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 13px !important;
 }
 
 body
@@ -44694,14 +44690,16 @@ body .app-wallet-asset-mark[data-asset="sol"] {
   color: #8a70e8 !important;
 }
 
-body .app-wallet-asset-mark[data-asset="eth"] svg {
-  width: 13px !important;
-  height: 20px !important;
+body .app-wallet-asset-mark.sm-chain-pill {
+  background: transparent !important;
+  color: inherit !important;
+  -webkit-text-fill-color: inherit !important;
 }
 
-body .app-wallet-asset-mark[data-asset="sol"] svg {
-  width: 22px !important;
-  height: 19px !important;
+body .app-wallet-asset-mark.sm-chain-pill .sm-chain-pill-image {
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 12px !important;
 }
 
 body .app-wallet-asset-mark[data-asset="usdc"] img {
@@ -44981,6 +44979,12 @@ body .app-wallet-action-menu-item:is(:hover, :focus) {
 body .app-wallet-action-menu-item .app-wallet-asset-mark {
   width: 34px !important;
   min-width: 34px !important;
+  height: 34px !important;
+  border-radius: 10px !important;
+}
+
+body .app-wallet-action-menu-item .app-wallet-asset-mark.sm-chain-pill .sm-chain-pill-image {
+  width: 34px !important;
   height: 34px !important;
   border-radius: 10px !important;
 }
@@ -46089,8 +46093,8 @@ body .sm-app-content .app-scheduler-select-trigger[data-state="open"] {
   border-color: transparent !important;
   background: var(--app-lime) !important;
   background-color: var(--app-lime) !important;
-  color: #ffffff !important;
-  -webkit-text-fill-color: #ffffff !important;
+  color: #111111 !important;
+  -webkit-text-fill-color: #111111 !important;
 }
 
 body .sm-app-content .app-scheduler-select-trigger[data-active="true"] > span,
@@ -46099,8 +46103,8 @@ body .sm-app-content .app-scheduler-select-trigger[data-state="open"] > span,
 body .sm-app-content .app-scheduler-select-trigger[data-active="true"] svg,
 body .sm-app-content .app-scheduler-select-trigger[data-selected="true"] svg,
 body .sm-app-content .app-scheduler-select-trigger[data-state="open"] svg {
-  color: #ffffff !important;
-  -webkit-text-fill-color: #ffffff !important;
+  color: #111111 !important;
+  -webkit-text-fill-color: #111111 !important;
 }
 
 body .app-scheduler-select-content {
@@ -46160,14 +46164,14 @@ body .app-scheduler-select-item + .app-scheduler-select-item {
 
 body .app-scheduler-select-item[data-highlighted] {
   background: var(--app-lime) !important;
-  color: #ffffff !important;
-  -webkit-text-fill-color: #ffffff !important;
+  color: #111111 !important;
+  -webkit-text-fill-color: #111111 !important;
 }
 
 body .app-scheduler-select-item[data-state="checked"] {
   background: var(--app-lime) !important;
-  color: #ffffff !important;
-  -webkit-text-fill-color: #ffffff !important;
+  color: #111111 !important;
+  -webkit-text-fill-color: #111111 !important;
 }
 
 body .app-scheduler-select-item span {
@@ -46222,8 +46226,8 @@ body .sm-app-content .app-scheduler-segment button:is(:hover, :focus-visible) {
   border-color: transparent !important;
   background: var(--app-lime) !important;
   background-color: var(--app-lime) !important;
-  color: #ffffff !important;
-  -webkit-text-fill-color: #ffffff !important;
+  color: #111111 !important;
+  -webkit-text-fill-color: #111111 !important;
   box-shadow: none !important;
   transform: translateY(-1px) !important;
 }
@@ -46236,8 +46240,8 @@ body .sm-app-content .app-scheduler-segment button[aria-pressed="true"] {
   border-color: transparent !important;
   background: var(--app-lime) !important;
   background-color: var(--app-lime) !important;
-  color: #ffffff !important;
-  -webkit-text-fill-color: #ffffff !important;
+  color: #111111 !important;
+  -webkit-text-fill-color: #111111 !important;
   box-shadow: none !important;
   transform: translateY(-1px) !important;
 }
@@ -46250,8 +46254,8 @@ body .sm-app-content .app-scheduler-segment button[aria-pressed="true"]:is(:hove
   border-color: transparent !important;
   background: var(--app-lime) !important;
   background-color: var(--app-lime) !important;
-  color: #ffffff !important;
-  -webkit-text-fill-color: #ffffff !important;
+  color: #111111 !important;
+  -webkit-text-fill-color: #111111 !important;
   box-shadow: none !important;
   transform: translateY(-1px) !important;
 }
@@ -46277,8 +46281,8 @@ body[data-dashboard-theme="dark"]
   border-color: transparent !important;
   background: var(--app-lime) !important;
   background-color: var(--app-lime) !important;
-  color: #ffffff !important;
-  -webkit-text-fill-color: #ffffff !important;
+  color: #111111 !important;
+  -webkit-text-fill-color: #111111 !important;
   box-shadow: none !important;
   transform: translateY(-1px) !important;
 }
@@ -48664,7 +48668,7 @@ body .sm-launcher-mode-track button[aria-checked="true"] .sm-launcher-choice-mar
   opacity: 1 !important;
 }
 
-body .sm-launcher-chain-logo-image {
+body .sm-launcher-chain-logo-tile .sm-chain-pill-image {
   display: block !important;
   width: 1.7rem !important;
   height: 1.7rem !important;
@@ -48685,7 +48689,7 @@ body .sm-launcher-chain-logo-tile {
   place-items: center !important;
   border: 0 !important;
   border-radius: 13px !important;
-  background: #faf7f6 !important;
+  background: transparent !important;
   box-shadow: none !important;
 }
 
@@ -49359,7 +49363,7 @@ body .sm-launcher-review a svg {
     border-radius: 12px !important;
   }
 
-  body .sm-launcher-chain-logo-image {
+  body .sm-launcher-chain-logo-tile .sm-chain-pill-image {
     width: 1.55rem !important;
     height: 1.55rem !important;
   }
@@ -52347,20 +52351,10 @@ body .sm-public-filter-toolbar .sm-public-chain-filter-icon {
   border-radius: 11px !important;
 }
 
-body .sm-public-filter-toolbar .sm-public-chain-filter .sm-public-chain-filter-logo-robinhood {
-  color: #111111 !important;
-  -webkit-text-fill-color: #111111 !important;
-}
-
-body
-  .sm-public-filter-toolbar
-  .sm-public-chain-filter-icon:has(.sm-public-chain-filter-logo-robinhood) {
-  background: var(--public-lime, #ccff00) !important;
-}
-
-body .sm-public-filter-toolbar .sm-public-chain-filter .sm-public-chain-filter-logo-solana {
-  color: var(--public-lavender, #9f8be7) !important;
-  -webkit-text-fill-color: var(--public-lavender, #9f8be7) !important;
+body .sm-public-filter-toolbar .sm-public-chain-filter-icon .sm-chain-pill-image {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 11px !important;
 }
 
 body .sm-public-filter-toolbar .sm-public-chain-filter-copy,
@@ -52689,7 +52683,7 @@ body .sm-launcher-chain-logo-tile {
   border-radius: 9px !important;
 }
 
-body .sm-launcher-chain-logo-image {
+body .sm-launcher-chain-logo-tile .sm-chain-pill-image {
   width: 1.5rem !important;
   height: 1.5rem !important;
 }
@@ -53474,14 +53468,16 @@ body .app-dashboard-balance-logo[data-asset="portfolio"] {
   -webkit-text-fill-color: #111111 !important;
 }
 
-body .app-dashboard-balance-logo[data-asset="eth"] svg {
-  width: 10px !important;
-  height: 16px !important;
+body .app-dashboard-balance-logo.sm-chain-pill {
+  background: transparent !important;
+  color: inherit !important;
+  -webkit-text-fill-color: inherit !important;
 }
 
-body .app-dashboard-balance-logo[data-asset="sol"] svg {
-  width: 18px !important;
-  height: 15px !important;
+body .app-dashboard-balance-logo.sm-chain-pill .sm-chain-pill-image {
+  width: 30px !important;
+  height: 30px !important;
+  border-radius: 10px !important;
 }
 
 body .app-dashboard-balance-logo[data-asset="usdc"] img,

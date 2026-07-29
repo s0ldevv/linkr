@@ -319,8 +319,8 @@
 
 .lkt-coin-card .lkt-coin-chain-logo {
   align-items: center;
-  background: #ffffff;
-  border: 1px solid #ffffff;
+  background: transparent;
+  border: 0;
   border-radius: 999px;
   box-shadow: 0 0 0 2px var(--lkt-card);
   display: inline-flex;
@@ -328,16 +328,14 @@
   height: 20px;
   justify-content: center;
   overflow: hidden;
-  padding: 2px;
+  padding: 0;
   width: 20px;
 }
 
-.lkt-coin-card .lkt-coin-chain-logo svg {
-  color: inherit;
-  height: 100%;
-  max-height: 100%;
-  max-width: 100%;
-  width: 100%;
+.lkt-coin-card .lkt-coin-chain-logo .sm-chain-pill-image {
+  border-radius: 999px;
+  height: 20px;
+  width: 20px;
 }
 
 /* ---------- homepage hero ---------- */
@@ -1426,10 +1424,17 @@
   padding: 5px 11px;
 }
 
-.lkx-cli-result-tx svg {
-  color: var(--lkt-lime);
-  height: 13px;
-  width: auto;
+.lkx-cli-result-chain.sm-chain-pill {
+  height: 20px;
+  min-height: 20px;
+  min-width: 20px;
+  width: 20px;
+}
+
+.lkx-cli-result-chain .sm-chain-pill-image {
+  border-radius: 999px;
+  height: 20px;
+  width: 20px;
 }
 
 .lkx-cli-result-tx code {
@@ -2348,9 +2353,22 @@
   justify-items: center;
 }
 
-.lkx-send-route-node svg {
+.lkx-send-route-node > svg {
   height: 17px;
   width: 17px;
+}
+
+.lkx-send-route-chain.sm-chain-pill {
+  height: 22px;
+  min-height: 22px;
+  min-width: 22px;
+  width: 22px;
+}
+
+.lkx-send-route-chain .sm-chain-pill-image {
+  border-radius: 999px;
+  height: 22px;
+  width: 22px;
 }
 
 .lkx-send-route-node span {
@@ -2571,9 +2589,17 @@
   color: #a690ff;
 }
 
-.lkx-receipt-party--network svg {
-  height: 12px;
-  width: 15px;
+.lkx-receipt-network-mark.sm-chain-pill {
+  height: 26px;
+  min-height: 26px;
+  min-width: 26px;
+  width: 26px;
+}
+
+.lkx-receipt-network-mark .sm-chain-pill-image {
+  border-radius: 999px;
+  height: 26px;
+  width: 26px;
 }
 
 .lkx-receipt-party > span {
@@ -3276,15 +3302,21 @@
 }
 
 .lkx-route-logo {
-  color: #a690ff;
-  height: 18px;
+  height: 24px;
+  min-height: 24px;
+  min-width: 24px;
   position: relative;
-  width: auto;
+  width: 24px;
 }
 
 .lkx-route-logo--rh {
-  color: var(--lkt-lime);
-  height: 22px;
+  height: 24px;
+}
+
+.lkx-route-logo .sm-chain-pill-image {
+  border-radius: 8px;
+  height: 24px;
+  width: 24px;
 }
 
 .lkx-route-node-metrics {
@@ -5497,9 +5529,18 @@
   grid-template-columns: 15px 1fr;
   padding: 4px 1px;
 }
-.lkx-api-networks svg {
-  height: 13px;
-  width: 13px;
+.lkx-api-network-mark.sm-chain-pill {
+  height: 15px;
+  min-height: 15px;
+  min-width: 15px;
+  width: 15px;
+}
+
+.lkx-api-network-mark .sm-chain-pill-image {
+  border-radius: 5px;
+  height: 15px;
+  padding: 3px;
+  width: 15px;
 }
 .lkx-api-networks b {
   color: rgb(255 255 255 / 65%);
@@ -6219,11 +6260,19 @@
   }
 
   .lkx-route-logo {
-    height: 14px;
+    height: 22px;
+    min-height: 22px;
+    min-width: 22px;
+    width: 22px;
   }
 
   .lkx-route-logo--rh {
-    height: 17px;
+    height: 22px;
+  }
+
+  .lkx-route-logo .sm-chain-pill-image {
+    height: 22px;
+    width: 22px;
   }
 
   .lkx-route-node-state i {
@@ -7222,7 +7271,7 @@
 
 .lkt-coin-chain-logo {
   align-items: center;
-  background: #f7f4f1;
+  background: transparent;
   border: 0;
   border-radius: 11px;
   color: var(--lkt-purple);
@@ -7234,19 +7283,14 @@
 }
 
 .lkt-coin-chain-logo[data-chain="robinhood"] {
-  background: var(--lkt-lime);
   color: #111111;
 }
 
-.lkt-coin-chain-logo svg {
+.lkt-coin-chain-logo .sm-chain-pill-image {
   display: block;
-  height: 17px;
-  width: 17px;
-}
-
-.lkt-coin-chain-logo[data-chain="solana"] svg {
-  color: var(--lkt-purple);
-  -webkit-text-fill-color: var(--lkt-purple);
+  height: 36px;
+  width: 36px;
+  border-radius: 11px;
 }
 
 .lkt-coin-id {
@@ -9172,4 +9216,3 @@ a.lkt-post-handle:focus-visible,
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
-

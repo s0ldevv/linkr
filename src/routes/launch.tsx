@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState, type ChangeEvent, type CSSProperties, type FormEvent } from "react";
 import { AlertCircle, Check, ExternalLink, ImagePlus, Loader2, Rocket, Wallet } from "lucide-react";
 import { toast } from "sonner";
+import { ChainPill } from "@/components/linkr/ChainPill";
 import { MarketingHeader } from "@/components/linkr/MarketingHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -120,10 +121,6 @@ const DEFAULT_CHAIN_CONFIG: Record<LaunchChain, ChainLaunchConfig> = {
   },
 };
 
-const LAUNCH_CHAIN_ICON_SRC: Record<LaunchChain, string> = {
-  robinhood: "/linkr/chains/evm.png",
-  solana: "/linkr/chains/sol.png",
-};
 const EVM_ADDRESS_RE = /^0x[a-fA-F0-9]{40}$/;
 const SOLANA_ADDRESS_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 const X_HANDLE_RE = /^@?[a-zA-Z0-9_]{1,15}$/;
@@ -389,29 +386,26 @@ function LaunchPage() {
                     <span className="sm-launcher-chain-visual" aria-hidden="true">
                       {mode.value === "dual" ? (
                         <span className="sm-launcher-chain-logo-pair">
-                          <span className="sm-launcher-chain-logo-tile">
-                            <img
-                              className="sm-launcher-chain-logo-image"
-                              src={LAUNCH_CHAIN_ICON_SRC.robinhood}
-                              alt=""
-                            />
-                          </span>
-                          <span className="sm-launcher-chain-logo-tile">
-                            <img
-                              className="sm-launcher-chain-logo-image"
-                              src={LAUNCH_CHAIN_ICON_SRC.solana}
-                              alt=""
-                            />
-                          </span>
-                        </span>
-                      ) : (
-                        <span className="sm-launcher-chain-logo-tile">
-                          <img
-                            className="sm-launcher-chain-logo-image"
-                            src={LAUNCH_CHAIN_ICON_SRC[mode.value]}
-                            alt=""
+                          <ChainPill
+                            chain="robinhood"
+                            className="sm-launcher-chain-logo-tile"
+                            iconOnly
+                            label={CHAIN_COPY.robinhood.title}
+                          />
+                          <ChainPill
+                            chain="solana"
+                            className="sm-launcher-chain-logo-tile"
+                            iconOnly
+                            label={CHAIN_COPY.solana.title}
                           />
                         </span>
+                      ) : (
+                        <ChainPill
+                          chain={mode.value}
+                          className="sm-launcher-chain-logo-tile"
+                          iconOnly
+                          label={CHAIN_COPY[mode.value].title}
+                        />
                       )}
                     </span>
                     <span className="sm-launcher-choice-copy">

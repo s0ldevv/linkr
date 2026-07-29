@@ -4,7 +4,6 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { ChainPill } from "@/components/linkr/ChainPill";
 import { Button } from "@/components/ui/button";
-import { RobinhoodLogo, SolanaLogo } from "@/components/linkr/ChainLogos";
 import { chainPresentationForRecord } from "@/lib/linkr/chain-presentation";
 import { shortAddress, formatEth, bpsToPercent, relativeTime, formatUsd } from "@/lib/linkr/format";
 import {
@@ -498,17 +497,26 @@ function DashboardBalanceStat({
 }
 
 function DashboardAssetMark({ asset }: { asset: "eth" | "sol" | "usdc" | "portfolio" }) {
+  if (asset === "eth") {
+    return (
+      <ChainPill
+        chain="robinhood"
+        className="app-dashboard-balance-logo"
+        iconOnly
+        label="Robinhood Chain"
+      />
+    );
+  }
+
+  if (asset === "sol") {
+    return (
+      <ChainPill chain="solana" className="app-dashboard-balance-logo" iconOnly label="Solana" />
+    );
+  }
+
   return (
     <span className="app-dashboard-balance-logo" data-asset={asset} aria-hidden="true">
-      {asset === "eth" ? (
-        <RobinhoodLogo />
-      ) : asset === "sol" ? (
-        <SolanaLogo />
-      ) : asset === "usdc" ? (
-        <img src="/linkr/usdc.webp" alt="" />
-      ) : (
-        <Wallet />
-      )}
+      {asset === "usdc" ? <img src="/linkr/usdc.webp" alt="" /> : <Wallet />}
     </span>
   );
 }

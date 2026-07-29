@@ -96,6 +96,46 @@ export function isRecurringScheduleKind(kind: unknown): boolean {
   return ["interval", "daily", "weekly"].includes(String(kind ?? ""));
 }
 
+export function scheduledActionRequiresTransactionProof(
+  actionType: unknown,
+): boolean {
+  return [
+    "buy",
+    "sell",
+    "transfer",
+    "claim_creator_rewards",
+    "add_liquidity",
+    "remove_liquidity",
+    "collect_liquidity_fees",
+  ].includes(String(actionType ?? ""));
+}
+
+export function assertTransactionBackedScheduledExecution(
+  row: { action_type?: unknown; id?: unknown },
+  execution: {
+    transactionId?: unknown;
+    txHash?: unknown;
+    txSignature?: unknown;
+    raw?: any;
+  } | null | undefined,
+) {
+  if (!scheduledActionRequiresTransactionProof(row?.action_type)) return;
+  const transactionId = cleanProofValue(execution?.transactionId);
+  const txHash = cleanProofValue(execution?.txHash);
+  const txSignature = cleanProofValue(execution?.txSignature);
+  const raw = execution?.raw ?? {};
+  const rawTxHash = cleanProofValue(
+    raw.tx_hash ?? raw.txHash ?? raw.hash ?? raw.signature,
+  );
+  const rawTxSignature = cleanProofValue(raw.tx_signature ?? raw.txSignature);
+  if (transactionId || txHash || txSignature || rawTxHash || rawTxSignature) {
+    return;
+  }
+  throw new Error(
+    `scheduled_${String(row?.action_type ?? "action")}_missing_transaction_proof`,
+  );
+}
+
 export function occurrenceKeyForDueAt(dueAt: unknown): string {
   const due = new Date(String(dueAt ?? ""));
   const millis = Number.isFinite(due.getTime()) ? due.getTime() : Date.now();
@@ -414,6 +454,11 @@ function positiveNumber(value: unknown): number | null {
   if (parsed != null) return parsed;
   const n = Number(value);
   return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+function cleanProofValue(value: unknown): string | null {
+  const text = String(value ?? "").trim();
+  return text.length > 0 ? text : null;
 }
 
 function parseFutureDate(value: unknown, now: Date): Date | null {

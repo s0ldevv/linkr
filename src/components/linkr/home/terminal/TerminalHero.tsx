@@ -29,7 +29,7 @@ import {
   Wallet,
   WalletCards,
 } from "lucide-react";
-import { RobinhoodLogo, SolanaLogo } from "@/components/linkr/ChainLogos";
+import { ChainPill } from "@/components/linkr/ChainPill";
 
 function XLogo(props: ComponentProps<"svg">) {
   return (
@@ -41,6 +41,23 @@ function XLogo(props: ComponentProps<"svg">) {
         d="M1 0 H142 L242 130 L356 0 H424 L273 173 L450 408 H313 L203 265 L79 407 L10 408 L171 222 Z M82 38 H121 L369 367 L329 365 Z"
       />
     </svg>
+  );
+}
+
+function TerminalChainMark({
+  chain,
+  className,
+}: {
+  chain: "robinhood" | "solana";
+  className?: string;
+}) {
+  return (
+    <ChainPill
+      chain={chain}
+      className={className}
+      iconOnly
+      label={chain === "solana" ? "Solana" : "Robinhood Chain"}
+    />
   );
 }
 
@@ -187,7 +204,7 @@ function CliMovie({ active }: { active: boolean }) {
                 <small>linkr · Solana launch</small>
               </span>
               <span className="lkx-cli-result-tx">
-                <SolanaLogo />
+                <TerminalChainMark chain="solana" className="lkx-cli-result-chain" />
                 <code>7xQ4…9Pk2</code>
               </span>
             </span>
@@ -378,7 +395,7 @@ function ActionsMovie() {
                 <i className="lkx-send-route-packet lkx-send-route-packet--echo" />
               </div>
               <div className="lkx-send-route-node">
-                <SolanaLogo />
+                <TerminalChainMark chain="solana" className="lkx-send-route-chain" />
                 <span>Solana</span>
               </div>
             </div>
@@ -425,9 +442,7 @@ function ActionsMovie() {
               <Check aria-hidden="true" size={11} strokeWidth={3} />
             </span>
             <span className="lkx-receipt-party lkx-receipt-party--network">
-              <i>
-                <SolanaLogo />
-              </i>
+              <TerminalChainMark chain="solana" className="lkx-receipt-network-mark" />
               <span>
                 <small>Network</small>
                 <strong>Solana</strong>
@@ -502,7 +517,7 @@ function NetworkMovie() {
               finality="0.4s"
               height="302.18m"
             >
-              <SolanaLogo className="lkx-route-logo" />
+              <TerminalChainMark chain="solana" className="lkx-route-logo" />
             </NetworkNode>
             <RouteLane side="left" />
             <div className="lkx-route-router">
@@ -528,7 +543,7 @@ function NetworkMovie() {
               finality="0.8s"
               height="18.42m"
             >
-              <RobinhoodLogo className="lkx-route-logo lkx-route-logo--rh" />
+              <TerminalChainMark chain="robinhood" className="lkx-route-logo lkx-route-logo--rh" />
             </NetworkNode>
           </div>
         </div>
@@ -726,12 +741,12 @@ function AgentApiMovie() {
             </div>
             <div className="lkx-api-networks">
               <span>
-                <SolanaLogo />
+                <TerminalChainMark chain="solana" className="lkx-api-network-mark" />
                 <b>Solana</b>
                 <i>connected</i>
               </span>
               <span>
-                <RobinhoodLogo />
+                <TerminalChainMark chain="robinhood" className="lkx-api-network-mark" />
                 <b>Robinhood</b>
                 <i>connected</i>
               </span>

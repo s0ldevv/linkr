@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { ChainPill } from "@/components/linkr/ChainPill";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { relativeTime } from "@/lib/linkr/format";
+import { formatTransactionAmount } from "@/lib/linkr/transaction-format";
 
 export const Route = createFileRoute("/_authenticated/app/actions")({
   head: () => ({ meta: [{ title: "Confirm - Linkr" }] }),
@@ -102,7 +104,8 @@ function ActionsPage() {
                 <p className="app-dashboard-section-copy">{relativeTime(tx.created_at)}</p>
               </div>
               <div className="app-actions-row-meta">
-                <strong className="sm-mono">{tx.amount_eth ?? 0} ETH</strong>
+                <strong className="sm-mono">{formatTransactionAmount(tx)}</strong>
+                <ChainPill chain={tx.chain === "solana" ? "solana" : "robinhood"} iconOnly />
                 <span className={statusClass(tx.status)}>{tx.status}</span>
               </div>
             </div>

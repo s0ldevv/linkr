@@ -1,10 +1,6 @@
+import { RobinhoodLogo, SolanaLogo } from "@/components/linkr/ChainLogos";
 import { cn } from "@/lib/utils";
 import type { ChainTone } from "@/lib/linkr/chain-presentation";
-
-const CHAIN_ICON_SRC: Record<ChainTone, string> = {
-  robinhood: "/linkr/chains/evm.png",
-  solana: "/linkr/chains/sol.png",
-};
 
 const CHAIN_ACCESSIBLE_LABEL: Record<ChainTone, string> = {
   robinhood: "Robinhood EVM",
@@ -24,6 +20,7 @@ export function ChainPill({
 }) {
   const resolvedChain = chain ?? "robinhood";
   const accessibleLabel = label || CHAIN_ACCESSIBLE_LABEL[resolvedChain];
+  const Logo = resolvedChain === "solana" ? SolanaLogo : RobinhoodLogo;
 
   return (
     <span
@@ -32,12 +29,7 @@ export function ChainPill({
       data-chain={resolvedChain}
       title={accessibleLabel}
     >
-      <img
-        aria-hidden="true"
-        className="sm-chain-pill-image"
-        src={CHAIN_ICON_SRC[resolvedChain]}
-        alt=""
-      />
+      <Logo aria-hidden="true" className="sm-chain-pill-image" />
       <span className={iconOnly ? "sr-only" : "sm-chain-pill-text"}>{accessibleLabel}</span>
     </span>
   );

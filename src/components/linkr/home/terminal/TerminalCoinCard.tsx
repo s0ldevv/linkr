@@ -4,7 +4,7 @@ import type { PublicTokenRank } from "@/lib/linkr/home-data";
 import { formatCompactUsd } from "@/lib/linkr/home-data";
 import { chainPresentationForRecord } from "@/lib/linkr/chain-presentation";
 import { shortAddress } from "@/lib/linkr/format";
-import { RobinhoodLogo, SolanaLogo } from "@/components/linkr/ChainLogos";
+import { ChainPill } from "@/components/linkr/ChainPill";
 import { Sparkline } from "./Sparkline";
 import { badgeForToken } from "./terminal-data";
 import { Check, Copy } from "lucide-react";
@@ -114,14 +114,12 @@ export function TerminalCoinCard({ isDemo, token }: { isDemo: boolean; token: Pu
             )}
           </span>
           <span className="lkt-coin-chain-badge">
-            <span
-              aria-label={chain.label}
+            <ChainPill
+              chain={chain.chain}
               className="lkt-coin-chain-logo"
-              data-chain={chain.chain}
-              title={chain.label}
-            >
-              {chain.chain === "solana" ? <SolanaLogo /> : <RobinhoodLogo />}
-            </span>
+              iconOnly
+              label={chain.label}
+            />
           </span>
         </span>
         <div className="lkt-coin-id">

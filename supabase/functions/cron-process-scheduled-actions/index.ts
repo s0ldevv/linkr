@@ -55,6 +55,7 @@ import {
 } from "../_shared/solana_swap/amount.ts";
 import { getMarketDataBundle } from "../_shared/market_data/index.ts";
 import {
+  assertTransactionBackedScheduledExecution,
   formatScheduledExecutedReply,
   formatScheduledFailedReply,
   isRecurringScheduleKind,
@@ -116,7 +117,7 @@ Deno.serve(async (req) => {
     { name: WORKER_NAME, ttlSeconds: 300, allowWithoutRpc: true },
     async ({ owner }) => {
       const result = await processScheduledActionBatch(admin, owner);
-      await recordHealthEvent(
+      await recordSchedulerHealthEvent(
         admin,
         WORKER_NAME,
         result.errors.length > 0 ? "degraded" : "ok",
@@ -179,6 +180,39 @@ async function processScheduledActionBatch(admin: any, owner: string) {
   return result;
 }
 
+async function recordSchedulerHealthEvent(
+  admin: any,
+  source: string,
+  status: "ok" | "degraded" | "down",
+  startedAt: number,
+  details: Record<string, unknown>,
+) {
+  await recordHealthEvent(admin, source, status, startedAt, details);
+  if (status !== "ok" || !schedulerRunHadWork(details)) return;
+  try {
+    await admin.from("system_health_events").insert({
+      source,
+      status,
+      latency_ms: Math.max(0, Date.now() - startedAt),
+      details: {
+        ...details,
+        force_persist_reason: "scheduler_workful_ok_run",
+      },
+      checked_at: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("scheduler_health_force_persist_failed", {
+      error: sanitizeError(error),
+    });
+  }
+}
+
+function schedulerRunHadWork(details: Record<string, unknown>): boolean {
+  return ["claimed", "executed", "checked", "requeued", "failed"].some((key) =>
+    Number(details[key] ?? 0) > 0
+  );
+}
+
 async function processScheduledAction(
   admin: any,
   row: any,
@@ -200,6 +234,7 @@ async function processScheduledAction(
   if (!occurrenceStarted) return "checked";
 
   const executed = await executeScheduledAction(admin, row);
+  assertTransactionBackedScheduledExecution(row, executed);
   await markExecuted(admin, row, executed);
   await queueReply(
     admin,

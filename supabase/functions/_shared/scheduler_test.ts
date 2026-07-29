@@ -3,6 +3,7 @@ import {
   assertThrows,
 } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import {
+  assertTransactionBackedScheduledExecution,
   nextRecurringDueAt,
   normalizeIntervalSeconds,
   normalizeScheduleKind,
@@ -72,5 +73,36 @@ Deno.test("occurrence keys are stable ISO due keys", () => {
   assertEquals(
     occurrenceKeyForDueAt("2026-07-27T10:00:00.000Z"),
     "due:2026-07-27T10:00:00.000Z",
+  );
+});
+
+Deno.test("transaction-backed scheduled actions require execution proof", () => {
+  assertTransactionBackedScheduledExecution(
+    { action_type: "buy" },
+    { txHash: "0xabc" },
+  );
+  assertTransactionBackedScheduledExecution(
+    { action_type: "transfer" },
+    { transactionId: "4ec88d97-af82-4d3c-b11e-3e2f2c2689db" },
+  );
+  assertTransactionBackedScheduledExecution(
+    { action_type: "claim_creator_rewards" },
+    { raw: { signature: "5Ks..." } },
+  );
+  assertThrows(
+    () =>
+      assertTransactionBackedScheduledExecution(
+        { action_type: "buy" },
+        { raw: { accepted: true } },
+      ),
+    Error,
+    "scheduled_buy_missing_transaction_proof",
+  );
+});
+
+Deno.test("non-transaction scheduled actions can complete without tx proof", () => {
+  assertTransactionBackedScheduledExecution(
+    { action_type: "launch_coin" },
+    { raw: { accepted: true } },
   );
 });

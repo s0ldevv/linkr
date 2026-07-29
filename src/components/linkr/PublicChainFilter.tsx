@@ -1,4 +1,4 @@
-import { RobinhoodLogo, SolanaLogo } from "@/components/linkr/ChainLogos";
+import { ChainPill } from "@/components/linkr/ChainPill";
 
 export type PublicChainFilterValue = "all" | "robinhood" | "solana";
 
@@ -36,10 +36,12 @@ export function PublicChainFilter({
 
 function ChainFilterIcon({ value }: { value: Exclude<PublicChainFilterValue, "all"> }) {
   return (
-    <span className="sm-public-chain-filter-icon" aria-hidden="true">
-      {value === "robinhood" && <RobinhoodLogo className="sm-public-chain-filter-logo-robinhood" />}
-      {value === "solana" && <SolanaLogo className="sm-public-chain-filter-logo-solana" />}
-    </span>
+    <ChainPill
+      chain={value}
+      className="sm-public-chain-filter-icon"
+      iconOnly
+      label={chainFilterLabel(value)}
+    />
   );
 }
 

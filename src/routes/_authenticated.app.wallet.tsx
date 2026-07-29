@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { RobinhoodLogo, SolanaLogo } from "@/components/linkr/ChainLogos";
+import { ChainPill } from "@/components/linkr/ChainPill";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -1062,9 +1062,12 @@ function WalletPage() {
         <div className="sm-card app-dashboard-card app-wallet-chain-card app-wallet-chain-card-evm">
           <div className="app-wallet-chain-head">
             <div className="app-wallet-chain-title">
-              <span className="app-wallet-chain-icon app-wallet-chain-icon-evm" aria-hidden="true">
-                <RobinhoodLogo />
-              </span>
+              <ChainPill
+                chain="robinhood"
+                className="app-wallet-chain-icon app-wallet-chain-icon-evm"
+                iconOnly
+                label="Robinhood Chain"
+              />
               <div>
                 <h2>EVM wallets</h2>
                 <p>Robinhood Chain wallets for ETH deposits and transactions.</p>
@@ -1088,12 +1091,12 @@ function WalletPage() {
         <div className="sm-card app-dashboard-card app-wallet-chain-card app-wallet-chain-card-solana">
           <div className="app-wallet-chain-head">
             <div className="app-wallet-chain-title">
-              <span
+              <ChainPill
+                chain="solana"
                 className="app-wallet-chain-icon app-wallet-chain-icon-solana"
-                aria-hidden="true"
-              >
-                <SolanaLogo />
-              </span>
+                iconOnly
+                label="Solana"
+              />
               <div>
                 <h2>Solana wallets</h2>
                 <p>Solana wallets for SOL, SPL tokens, and launch rewards.</p>
@@ -1811,15 +1814,24 @@ function openCenteredAuthPopup(url: string): Window | null {
 }
 
 function WalletAssetMark({ asset }: { asset: "eth" | "sol" | "usdc" }) {
+  if (asset === "eth") {
+    return (
+      <ChainPill
+        chain="robinhood"
+        className="app-wallet-asset-mark"
+        iconOnly
+        label="Robinhood Chain"
+      />
+    );
+  }
+
+  if (asset === "sol") {
+    return <ChainPill chain="solana" className="app-wallet-asset-mark" iconOnly label="Solana" />;
+  }
+
   return (
     <span className="app-wallet-asset-mark" data-asset={asset} aria-hidden="true">
-      {asset === "eth" ? (
-        <RobinhoodLogo />
-      ) : asset === "sol" ? (
-        <SolanaLogo />
-      ) : (
-        <img src="/linkr/usdc.webp" alt="" />
-      )}
+      <img src="/linkr/usdc.webp" alt="" />
     </span>
   );
 }
