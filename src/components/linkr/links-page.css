@@ -76,13 +76,24 @@
   margin-top: clamp(10px, 1.8vw, 18px);
 }
 
-.linkr-links-logo {
+.linkr-links-logo-shell {
+  align-items: center;
   background: #ffffff;
   border-radius: 50%;
   box-shadow: 0 12px 32px rgb(0 0 0 / 24%);
+  display: inline-flex;
   height: clamp(52px, 6vw, 64px);
-  object-fit: cover;
+  justify-content: center;
+  padding: clamp(7px, 1.1vw, 10px);
   width: clamp(52px, 6vw, 64px);
+}
+
+.linkr-links-logo {
+  background: transparent;
+  display: block;
+  height: 100%;
+  object-fit: contain;
+  width: 100%;
 }
 
 .linkr-links-brand span {

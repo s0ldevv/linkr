@@ -32768,6 +32768,10 @@ body .sm-public-launches-page > .sm-marketing-header + main.sm-public-launches-m
   padding-top: clamp(96px, 10vw, 118px) !important;
 }
 
+body .sm-public-explore-page > .sm-marketing-header + main.sm-public-launches-main {
+  padding-top: clamp(88px, 8vw, 104px) !important;
+}
+
 @media (max-width: 640px) {
   body
     :is(.sm-public-launches-page, .sm-public-activity-page)
@@ -32805,6 +32809,10 @@ body .sm-public-launches-page > .sm-marketing-header + main.sm-public-launches-m
 
   body .sm-public-launches-page > .sm-marketing-header + main.sm-public-launches-main {
     padding-top: clamp(92px, 24vw, 112px) !important;
+  }
+
+  body .sm-public-explore-page > .sm-marketing-header + main.sm-public-launches-main {
+    padding-top: clamp(80px, 21vw, 96px) !important;
   }
 }
 

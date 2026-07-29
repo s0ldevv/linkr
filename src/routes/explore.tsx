@@ -124,7 +124,7 @@ function PublicExplorePage() {
     [chainFilter, launchRows],
   );
   return (
-    <div className="lkt-home min-h-screen sm-public-board-page sm-public-launches-page">
+    <div className="lkt-home min-h-screen sm-public-board-page sm-public-launches-page sm-public-explore-page">
       <MarketingHeader />
       <main className="sm-public-launches-main">
         <div className="sm-public-board-shell sm-public-launches-summary">

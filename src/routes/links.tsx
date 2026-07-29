@@ -6,6 +6,7 @@ import {
   Copy,
   Cpu,
   ExternalLink,
+  Home,
   MessageCircle,
   Package,
   Send,
@@ -54,6 +55,12 @@ type LinkrConfigClient = {
 const LINKS: LinkItem[] = [
   {
     accent: "primary",
+    href: "/",
+    icon: Home,
+    label: "App",
+    subtitle: "Open Linkr",
+  },
+  {
     external: true,
     href: "https://x.com/linkrcash",
     icon: XLogo,
@@ -170,7 +177,9 @@ function LinksPage() {
         </header>
 
         <div className="linkr-links-brand">
-          <img src="/linkr-favi.png" alt="" className="linkr-links-logo" />
+          <div className="linkr-links-logo-shell" aria-hidden="true">
+            <img src="/linkr-favi.png" alt="" className="linkr-links-logo" />
+          </div>
           <span>linkr</span>
         </div>
 
@@ -202,8 +211,8 @@ function LinksPage() {
 
         <section className="linkr-links-token" aria-labelledby="linkr-token-ca-title">
           <div className="linkr-links-token-head">
-            <h2 id="linkr-token-ca-title">$LINKR CA</h2>
-            <span>{linkrCaQuery.isFetching ? "Syncing" : "Token"}</span>
+            <h2 id="linkr-token-ca-title">Official $LINKR CA</h2>
+            {linkrCaQuery.isFetching && <span>Syncing</span>}
           </div>
           <div className="linkr-links-token-row">
             <code>{linkrCa}</code>
