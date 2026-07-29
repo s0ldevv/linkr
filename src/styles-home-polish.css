@@ -38772,6 +38772,139 @@ body .sm-profile-page.lkt-home .sm-profile-section-grid .sm-profile-launch-art {
   }
 }
 
+/* Header LINKR CA pill: same control height as the header actions, compact when space is tight. */
+body .sm-header-actions .sm-header-token-pill,
+body .sm-marketing-header .sm-header-token-pill {
+  box-sizing: border-box !important;
+  display: inline-flex !important;
+  flex: 0 1 auto !important;
+  height: 56px !important;
+  max-width: min(42vw, 560px) !important;
+  min-width: 0 !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 10px !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  appearance: none !important;
+  background: #242424 !important;
+  padding: 0 10px 0 12px !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  box-shadow: none !important;
+  cursor: pointer !important;
+  font-family: var(--rayo-font, inherit) !important;
+  line-height: 1 !important;
+  text-decoration: none !important;
+  transition:
+    transform 160ms ease,
+    background-color 160ms ease !important;
+  white-space: nowrap !important;
+}
+
+body .sm-header-actions .sm-header-token-pill:hover,
+body .sm-marketing-header .sm-header-token-pill:hover {
+  background: #2d2d2d !important;
+  transform: translateY(-1px) !important;
+}
+
+body .sm-header-actions .sm-header-token-pill:focus-visible,
+body .sm-marketing-header .sm-header-token-pill:focus-visible {
+  outline: 3px solid #ccff00 !important;
+  outline-offset: 3px !important;
+}
+
+body .sm-header-token-symbol {
+  display: inline-flex !important;
+  flex: 0 0 auto !important;
+  height: 30px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 999px !important;
+  background: #ccff00 !important;
+  padding: 0 11px !important;
+  color: #111111 !important;
+  -webkit-text-fill-color: #111111 !important;
+  font-size: 0.76rem !important;
+  font-weight: 950 !important;
+  letter-spacing: 0 !important;
+}
+
+body .sm-header-token-ca {
+  display: block !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
+    monospace !important;
+  font-size: 0.78rem !important;
+  font-style: normal !important;
+  font-weight: 780 !important;
+  letter-spacing: 0 !important;
+  line-height: 1 !important;
+  text-overflow: clip !important;
+}
+
+body .sm-header-token-ca-short {
+  display: none !important;
+}
+
+body .sm-header-token-copy {
+  display: inline-grid !important;
+  flex: 0 0 34px !important;
+  width: 34px !important;
+  height: 34px !important;
+  place-items: center !important;
+  border-radius: 999px !important;
+  background: rgb(255 255 255 / 12%) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+body .sm-header-token-pill[data-copied="true"] .sm-header-token-copy {
+  background: #ccff00 !important;
+  color: #111111 !important;
+  -webkit-text-fill-color: #111111 !important;
+}
+
+@media (max-width: 1280px) {
+  body .sm-header-token-ca-full {
+    display: none !important;
+  }
+
+  body .sm-header-token-ca-short {
+    display: inline !important;
+  }
+}
+
+@media (max-width: 640px) {
+  body .sm-header-actions .sm-header-token-pill,
+  body .sm-marketing-header .sm-header-token-pill {
+    height: 48px !important;
+    max-width: min(48vw, 190px) !important;
+    gap: 7px !important;
+    padding: 0 8px 0 9px !important;
+  }
+
+  body .sm-header-token-symbol {
+    height: 26px !important;
+    padding: 0 8px !important;
+    font-size: 0.68rem !important;
+  }
+
+  body .sm-header-token-ca {
+    font-size: 0.7rem !important;
+  }
+
+  body .sm-header-token-copy {
+    flex-basis: 30px !important;
+    width: 30px !important;
+    height: 30px !important;
+  }
+}
+
 /* Header X profile button: high-contrast brand mark without adding another text pill. */
 body .sm-header-actions .sm-header-x-button,
 body .sm-marketing-header .sm-header-x-button {
@@ -38833,6 +38966,49 @@ body .sm-header-x-button .sm-header-x-mark {
   body .sm-header-x-button .sm-header-x-mark {
     width: 19px !important;
     height: 19px !important;
+  }
+}
+
+@media (max-width: 640px) {
+  body .sm-marketing-header-inner {
+    grid-template-columns: auto minmax(0, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  body .sm-header-actions {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    gap: 8px !important;
+  }
+}
+
+@media (max-width: 380px) {
+  body .sm-marketing-header-inner {
+    gap: 8px !important;
+  }
+
+  body .sm-marketing-header .sm-logo .sm-logo-mark {
+    width: 52px !important;
+    height: 52px !important;
+    padding: 8px !important;
+  }
+
+  body .sm-header-actions {
+    gap: 6px !important;
+  }
+
+  body .sm-header-actions .sm-header-token-pill,
+  body .sm-marketing-header .sm-header-token-pill {
+    max-width: 128px !important;
+  }
+
+  body .sm-header-actions .sm-header-x-button,
+  body .sm-marketing-header .sm-header-x-button,
+  body .sm-mobile-menu-button {
+    width: 44px !important;
+    min-width: 44px !important;
+    height: 44px !important;
+    min-height: 44px !important;
   }
 }
 

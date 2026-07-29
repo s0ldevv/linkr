@@ -1,9 +1,11 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ArrowUpRight,
+  Check,
   ChevronDown,
+  Copy,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -12,6 +14,7 @@ import {
 } from "lucide-react";
 import { Logo } from "./Logo";
 import { useAuth } from "@/hooks/use-auth";
+import { FALLBACK_LINKR_CA, useLinkrTokenCa } from "@/hooks/use-linkr-token-ca";
 import { PublicMobileBottomNav, X_POST_TEMPLATE_URL, X_PROFILE_URL } from "./PublicMobileBottomNav";
 import {
   DropdownMenu,
@@ -20,6 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
+import { copyTextToClipboard } from "@/lib/clipboard";
 import { normalizeProfileHandle } from "@/lib/linkr/profile-links";
 import { authSearchFor } from "@/lib/linkr/auth-return";
 
@@ -54,6 +58,9 @@ export function MarketingHeader({ onMobileMenuOpenChange }: MarketingHeaderProps
   const authSearch = authSearchFor(location.href);
   const { user } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [copiedTokenCa, setCopiedTokenCa] = useState(false);
+  const copyResetTimeoutRef = useRef<number | undefined>(undefined);
+  const linkrCaQuery = useLinkrTokenCa();
   const profileQuery = useQuery({
     queryKey: ["header-profile", user?.id],
     enabled: Boolean(user?.id),
@@ -79,6 +86,8 @@ export function MarketingHeader({ onMobileMenuOpenChange }: MarketingHeaderProps
     (user?.user_metadata?.picture as string | undefined);
   const displayUsername = username.includes("@") ? username : "@" + username;
   const profileUsername = normalizeProfileHandle(username);
+  const linkrCa = linkrCaQuery.data ?? FALLBACK_LINKR_CA;
+  const compactLinkrCa = compactTokenCa(linkrCa);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -102,9 +111,36 @@ export function MarketingHeader({ onMobileMenuOpenChange }: MarketingHeaderProps
     return () => onMobileMenuOpenChange?.(false);
   }, [menuOpen, onMobileMenuOpenChange]);
 
+  useEffect(() => {
+    return () => {
+      if (copyResetTimeoutRef.current) {
+        window.clearTimeout(copyResetTimeoutRef.current);
+      }
+    };
+  }, []);
+
   async function signOut() {
     await supabase.auth.signOut();
     window.location.href = "/";
+  }
+
+  async function copyHeaderTokenCa() {
+    const copied = await copyTextToClipboard(linkrCa);
+    if (!copied) {
+      setCopiedTokenCa(false);
+      return;
+    }
+
+    setCopiedTokenCa(true);
+
+    if (copyResetTimeoutRef.current) {
+      window.clearTimeout(copyResetTimeoutRef.current);
+    }
+
+    copyResetTimeoutRef.current = window.setTimeout(() => {
+      setCopiedTokenCa(false);
+      copyResetTimeoutRef.current = undefined;
+    }, 1_600);
   }
 
   return (
@@ -130,6 +166,28 @@ export function MarketingHeader({ onMobileMenuOpenChange }: MarketingHeaderProps
         </nav>
 
         <div className="sm-header-actions">
+          <button
+            className="sm-header-token-pill"
+            type="button"
+            onClick={copyHeaderTokenCa}
+            aria-label={copiedTokenCa ? "LINKR token CA copied" : "Copy LINKR token CA"}
+            title={linkrCa}
+            data-copied={copiedTokenCa}
+            data-loading={linkrCaQuery.isFetching}
+          >
+            <span className="sm-header-token-symbol">$LINKR</span>
+            <code className="sm-header-token-ca">
+              <span className="sm-header-token-ca-full">{linkrCa}</span>
+              <span className="sm-header-token-ca-short">{compactLinkrCa}</span>
+            </code>
+            <span className="sm-header-token-copy" aria-hidden="true">
+              {copiedTokenCa ? (
+                <Check size={16} strokeWidth={2.7} />
+              ) : (
+                <Copy size={16} strokeWidth={2.45} />
+              )}
+            </span>
+          </button>
           <a
             className="sm-header-primary"
             href={X_POST_TEMPLATE_URL}
@@ -305,4 +363,11 @@ export function MarketingHeader({ onMobileMenuOpenChange }: MarketingHeaderProps
       <PublicMobileBottomNav />
     </header>
   );
+}
+
+function compactTokenCa(value: string) {
+  const tokenCa = value.trim();
+  if (!tokenCa) return FALLBACK_LINKR_CA;
+  if (tokenCa.length <= 14) return tokenCa;
+  return `${tokenCa.slice(0, 4)}...${tokenCa.slice(-4)}`;
 }

@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
 import {
   BookOpen,
   Bot,
@@ -17,11 +16,9 @@ import {
 import { useState, type ComponentType, type SVGProps } from "react";
 
 import { XLogo } from "@/components/linkr/XLogo";
-import { supabase } from "@/integrations/supabase/client";
+import { FALLBACK_LINKR_CA, useLinkrTokenCa } from "@/hooks/use-linkr-token-ca";
+import { copyTextToClipboard } from "@/lib/clipboard";
 import "@/components/linkr/links-page.css";
-
-const LINKR_CA_CONFIG_KEY = "linkr_token_ca";
-const FALLBACK_LINKR_CA = "soon";
 
 type LinkItem = {
   accent?: "primary";
@@ -30,27 +27,6 @@ type LinkItem = {
   icon: ComponentType<SVGProps<SVGSVGElement>>;
   label: string;
   subtitle: string;
-};
-
-type ConfigRow = {
-  config_key: string;
-  config_value: string;
-};
-
-type LinkrConfigClient = {
-  from: (table: "linkr_app_config_info") => {
-    select: (columns: string) => {
-      eq: (
-        column: "config_key",
-        value: string,
-      ) => {
-        maybeSingle: () => Promise<{
-          data: ConfigRow | null;
-          error: { message?: string } | null;
-        }>;
-      };
-    };
-  };
 };
 
 const LINKS: LinkItem[] = [
@@ -138,23 +114,7 @@ export const Route = createFileRoute("/links")({
 
 function LinksPage() {
   const [copied, setCopied] = useState(false);
-  const linkrCaQuery = useQuery({
-    queryKey: ["linkr-app-config-info", LINKR_CA_CONFIG_KEY],
-    staleTime: 60_000,
-    queryFn: async () => {
-      const client = supabase as unknown as LinkrConfigClient;
-      const { data, error } = await client
-        .from("linkr_app_config_info")
-        .select("config_key,config_value")
-        .eq("config_key", LINKR_CA_CONFIG_KEY)
-        .maybeSingle();
-
-      if (error) return FALLBACK_LINKR_CA;
-
-      const value = data?.config_value?.trim();
-      return value || FALLBACK_LINKR_CA;
-    },
-  });
+  const linkrCaQuery = useLinkrTokenCa();
 
   const linkrCa = linkrCaQuery.data ?? FALLBACK_LINKR_CA;
   const dexscreenerUrl = `https://dexscreener.com/solana/${encodeURIComponent(linkrCa)}`;
@@ -171,9 +131,9 @@ function LinksPage() {
   ];
 
   async function copyTokenCa() {
-    if (typeof navigator === "undefined" || !navigator.clipboard) return;
+    const copiedTokenCa = await copyTextToClipboard(linkrCa);
+    if (!copiedTokenCa) return;
 
-    await navigator.clipboard.writeText(linkrCa);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1_600);
   }
