@@ -6622,7 +6622,7 @@
   backdrop-filter: blur(10px);
   inset: 0;
   position: fixed;
-  z-index: 220;
+  z-index: 100100;
 }
 
 .lkx-human-video-modal {
@@ -6637,7 +6637,7 @@
   top: 50%;
   transform: translate(-50%, -50%);
   width: min(94vw, 960px);
-  z-index: 221;
+  z-index: 100101;
 }
 
 .lkx-human-video-overlay[data-state="closed"],
@@ -9172,5 +9172,4 @@ a.lkt-post-handle:focus-visible,
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
-
 

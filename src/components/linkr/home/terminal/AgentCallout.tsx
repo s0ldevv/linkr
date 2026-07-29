@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import * as Dialog from "@radix-ui/react-dialog";
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { ArrowUpRight, Bot, FileText, UserRound, X } from "lucide-react";
 
 const HUMAN_EXPLAINER_VIDEO_SRC = "/linkr/linkr-explainer.mp4";
@@ -9,36 +10,65 @@ export function AgentCallout() {
   const [videoOpen, setVideoOpen] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
-  function startVideo() {
+  const startVideo = useCallback((reset = false) => {
     const video = videoRef.current;
     if (!video) return;
 
     video.volume = 0.5;
-    video.currentTime = 0;
+    if (reset) {
+      try {
+        video.currentTime = 0;
+      } catch {
+        // Some browsers refuse seeking until metadata is available.
+      }
+    }
+    if (video.readyState === HTMLMediaElement.HAVE_NOTHING) video.load();
     void video.play().catch(() => undefined);
-  }
+  }, []);
 
-  function stopVideo() {
+  const stopVideo = useCallback(() => {
     const video = videoRef.current;
     if (!video) return;
 
     video.pause();
-    video.currentTime = 0;
-  }
+    try {
+      video.currentTime = 0;
+    } catch {
+      // Some browsers refuse seeking until metadata is available.
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!videoOpen) return;
+    const video = videoRef.current;
+    if (!video) return;
+
+    const resumePlayback = () => startVideo(false);
+    const frameId = window.requestAnimationFrame(resumePlayback);
+
+    video.addEventListener("loadedmetadata", resumePlayback, { once: true });
+    video.addEventListener("canplay", resumePlayback, { once: true });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      video.removeEventListener("loadedmetadata", resumePlayback);
+      video.removeEventListener("canplay", resumePlayback);
+    };
+  }, [startVideo, videoOpen]);
 
   function handleVideoOpenChange(open: boolean) {
-    setVideoOpen(open);
-
     if (open) {
-      startVideo();
+      flushSync(() => setVideoOpen(true));
+      startVideo(true);
       return;
     }
 
     stopVideo();
+    setVideoOpen(false);
   }
 
   return (
-    <>
+    <Dialog.Root open={videoOpen} onOpenChange={handleVideoOpenChange}>
       <section className="lkx-agent-callout" aria-labelledby="lkx-agent-callout-title">
         <div className="lkx-agent-callout-mark" aria-hidden="true">
           <Bot size={28} strokeWidth={2.15} />
@@ -60,39 +90,36 @@ export function AgentCallout() {
             Read skill.md
             <ArrowUpRight aria-hidden="true" size={15} strokeWidth={2.6} />
           </a>
-          <button
-            className="lkx-agent-callout-human"
-            type="button"
-            onClick={() => handleVideoOpenChange(true)}
-          >
-            <UserRound aria-hidden="true" size={17} strokeWidth={2.35} />
-            No, I am a human
-          </button>
+          <Dialog.Trigger asChild>
+            <button className="lkx-agent-callout-human" type="button">
+              <UserRound aria-hidden="true" size={17} strokeWidth={2.35} />
+              No, I am a human
+            </button>
+          </Dialog.Trigger>
         </div>
       </section>
 
-      <Dialog.Root open={videoOpen} onOpenChange={handleVideoOpenChange}>
-        <Dialog.Portal forceMount>
-          <Dialog.Overlay forceMount className="lkx-human-video-overlay" />
-          <Dialog.Content forceMount className="lkx-human-video-modal">
-            <Dialog.Title className="sr-only">Linkr explainer video</Dialog.Title>
-            <Dialog.Close className="lkx-human-video-close" aria-label="Close video">
-              <X aria-hidden="true" size={20} strokeWidth={2.7} />
-            </Dialog.Close>
-            <video
-              ref={videoRef}
-              className="lkx-human-video-player"
-              controls
-              playsInline
-              onLoadedMetadata={(event) => {
-                event.currentTarget.volume = 0.5;
-              }}
-              preload="metadata"
-              src={HUMAN_EXPLAINER_VIDEO_SRC}
-            />
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
-    </>
+      <Dialog.Portal>
+        <Dialog.Overlay className="lkx-human-video-overlay" />
+        <Dialog.Content className="lkx-human-video-modal">
+          <Dialog.Title className="sr-only">Linkr explainer video</Dialog.Title>
+          <Dialog.Close className="lkx-human-video-close" aria-label="Close video">
+            <X aria-hidden="true" size={20} strokeWidth={2.7} />
+          </Dialog.Close>
+          <video
+            ref={videoRef}
+            autoPlay
+            className="lkx-human-video-player"
+            controls
+            playsInline
+            onLoadedMetadata={(event) => {
+              event.currentTarget.volume = 0.5;
+            }}
+            preload="auto"
+            src={HUMAN_EXPLAINER_VIDEO_SRC}
+          />
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }
