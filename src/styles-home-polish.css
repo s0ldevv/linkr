@@ -748,7 +748,7 @@ body,
   height: 32px !important;
   border: 1px solid var(--lk-line-strong) !important;
   border-radius: 4px !important;
-  background: #ffffff !important;
+  background: var(--linkr-logo-bg, #9f8be7) !important;
   box-shadow: 3px 3px 0 rgb(23 138 69 / 20%) !important;
 }
 
@@ -1647,7 +1647,7 @@ body,
   height: 28px !important;
   border: 1px solid var(--lk-line-strong) !important;
   border-radius: 4px !important;
-  background: #f8fff4 !important;
+  background: var(--linkr-logo-bg, #9f8be7) !important;
   box-shadow: none !important;
 }
 
@@ -2532,7 +2532,7 @@ body,
 
 .sm-app-sidebar .sm-logo img {
   border-color: rgb(255 255 255 / 24%) !important;
-  background: #f8fff4 !important;
+  background: var(--linkr-logo-bg, #9f8be7) !important;
 }
 
 .sm-app-sidebar-status,
@@ -3114,7 +3114,7 @@ body,
   height: 30px !important;
   border: 1px solid var(--wc-line-strong) !important;
   border-radius: 6px !important;
-  background: #ffffff !important;
+  background: var(--linkr-logo-bg, #9f8be7) !important;
 }
 
 .sm-logo span {
@@ -4293,11 +4293,11 @@ body {
   height: 56px !important;
   border: 0 !important;
   border-radius: 999px !important;
-  background: #ffffff !important;
+  background: var(--linkr-logo-bg, #9f8be7) !important;
   box-shadow: none !important;
   object-fit: contain !important;
   padding: 7px !important;
-  filter: grayscale(1) contrast(1.2);
+  filter: none;
 }
 
 .sm-logo span {
@@ -6271,7 +6271,7 @@ body
 }
 
 .sm-marketing-header .sm-logo {
-  background: #ccff00;
+  background: var(--linkr-logo-bg, #9f8be7);
   padding-right: 10px;
   padding-left: 10px;
   padding-top: 2px;
@@ -9426,7 +9426,7 @@ body
 .sm-logo img {
   width: 3.1rem;
   height: 3.1rem;
-  background: var(--sm-lime);
+  background: var(--linkr-logo-bg, #9f8be7);
   padding: 0.35rem;
   object-fit: contain;
 }
@@ -9448,7 +9448,7 @@ body
   min-height: 5rem;
   justify-content: center;
   margin-top: -0.35rem;
-  background: var(--sm-lime);
+  background: var(--linkr-logo-bg, #9f8be7);
   padding: 0.9rem 0.5rem 0.6rem;
 }
 
@@ -16579,10 +16579,10 @@ body .sm-app-sidebar .sm-logo img {
   height: 56px !important;
   border: 0 !important;
   border-radius: 999px !important;
-  background: #ffffff !important;
+  background: var(--linkr-logo-bg, #9f8be7) !important;
   box-shadow: none !important;
   padding: 7px !important;
-  filter: grayscale(1) contrast(1.2) !important;
+  filter: none !important;
 }
 
 body .sm-marketing-header .sm-logo span,
@@ -21458,7 +21458,7 @@ body .sm-public-profile-avatar {
 }
 
 body .sm-public-profile-avatar[data-linkr="true"] {
-  background: var(--public-lime) !important;
+  background: var(--linkr-logo-bg, #9f8be7) !important;
   color: #111111 !important;
 }
 
@@ -28398,7 +28398,7 @@ body .sm-mobile-menu-brand .sm-logo .sm-logo-mark {
   overflow: hidden !important;
   border: 0 !important;
   border-radius: 999px !important;
-  background: #ffffff !important;
+  background: var(--linkr-logo-bg, #9f8be7) !important;
   clip-path: circle(50% at 50% 50%) !important;
   padding: 10px !important;
   place-items: center !important;
@@ -32872,7 +32872,7 @@ body .sm-app-sidebar .sm-logo .sm-logo-mark {
   overflow: hidden !important;
   border: 0 !important;
   border-radius: 999px !important;
-  background: #ffffff !important;
+  background: var(--linkr-logo-bg, #9f8be7) !important;
   clip-path: circle(50% at 50% 50%) !important;
   padding: 10px !important;
   place-items: center !important;
@@ -32880,7 +32880,7 @@ body .sm-app-sidebar .sm-logo .sm-logo-mark {
 }
 
 body .app-rayo-login-page .app-login-header .sm-logo .sm-logo-mark {
-  background: #111111 !important;
+  background: var(--linkr-logo-bg, #9f8be7) !important;
 }
 
 body .sm-logo .sm-logo-mark img,
@@ -32925,13 +32925,13 @@ body .app-rayo-login-page .app-login-header .sm-logo {
     height: 60px !important;
     border: 0 !important;
     border-radius: 999px !important;
-    background: #ffffff !important;
+    background: var(--linkr-logo-bg, #9f8be7) !important;
     clip-path: circle(50% at 50% 50%) !important;
     padding: 9px !important;
   }
 
   body .app-rayo-login-page .app-login-header .sm-logo .sm-logo-mark {
-    background: #111111 !important;
+    background: var(--linkr-logo-bg, #9f8be7) !important;
   }
 
   body .sm-marketing-header .sm-logo span,
@@ -32943,7 +32943,7 @@ body .app-rayo-login-page .app-login-header .sm-logo {
 }
 
 body .sm-mobile-menu .sm-mobile-menu-brand .sm-logo .sm-logo-mark {
-  background: #111111 !important;
+  background: var(--linkr-logo-bg, #9f8be7) !important;
 }
 
 body .sm-mobile-menu .sm-mobile-menu-brand .sm-logo span {
@@ -52229,7 +52229,7 @@ body .sm-public-activity-page .sm-public-message .sm-public-message-author a {
 }
 
 body .sm-public-activity-page .sm-public-profile-avatar[data-linkr="true"] {
-  background: #ffffff !important;
+  background: var(--linkr-logo-bg, #9f8be7) !important;
 }
 
 body .sm-public-activity-page .sm-public-profile-avatar[data-linkr="true"] img {
@@ -54618,4 +54618,18 @@ body .sm-profile-comment-card .sm-profile-chip-row span {
 
 body .sm-app-shell :where(button, a, [role="button"]):is(:hover, :focus-visible) {
   border-color: transparent !important;
+}
+
+/* Linkr logo background guard. */
+body .sm-logo .sm-logo-mark,
+body .sm-marketing-header .sm-logo .sm-logo-mark,
+body .sm-mobile-menu-brand .sm-logo .sm-logo-mark,
+body .sm-app-sidebar .sm-logo .sm-logo-mark,
+body .sm-app-mobile-bar .sm-logo .sm-logo-mark,
+body .app-rayo-login-page .app-login-header .sm-logo .sm-logo-mark,
+body .linkr-links-logo-shell,
+body .sm-public-profile-avatar[data-linkr="true"],
+body .sm-public-activity-page .sm-public-profile-avatar[data-linkr="true"],
+body .lkt-brand img {
+  background: var(--linkr-logo-bg, #9f8be7) !important;
 }

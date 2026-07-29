@@ -54,7 +54,7 @@ type PublicActivityProfile = {
 };
 type ChainFilter = PublicChainFilterValue;
 
-const LINKR_PROFILE_IMAGE_SRC = "/linkr/linkr-logo-white-bg.png";
+const LINKR_PROFILE_IMAGE_SRC = "/linkr-logo.png";
 
 const DEMO_ACTIVITY: PublicActivity[] = [
   {

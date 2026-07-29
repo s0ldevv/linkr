@@ -78,7 +78,7 @@
 
 .linkr-links-logo-shell {
   align-items: center;
-  background: #ffffff;
+  background: var(--linkr-logo-bg, #9f8be7);
   border-radius: 50%;
   box-shadow: 0 12px 32px rgb(0 0 0 / 24%);
   display: inline-flex;
