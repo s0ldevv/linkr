@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsOfServiceRouteImport } from './routes/terms-of-service'
 import { Route as SecretpanelRouteImport } from './routes/secretpanel'
 import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
+import { Route as LinksRouteImport } from './routes/links'
 import { Route as LaunchesRouteImport } from './routes/launches'
 import { Route as LaunchRouteImport } from './routes/launch'
 import { Route as ExploreRouteImport } from './routes/explore'
@@ -60,6 +61,11 @@ const SecretpanelRoute = SecretpanelRouteImport.update({
 const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
   id: '/privacy-policy',
   path: '/privacy-policy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LinksRoute = LinksRouteImport.update({
+  id: '/links',
+  path: '/links',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LaunchesRoute = LaunchesRouteImport.update({
@@ -247,6 +253,7 @@ export interface FileRoutesByFullPath {
   '/explore': typeof ExploreRoute
   '/launch': typeof LaunchRoute
   '/launches': typeof LaunchesRoute
+  '/links': typeof LinksRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/secretpanel': typeof SecretpanelRoute
   '/terms-of-service': typeof TermsOfServiceRoute
@@ -285,6 +292,7 @@ export interface FileRoutesByTo {
   '/explore': typeof ExploreRoute
   '/launch': typeof LaunchRoute
   '/launches': typeof LaunchesRoute
+  '/links': typeof LinksRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/secretpanel': typeof SecretpanelRoute
   '/terms-of-service': typeof TermsOfServiceRoute
@@ -324,6 +332,7 @@ export interface FileRoutesById {
   '/explore': typeof ExploreRoute
   '/launch': typeof LaunchRoute
   '/launches': typeof LaunchesRoute
+  '/links': typeof LinksRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/secretpanel': typeof SecretpanelRoute
   '/terms-of-service': typeof TermsOfServiceRoute
@@ -364,6 +373,7 @@ export interface FileRouteTypes {
     | '/explore'
     | '/launch'
     | '/launches'
+    | '/links'
     | '/privacy-policy'
     | '/secretpanel'
     | '/terms-of-service'
@@ -402,6 +412,7 @@ export interface FileRouteTypes {
     | '/explore'
     | '/launch'
     | '/launches'
+    | '/links'
     | '/privacy-policy'
     | '/secretpanel'
     | '/terms-of-service'
@@ -440,6 +451,7 @@ export interface FileRouteTypes {
     | '/explore'
     | '/launch'
     | '/launches'
+    | '/links'
     | '/privacy-policy'
     | '/secretpanel'
     | '/terms-of-service'
@@ -480,6 +492,7 @@ export interface RootRouteChildren {
   ExploreRoute: typeof ExploreRoute
   LaunchRoute: typeof LaunchRoute
   LaunchesRoute: typeof LaunchesRoute
+  LinksRoute: typeof LinksRoute
   PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   SecretpanelRoute: typeof SecretpanelRoute
   TermsOfServiceRoute: typeof TermsOfServiceRoute
@@ -513,6 +526,13 @@ declare module '@tanstack/react-router' {
       path: '/privacy-policy'
       fullPath: '/privacy-policy'
       preLoaderRoute: typeof PrivacyPolicyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/links': {
+      id: '/links'
+      path: '/links'
+      fullPath: '/links'
+      preLoaderRoute: typeof LinksRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/launches': {
@@ -829,6 +849,7 @@ const rootRouteChildren: RootRouteChildren = {
   ExploreRoute: ExploreRoute,
   LaunchRoute: LaunchRoute,
   LaunchesRoute: LaunchesRoute,
+  LinksRoute: LinksRoute,
   PrivacyPolicyRoute: PrivacyPolicyRoute,
   SecretpanelRoute: SecretpanelRoute,
   TermsOfServiceRoute: TermsOfServiceRoute,

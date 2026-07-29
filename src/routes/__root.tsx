@@ -148,21 +148,25 @@ function RootComponent() {
   const isAuthSurface = normalizedPathname.startsWith("/auth");
   const isTelegramAuthSurface = normalizedPathname.startsWith("/telegram");
   const isAuthCallbackSurface = normalizedPathname.startsWith("/auth/callback");
+  const isLinksSurface = normalizedPathname === "/links";
   const hideEntryGate =
     normalizedPathname === "/terms-of-service" ||
+    isLinksSurface ||
     isAuthSurface ||
     isTelegramAuthSurface ||
     normalizedPathname === "/secretpanel";
   const appContent = (
     <div id="linkr-app-content">
       <Outlet />
-      {!isAuthSurface && !isTelegramAuthSurface && !isAuthCallbackSurface && <RayoChrome />}
+      {!isAuthSurface && !isTelegramAuthSurface && !isAuthCallbackSurface && !isLinksSurface && (
+        <RayoChrome />
+      )}
     </div>
   );
 
   return (
     <QueryClientProvider client={queryClient}>
-      {!isTelegramAuthSurface && !isAuthSurface && <MobileInstallBanner />}
+      {!isTelegramAuthSurface && !isAuthSurface && !isLinksSurface && <MobileInstallBanner />}
       {hideEntryGate ? (
         appContent
       ) : (
@@ -170,7 +174,7 @@ function RootComponent() {
           {appContent}
         </AppEntryGate>
       )}
-      <CookiePrivacyNotice />
+      {!isLinksSurface && <CookiePrivacyNotice />}
       <Toaster theme="light" position="top-right" />
     </QueryClientProvider>
   );
