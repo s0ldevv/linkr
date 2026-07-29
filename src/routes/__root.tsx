@@ -28,6 +28,13 @@ const OG_DESCRIPTION =
 const OG_IMAGE_URL =
   "https://raw.githubusercontent.com/s0ldevv/linkr/main/public/linkr/linkr-og-c9ef0be9d1b6.png";
 const OG_IMAGE_ALT = "Linkr app preview";
+const MANIFEST_LINK = { rel: "manifest", href: "/manifest.webmanifest" } as const;
+
+function isAuthenticatedAppRoute(matches: Array<{ pathname: string; routeId: string }>): boolean {
+  return matches.some(
+    (match) => match.pathname.startsWith("/app") || match.routeId.includes("_authenticated"),
+  );
+}
 
 function NotFoundComponent() {
   return (
@@ -86,7 +93,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  head: () => ({
+  head: ({ matches }) => ({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
@@ -135,7 +142,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "icon", href: "/linkr-favi.png", type: "image/png" },
       { rel: "apple-touch-icon", href: "/linkr-favi.png" },
       { rel: "image_src", href: OG_IMAGE_URL },
-      { rel: "manifest", href: "/manifest.webmanifest" },
+      ...(isAuthenticatedAppRoute(matches) ? [] : [MANIFEST_LINK]),
       {
         rel: "stylesheet",
         href: appCss,
