@@ -104,7 +104,8 @@ Deno.test("Telegram photo helper sends caption and keyboard payload", async () =
   try {
     await sendTelegramPhoto({
       chat_id: "123",
-      photo: "https://linkr.cash/linkr/linkr-tg-start-back.png",
+      photo:
+        "https://xnxdbcfcxaqukmsajjfm.supabase.co/storage/v1/object/public/token-logos/linkr-assets/telegram/start/linkr-tg-start-back.png",
       caption: "Welcome to Linkr on Telegram.",
       message_thread_id: "456",
       reply_markup: telegramStartMenuKeyboard("https://example.test/login"),
@@ -125,7 +126,8 @@ Deno.test("Telegram photo helper sends caption and keyboard payload", async () =
   const body = JSON.parse(String(calls[0].init?.body ?? "{}"));
   if (body.chat_id !== "123") throw new Error("Photo chat id changed");
   if (
-    body.photo !== "https://linkr.cash/linkr/linkr-tg-start-back.png"
+    body.photo !==
+      "https://xnxdbcfcxaqukmsajjfm.supabase.co/storage/v1/object/public/token-logos/linkr-assets/telegram/start/linkr-tg-start-back.png"
   ) {
     throw new Error("Photo URL changed");
   }

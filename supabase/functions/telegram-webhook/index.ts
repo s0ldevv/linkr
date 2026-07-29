@@ -55,7 +55,8 @@ import { getActiveBanForAuthUser } from "../_shared/x_bans.ts";
 
 const PRIVATE_ACTION_RE =
   /\b(wallet|balance|portfolio|history|buy|sell|send|transfer|launch|create coin|make a coin|liquidity|schedule|claim|creator rewards?|cashback|api key|private key|export)\b/i;
-const START_MENU_IMAGE_URL = "https://linkr.cash/linkr/linkr-tg-start-back.png";
+const START_MENU_IMAGE_URL =
+  "https://xnxdbcfcxaqukmsajjfm.supabase.co/storage/v1/object/public/token-logos/linkr-assets/telegram/start/linkr-tg-start-back.png";
 
 function jsonResponse(body: unknown, init: ResponseInit = {}): Response {
   const headers = new Headers(init.headers);
