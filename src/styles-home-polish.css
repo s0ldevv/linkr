@@ -32953,7 +32953,7 @@ body .sm-mobile-menu .sm-mobile-menu-brand .sm-logo span {
 
 /* Authenticated dashboard final pass: light, legible, and flat. */
 body .sm-app-shell {
-  --app-bg: #f5f7fb;
+  --app-bg: #e9e9e9;
   --app-panel: #ffffff;
   --app-panel-soft: #f8fafc;
   --app-ink: #0a0f1a;
@@ -38970,12 +38970,12 @@ body .sm-mobile-bottom-tabs {
 }
 
 /* ------------------------------------------------------------------ */
-/* Rayo light dashboard pass: flat cream/white/ink system for /app,   */
+/* Rayo light dashboard pass: flat neutral/white/ink system for /app, */
 /* tokens from the rayo template light theme + the app login page.    */
 /* ------------------------------------------------------------------ */
 
 body .sm-app-shell {
-  --app-bg: #faf7f6;
+  --app-bg: #e9e9e9;
   --app-panel: #ffffff;
   --app-soft: #f1ede9;
   --app-ink: #111111;
@@ -38992,6 +38992,11 @@ body .sm-app-shell {
   background: var(--app-bg) !important;
   color: var(--app-ink) !important;
   font-family: var(--rayo-font) !important;
+}
+
+body .sm-app-shell:not([data-dashboard-theme="dark"]) {
+  --app-bg: #e9e9e9;
+  background: #e9e9e9 !important;
 }
 
 body .sm-app-sidebar {
