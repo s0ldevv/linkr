@@ -19,13 +19,18 @@ import { formatEth, formatUsd, shortAddress } from "@/lib/linkr/format";
 import { toast } from "sonner";
 
 type ScheduledAction = Tables<"scheduled_actions"> & {
+  cancel_reason?: string | null;
+  cancelled_at?: string | null;
   ends_at?: string | null;
+  executed_at?: string | null;
+  failed_at?: string | null;
   failed_occurrence_count?: number | null;
   interval_seconds?: number | null;
   last_execution_at?: string | null;
   max_occurrences?: number | null;
   occurrence_count?: number | null;
   paused_at?: string | null;
+  processed_at?: string | null;
   schedule_kind?: string | null;
   successful_occurrence_count?: number | null;
 };
@@ -215,11 +220,25 @@ function SchedulerPage() {
 
   const controlMutation = useMutation({
     mutationFn: invokeSchedulerControl,
-    onSuccess: async (_data, variables) => {
+    onSuccess: async (data, variables) => {
       toast.success(scheduleControlSuccess(variables.action));
       if (user?.id) {
+        if (data.scheduled_action) {
+          queryClient.setQueryData<ScheduledAction[]>(
+            ["scheduled-actions", user.id],
+            (current) =>
+              current?.map((row) =>
+                row.id === data.scheduled_action?.id
+                  ? ({ ...row, ...data.scheduled_action } as ScheduledAction)
+                  : row,
+              ) ?? current,
+          );
+        }
         await queryClient.invalidateQueries({
           queryKey: ["scheduled-actions", user.id],
+        });
+        await queryClient.invalidateQueries({
+          queryKey: ["schedule-occurrences", user.id],
         });
       }
     },
@@ -1255,6 +1274,7 @@ function SchedulerRow({
   const runSummary = scheduleRunSummary(row, latestOccurrence);
   const transactionHash = latestTransactionHash(row, latestOccurrence);
   const txUrl = transactionExplorerUrl(chain, transactionHash);
+  const shouldShowRecurrence = !scheduleCannotRun(row) && isRecurringRow(row);
   const canPause = row.status === "pending" || row.status === "processing";
   const canResume = row.status === "paused";
   const canCancel = ["pending", "processing", "paused"].includes(row.status);
@@ -1282,7 +1302,7 @@ function SchedulerRow({
           )}
           {row.last_checked_at && <span>checked {timeAgo(row.last_checked_at)}</span>}
           {row.error && <span className="app-history-error">{row.error}</span>}
-          {row.schedule_kind && row.schedule_kind !== "one_time" && (
+          {shouldShowRecurrence && row.schedule_kind && row.schedule_kind !== "one_time" && (
             <span>{recurrenceText(row)}</span>
           )}
         </div>
@@ -1524,10 +1544,29 @@ function isRecurringRow(row: ScheduledAction): boolean {
   return ["interval", "daily", "weekly"].includes(String(row.schedule_kind ?? ""));
 }
 
+function scheduleCannotRun(row: ScheduledAction): boolean {
+  return ["cancelled", "executed", "failed", "expired"].includes(String(row.status ?? ""));
+}
+
 function scheduleDisplayStatus(
   row: ScheduledAction,
   latestOccurrence: ScheduleOccurrence | null,
 ): { className: string; label: string } {
+  if (row.status === "cancelled") {
+    return { className: statusClass("cancelled"), label: "Cancelled" };
+  }
+  if (row.status === "paused") {
+    return { className: statusClass("paused"), label: "Paused" };
+  }
+  if (row.status === "executed") {
+    return { className: statusClass("executed"), label: "Executed" };
+  }
+  if (row.status === "failed") {
+    return { className: statusClass("failed"), label: "Failed" };
+  }
+  if (row.status === "expired") {
+    return { className: statusClass("expired"), label: "Expired" };
+  }
   if (row.status === "processing") {
     return { className: statusClass("processing"), label: "Running" };
   }
@@ -1558,6 +1597,12 @@ function scheduleRunSummary(
 ): string | null {
   const latestStatus = latestOccurrence?.status;
   const latestCompletedAt = latestOccurrence?.completed_at ?? row.last_execution_at;
+  if (row.status === "cancelled") {
+    const cancelled = row.cancelled_at ? `Cancelled ${timeAgo(row.cancelled_at)}.` : "Cancelled.";
+    return `${cancelled} No future runs will execute.`;
+  }
+  if (row.status === "paused") return "Paused. It will not run until resumed.";
+  if (row.status === "expired") return "Expired before execution.";
   if (latestStatus === "succeeded" || Number(row.successful_occurrence_count ?? 0) > 0) {
     const last = latestCompletedAt ? `Last run succeeded ${timeAgo(latestCompletedAt)}.` : "";
     const next =
@@ -1585,6 +1630,18 @@ function scheduleRunSummary(
 }
 
 function triggerText(row: ScheduledAction): string {
+  if (row.status === "cancelled") {
+    return row.cancelled_at ? `Cancelled ${timeAgo(row.cancelled_at)}` : "Cancelled";
+  }
+  if (row.status === "paused") return "Paused";
+  if (row.status === "executed") {
+    const completedAt = row.executed_at ?? row.processed_at ?? row.last_execution_at;
+    return completedAt ? `Executed ${timeAgo(completedAt)}` : "Executed";
+  }
+  if (row.status === "failed") {
+    return row.failed_at ? `Failed ${timeAgo(row.failed_at)}` : "Failed";
+  }
+  if (row.status === "expired") return "Expired";
   if (row.trigger_type === "time") {
     if (isRecurringRow(row)) {
       const prefix = Number(row.occurrence_count ?? 0) > 0 ? "Next run" : "First run";

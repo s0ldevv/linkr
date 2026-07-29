@@ -232,6 +232,8 @@ async function processScheduledAction(
 
   const occurrenceStarted = await beginScheduleOccurrence(admin, row);
   if (!occurrenceStarted) return "checked";
+  const stillExecutable = await scheduleStillExecutable(admin, row);
+  if (!stillExecutable) return "checked";
 
   const executed = await executeScheduledAction(admin, row);
   assertTransactionBackedScheduledExecution(row, executed);
@@ -958,10 +960,53 @@ async function beginScheduleOccurrence(admin: any, row: any): Promise<boolean> {
   return true;
 }
 
+async function scheduleStillExecutable(admin: any, row: any): Promise<boolean> {
+  const { data, error } = await admin
+    .from("scheduled_actions")
+    .select("status,active_occurrence_id")
+    .eq("id", row.id)
+    .maybeSingle();
+  if (error) throw error;
+
+  const currentStatus = String(data?.status ?? "");
+  const currentOccurrenceId = String(data?.active_occurrence_id ?? "");
+  const claimedOccurrenceId = String(row.active_occurrence_id ?? "");
+  if (
+    currentStatus === "processing" &&
+    currentOccurrenceId &&
+    currentOccurrenceId === claimedOccurrenceId
+  ) {
+    return true;
+  }
+
+  const occurrenceStatus = currentStatus === "cancelled" ? "cancelled" : "skipped";
+  const occurrenceError = currentStatus === "cancelled"
+    ? "schedule_cancelled"
+    : `schedule_not_executable:${currentStatus || "missing"}`;
+  await completeScheduleOccurrence(
+    admin,
+    row,
+    occurrenceStatus,
+    {
+      skipped_before_execution: true,
+      schedule_status: currentStatus || null,
+    },
+    occurrenceError,
+  ).catch((completeError) => {
+    console.error("scheduled_occurrence_skip_complete_failed", {
+      schedule_id: row.id,
+      occurrence_id: row.active_occurrence_id ?? null,
+      schedule_status: currentStatus || null,
+      error: sanitizeError(completeError),
+    });
+  });
+  return false;
+}
+
 async function completeScheduleOccurrence(
   admin: any,
   row: any,
-  status: "succeeded" | "failed" | "retrying",
+  status: "succeeded" | "failed" | "retrying" | "cancelled" | "skipped",
   outcome: Record<string, unknown>,
   error: string | null,
 ) {
