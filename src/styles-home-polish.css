@@ -45868,6 +45868,7 @@ body .sm-app-content .app-scheduler-segment button {
   border: 0 !important;
   border-radius: 12px !important;
   background: transparent !important;
+  background-color: transparent !important;
   padding: 0 12px !important;
   color: var(--app-muted) !important;
   -webkit-text-fill-color: var(--app-muted) !important;
@@ -45878,38 +45879,55 @@ body .sm-app-content .app-scheduler-segment button {
   letter-spacing: 0.02em !important;
   line-height: 1 !important;
   text-transform: uppercase !important;
+  transition:
+    background-color 140ms ease,
+    box-shadow 140ms ease,
+    color 140ms ease,
+    transform 140ms ease !important;
   white-space: nowrap !important;
 }
 
 body .sm-app-content .app-scheduler-segment button:is(:hover, :focus-visible) {
   border-color: var(--app-ink) !important;
   background: var(--app-lime) !important;
+  background-color: var(--app-lime) !important;
   color: #111111 !important;
   -webkit-text-fill-color: #111111 !important;
+  box-shadow:
+    inset 0 0 0 1px rgb(17 17 17 / 14%),
+    0 6px 14px rgb(17 17 17 / 8%) !important;
   transform: translateY(-1px) !important;
 }
 
 body .sm-app-content .app-scheduler-segment button.is-active,
 body .sm-app-content .app-scheduler-segment button[data-active="true"],
+body .sm-app-content .app-scheduler-segment button[data-selected="true"],
 body .sm-app-content .app-scheduler-segment button[data-state="active"],
 body .sm-app-content .app-scheduler-segment button[aria-pressed="true"] {
   border-color: var(--app-ink) !important;
   background: var(--app-lime) !important;
+  background-color: var(--app-lime) !important;
   color: #111111 !important;
   -webkit-text-fill-color: #111111 !important;
-  box-shadow: inset 0 0 0 1px rgb(17 17 17 / 10%) !important;
+  box-shadow:
+    inset 0 0 0 1px rgb(17 17 17 / 14%),
+    0 6px 14px rgb(17 17 17 / 8%) !important;
   transform: translateY(-1px) !important;
 }
 
 body .sm-app-content .app-scheduler-segment button.is-active:is(:hover, :focus-visible),
 body .sm-app-content .app-scheduler-segment button[data-active="true"]:is(:hover, :focus-visible),
+body .sm-app-content .app-scheduler-segment button[data-selected="true"]:is(:hover, :focus-visible),
 body .sm-app-content .app-scheduler-segment button[data-state="active"]:is(:hover, :focus-visible),
 body .sm-app-content .app-scheduler-segment button[aria-pressed="true"]:is(:hover, :focus-visible) {
   border-color: var(--app-ink) !important;
   background: var(--app-lime) !important;
+  background-color: var(--app-lime) !important;
   color: #111111 !important;
   -webkit-text-fill-color: #111111 !important;
-  box-shadow: inset 0 0 0 1px rgb(17 17 17 / 10%) !important;
+  box-shadow:
+    inset 0 0 0 1px rgb(17 17 17 / 14%),
+    0 6px 14px rgb(17 17 17 / 8%) !important;
   transform: translateY(-1px) !important;
 }
 
@@ -45922,6 +45940,10 @@ body[data-dashboard-theme="dark"] .sm-app-content .app-scheduler-segment button[
 body[data-dashboard-theme="dark"]
   .sm-app-content
   .app-scheduler-segment
+  button[data-selected="true"],
+body[data-dashboard-theme="dark"]
+  .sm-app-content
+  .app-scheduler-segment
   button[data-state="active"],
 body[data-dashboard-theme="dark"]
   .sm-app-content
@@ -45929,8 +45951,12 @@ body[data-dashboard-theme="dark"]
   button[aria-pressed="true"] {
   border-color: var(--app-ink) !important;
   background: var(--app-lime) !important;
+  background-color: var(--app-lime) !important;
   color: #111111 !important;
   -webkit-text-fill-color: #111111 !important;
+  box-shadow:
+    inset 0 0 0 1px rgb(17 17 17 / 16%),
+    0 6px 14px rgb(0 0 0 / 24%) !important;
   transform: translateY(-1px) !important;
 }
 

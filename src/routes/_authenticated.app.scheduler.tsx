@@ -1317,6 +1317,7 @@ function SegmentedControl<T extends string>({
             className={value === option.value ? "is-active" : undefined}
             aria-pressed={value === option.value}
             data-active={value === option.value ? "true" : undefined}
+            data-selected={value === option.value ? "true" : undefined}
             data-state={value === option.value ? "active" : undefined}
             onClick={() => onChange(option.value)}
           >
