@@ -45742,6 +45742,115 @@ body .sm-app-content .app-scheduler-select {
   cursor: pointer !important;
 }
 
+body .sm-app-content .app-scheduler-select-trigger {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+  cursor: pointer !important;
+}
+
+body .sm-app-content .app-scheduler-select-trigger > span {
+  min-width: 0 !important;
+  color: var(--app-ink) !important;
+  -webkit-text-fill-color: var(--app-ink) !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+body .sm-app-content .app-scheduler-select-trigger svg {
+  width: 18px !important;
+  height: 18px !important;
+  flex: 0 0 auto !important;
+  color: var(--app-muted) !important;
+  -webkit-text-fill-color: var(--app-muted) !important;
+  opacity: 1 !important;
+}
+
+body .sm-app-content .app-scheduler-select-trigger[data-state="open"] {
+  background: color-mix(in srgb, var(--app-lime) 18%, var(--app-panel)) !important;
+}
+
+body .app-scheduler-select-content {
+  --app-bg: #faf7f6;
+  --app-panel: #ffffff;
+  --app-ink: #111111;
+  --app-muted: #585858;
+  --app-lime: #ccff00;
+  z-index: 80 !important;
+  min-width: var(--radix-select-trigger-width) !important;
+  border: 0 !important;
+  border-radius: 20px !important;
+  background: var(--app-panel) !important;
+  padding: 6px !important;
+  color: var(--app-ink) !important;
+  -webkit-text-fill-color: var(--app-ink) !important;
+  box-shadow: 0 18px 48px rgb(17 17 17 / 12%) !important;
+}
+
+body[data-dashboard-theme="dark"] .app-scheduler-select-content {
+  --app-bg: #101010;
+  --app-panel: #1c1c1c;
+  --app-ink: #faf7f6;
+  --app-muted: rgb(250 247 246 / 68%);
+  --app-lime: #ccff00;
+  box-shadow: 0 18px 48px rgb(0 0 0 / 34%) !important;
+}
+
+body .app-scheduler-select-content [data-radix-select-viewport] {
+  display: grid !important;
+  gap: 4px !important;
+  padding: 0 !important;
+}
+
+body .app-scheduler-select-content [data-radix-select-scroll-up-button],
+body .app-scheduler-select-content [data-radix-select-scroll-down-button] {
+  color: var(--app-muted) !important;
+  -webkit-text-fill-color: var(--app-muted) !important;
+}
+
+body .app-scheduler-select-item {
+  min-height: 42px !important;
+  border-radius: 14px !important;
+  padding: 0 36px 0 12px !important;
+  color: var(--app-ink) !important;
+  -webkit-text-fill-color: var(--app-ink) !important;
+  cursor: pointer !important;
+  font-size: 0.86rem !important;
+  font-weight: 850 !important;
+  letter-spacing: 0 !important;
+  line-height: 1 !important;
+}
+
+body .app-scheduler-select-item + .app-scheduler-select-item {
+  margin-top: 4px !important;
+}
+
+body .app-scheduler-select-item[data-highlighted] {
+  background: color-mix(in srgb, var(--app-lime) 28%, var(--app-panel)) !important;
+  color: #111111 !important;
+  -webkit-text-fill-color: #111111 !important;
+}
+
+body .app-scheduler-select-item[data-state="checked"] {
+  background: var(--app-lime) !important;
+  color: #111111 !important;
+  -webkit-text-fill-color: #111111 !important;
+}
+
+body .app-scheduler-select-item span {
+  color: inherit !important;
+  -webkit-text-fill-color: inherit !important;
+}
+
+body .app-scheduler-select-item svg {
+  width: 16px !important;
+  height: 16px !important;
+  color: inherit !important;
+  -webkit-text-fill-color: inherit !important;
+}
+
 body .sm-app-content .app-scheduler-segment {
   display: grid !important;
   grid-template-columns: repeat(auto-fit, minmax(86px, 1fr)) !important;

@@ -5,6 +5,13 @@ import { AlertCircle, CheckCircle2, Loader2, Pause, Play, Plus, XCircle } from "
 import { ChainPill } from "@/components/linkr/ChainPill";
 import { DashboardStatCard } from "@/components/linkr/DashboardStatCard";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
@@ -517,18 +524,13 @@ function SchedulerCreateForm({ onCreated }: { onCreated: () => void }) {
                 onChange={setChain}
               />
               <Field label="Action" htmlFor="scheduler-action-type">
-                <select
+                <SchedulerSelect<SchedulerActionType>
                   id="scheduler-action-type"
-                  className="app-scheduler-input app-scheduler-select app-scheduler-action-select"
                   value={actionType}
-                  onChange={(event) => setActionType(event.target.value as SchedulerActionType)}
-                >
-                  {ACTION_OPTIONS.map((option) => (
-                    <option value={option.value} key={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+                  options={ACTION_OPTIONS}
+                  onChange={setActionType}
+                  triggerClassName="app-scheduler-action-select"
+                />
               </Field>
               <SegmentedControl<SchedulerTriggerType>
                 label="Trigger"
@@ -792,18 +794,15 @@ function SchedulerCreateForm({ onCreated }: { onCreated: () => void }) {
                     />
                   </Field>
                   <Field label="Unit" htmlFor="buy-unit">
-                    <select
+                    <SchedulerSelect<BuyUnit>
                       id="buy-unit"
-                      className="app-scheduler-input app-scheduler-select"
                       value={buyUnit}
-                      onChange={(event) => setBuyUnit(event.target.value as BuyUnit)}
-                    >
-                      {buyUnitOptions.map((unit) => (
-                        <option value={unit} key={unit}>
-                          {unit.toUpperCase()}
-                        </option>
-                      ))}
-                    </select>
+                      options={buyUnitOptions.map((unit) => ({
+                        value: unit,
+                        label: unit.toUpperCase(),
+                      }))}
+                      onChange={setBuyUnit}
+                    />
                   </Field>
                 </div>
               ) : actionType === "sell" ? (
@@ -843,18 +842,15 @@ function SchedulerCreateForm({ onCreated }: { onCreated: () => void }) {
                     />
                   </Field>
                   <Field label="Unit" htmlFor="transfer-unit">
-                    <select
+                    <SchedulerSelect<TransferUnit>
                       id="transfer-unit"
-                      className="app-scheduler-input app-scheduler-select"
                       value={transferUnit}
-                      onChange={(event) => setTransferUnit(event.target.value as TransferUnit)}
-                    >
-                      {transferUnitOptions.map((unit) => (
-                        <option value={unit} key={unit}>
-                          {unit.toUpperCase()}
-                        </option>
-                      ))}
-                    </select>
+                      options={transferUnitOptions.map((unit) => ({
+                        value: unit,
+                        label: unit.toUpperCase(),
+                      }))}
+                      onChange={setTransferUnit}
+                    />
                   </Field>
                 </div>
               ) : null}
@@ -887,18 +883,12 @@ function SchedulerCreateForm({ onCreated }: { onCreated: () => void }) {
                     />
                   </Field>
                   <Field label="Repeat" htmlFor="schedule-kind">
-                    <select
+                    <SchedulerSelect<ScheduleKind>
                       id="schedule-kind"
-                      className="app-scheduler-input app-scheduler-select"
                       value={scheduleKind}
-                      onChange={(event) => setScheduleKind(event.target.value as ScheduleKind)}
-                    >
-                      {SCHEDULE_KIND_OPTIONS.map((option) => (
-                        <option value={option.value} key={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
+                      options={SCHEDULE_KIND_OPTIONS}
+                      onChange={setScheduleKind}
+                    />
                   </Field>
                   {scheduleKind === "interval" && (
                     <Field label="Every seconds" htmlFor="interval-seconds">
@@ -935,18 +925,12 @@ function SchedulerCreateForm({ onCreated }: { onCreated: () => void }) {
                     />
                   </Field>
                   <Field label="Repeat" htmlFor="market-schedule-kind">
-                    <select
+                    <SchedulerSelect<ScheduleKind>
                       id="market-schedule-kind"
-                      className="app-scheduler-input app-scheduler-select"
                       value={scheduleKind}
-                      onChange={(event) => setScheduleKind(event.target.value as ScheduleKind)}
-                    >
-                      {SCHEDULE_KIND_OPTIONS.map((option) => (
-                        <option value={option.value} key={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
+                      options={SCHEDULE_KIND_OPTIONS}
+                      onChange={setScheduleKind}
+                    />
                   </Field>
                   {scheduleKind !== "one_time" && (
                     <Field label="First check" htmlFor="market-starts-at">
@@ -1271,6 +1255,43 @@ function Field({
       <span>{label}</span>
       {children}
     </label>
+  );
+}
+
+function SchedulerSelect<T extends string>({
+  id,
+  value,
+  options,
+  onChange,
+  triggerClassName,
+}: {
+  id: string;
+  value: T;
+  options: Array<{ value: T; label: string }>;
+  onChange: (value: T) => void;
+  triggerClassName?: string;
+}) {
+  const selectedLabel = options.find((option) => option.value === value)?.label;
+
+  return (
+    <Select value={value} onValueChange={(nextValue) => onChange(nextValue as T)}>
+      <SelectTrigger
+        id={id}
+        type="button"
+        className={["app-scheduler-input app-scheduler-select-trigger", triggerClassName]
+          .filter(Boolean)
+          .join(" ")}
+      >
+        <SelectValue placeholder={selectedLabel ?? "Select"} />
+      </SelectTrigger>
+      <SelectContent className="app-scheduler-select-content" align="start">
+        {options.map((option) => (
+          <SelectItem className="app-scheduler-select-item" value={option.value} key={option.value}>
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
 
