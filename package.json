@@ -13,6 +13,7 @@
     "test:edge": "deno test --allow-env supabase/functions/_shared",
     "test:security-edge": "deno test --allow-env supabase/functions/_shared/wallet_key_verification_test.ts supabase/functions/_shared/security_controls_test.ts",
     "check:edge-budget": "node scripts/edge-function-budget.mjs",
+    "verify:production": "node scripts/verify-single-production.mjs && node scripts/verify-production-assets.mjs",
     "verify:edge-release": "npm run audit:architecture && npm run check:edge-budget && npm run test:edge",
     "check": "npm run audit:architecture && npm run check:edge-budget && npm run lint && npm run typecheck && npm run build",
     "format": "prettier --write .",

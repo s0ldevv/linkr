@@ -1,36 +1,45 @@
+// Last-resort recovery from a chunk that will not load.
+//
+// Vercel Skew Protection is the primary defence: a Vercel-built production
+// deployment issues a __vdpl cookie, so a tab open across a deploy keeps being
+// served its own chunks. This script only covers the cases that escape it —
+// cookies blocked, a tab older than the skew window, or a deployment removed.
+//
+// Deliberately minimal. SSR documents are served no-store, so exactly ONE reload
+// is enough to obtain HTML with current chunk hashes. A chunk 404 is always a
+// server-side deployment problem, never a browser cache problem, so this does not
+// clear caches or unregister service workers — doing so only hides the real cause.
 (() => {
-  const MAX_ATTEMPTS = 4;
-  const RETRY_BASE_DELAY_MS = 350;
-  const RETRY_MAX_DELAY_MS = 3000;
-  const RECOVERY_KEY = "linkr:asset-recovery:" + location.pathname;
-  const RECOVERY_PARAMS = ["_asset_retry", "_asset_recovery_ts"];
+  const RELOAD_KEY = "linkr:asset-reload";
+  const RELOAD_WINDOW_MS = 30_000;
+  const REPORT_PATH = "/api/asset-failure";
+  const LEGACY_PARAMS = ["_asset_retry", "_asset_recovery_ts"];
 
-  let scheduled = false;
+  let handled = false;
 
-  const safeSessionGet = (key) => {
+  const readMark = () => {
     try {
-      return sessionStorage.getItem(key);
+      return Number(sessionStorage.getItem(RELOAD_KEY)) || 0;
     } catch (_) {
-      return null;
+      return 0;
     }
   };
 
-  const safeSessionSet = (key, value) => {
+  const writeMark = (value) => {
     try {
-      sessionStorage.setItem(key, value);
+      sessionStorage.setItem(RELOAD_KEY, String(value));
     } catch (_) {}
   };
 
-  const safeSessionRemove = (key) => {
+  const clearMark = () => {
     try {
-      sessionStorage.removeItem(key);
+      sessionStorage.removeItem(RELOAD_KEY);
     } catch (_) {}
   };
 
-  const failedAssetFromEvent = (event) => {
-    const payload = event && event.payload;
-    if (payload && typeof payload.href === "string") return payload.href;
-
+  const failedAsset = (event) => {
+    const fromPayload = event && event.payload && event.payload.href;
+    if (typeof fromPayload === "string") return fromPayload;
     const target = event && event.target;
     const asset = target && (target.src || target.href);
     return typeof asset === "string" ? asset : null;
@@ -46,50 +55,28 @@
     }
   };
 
-  const markAttempt = () => {
-    const attempts = Number(safeSessionGet(RECOVERY_KEY) || "0");
-    safeSessionSet(RECOVERY_KEY, String(attempts + 1));
-    return attempts;
+  const report = (asset, outcome) => {
+    try {
+      const body = JSON.stringify({
+        asset,
+        outcome,
+        document: location.pathname,
+        at: new Date().toISOString(),
+      });
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon(REPORT_PATH, new Blob([body], { type: "application/json" }));
+        return;
+      }
+      fetch(REPORT_PATH, {
+        method: "POST",
+        body,
+        headers: { "content-type": "application/json" },
+        keepalive: true,
+      }).catch(() => {});
+    } catch (_) {}
   };
 
-  const cleanupBrowserCaches = async () => {
-    await Promise.allSettled([
-      (async () => {
-        if (!("serviceWorker" in navigator)) return;
-        const registrations = await navigator.serviceWorker.getRegistrations();
-        await Promise.allSettled(registrations.map((registration) => registration.unregister()));
-      })(),
-      (async () => {
-        if (!("caches" in window)) return;
-        const keys = await caches.keys();
-        await Promise.allSettled(keys.map((key) => caches.delete(key)));
-      })(),
-    ]);
-  };
-
-  const reloadWithFreshDocument = async (attempts, reason) => {
-    await cleanupBrowserCaches();
-
-    const url = new URL(location.href);
-    RECOVERY_PARAMS.forEach((param) => url.searchParams.delete(param));
-    url.searchParams.set("_asset_retry", String(attempts + 1));
-    url.searchParams.set("_asset_recovery_ts", String(Date.now()));
-
-    console.warn("[Linkr] Recovering from stale or blocked build asset.", {
-      attempt: attempts + 1,
-      reason,
-      nextUrl: url.pathname + url.search,
-    });
-
-    location.replace(url.toString());
-  };
-
-  const showFallback = (reason) => {
-    const retry = async () => {
-      safeSessionRemove(RECOVERY_KEY);
-      await reloadWithFreshDocument(0, reason || "manual-retry");
-    };
-
+  const showFallback = (asset) => {
     const render = () => {
       const main = document.createElement("main");
       main.style.cssText =
@@ -99,19 +86,22 @@
       panel.style.cssText = "max-width:460px";
 
       const title = document.createElement("h1");
-      title.textContent = "Linkr could not load the latest app";
+      title.textContent = "Linkr just updated";
       title.style.cssText = "font-size:24px;margin:0 0 12px";
 
       const message = document.createElement("p");
       message.textContent =
-        "The browser is still receiving an old or blocked app file. Try once more to clear cached app state and load a fresh copy.";
+        "A part of the app could not be loaded. Reloading should pick up the new version.";
       message.style.cssText = "margin:0 0 20px;color:#a1a1aa;line-height:1.45";
 
       const button = document.createElement("button");
       button.textContent = "Reload Linkr";
       button.style.cssText =
         "border:0;border-radius:8px;padding:12px 18px;background:#fafafa;color:#09090b;font-weight:600;cursor:pointer";
-      button.addEventListener("click", retry);
+      button.addEventListener("click", () => {
+        clearMark();
+        location.reload();
+      });
 
       panel.append(title, message, button);
       main.append(panel);
@@ -122,51 +112,43 @@
     else addEventListener("DOMContentLoaded", render, { once: true });
   };
 
-  const recover = (event, reason) => {
-    if (scheduled) return;
+  const recover = (event) => {
+    if (handled) return;
 
-    const asset = failedAssetFromEvent(event);
+    const asset = failedAsset(event);
     if (!isAppAsset(asset)) return;
 
-    scheduled = true;
+    handled = true;
     if (event && typeof event.preventDefault === "function") event.preventDefault();
 
-    const attempts = markAttempt();
-    const recoveryReason = reason || asset || "asset-load-failed";
-
-    if (attempts >= MAX_ATTEMPTS) {
-      showFallback(recoveryReason);
+    // A mark inside the window means the reload already happened and did not help.
+    // Reloading again would loop, so stop and say so honestly.
+    const mark = readMark();
+    if (mark && Date.now() - mark < RELOAD_WINDOW_MS) {
+      clearMark();
+      report(asset, "reload-did-not-help");
+      showFallback(asset);
       return;
     }
 
-    const delay = Math.min(RETRY_MAX_DELAY_MS, RETRY_BASE_DELAY_MS * Math.pow(2, attempts));
-    setTimeout(() => {
-      reloadWithFreshDocument(attempts, recoveryReason).catch(() => {
-        location.reload();
-      });
-    }, delay);
+    writeMark(Date.now());
+    report(asset, "reloading");
+    console.warn("[Linkr] A build asset failed to load; reloading once for fresh HTML.", asset);
+    location.reload();
   };
 
-  addEventListener("vite:preloadError", (event) => recover(event, "vite-preload-error"));
+  addEventListener("vite:preloadError", recover);
+  addEventListener("error", (event) => failedAsset(event) && recover(event), true);
 
-  addEventListener(
-    "error",
-    (event) => {
-      const asset = failedAssetFromEvent(event);
-      if (asset) recover(event, asset);
-    },
-    true,
-  );
-
-  setTimeout(() => {
-    if (scheduled) return;
-    safeSessionRemove(RECOVERY_KEY);
+  // The app booted, so any earlier failure is resolved. Clear the mark and strip
+  // the query params the previous multi-attempt recovery script used to append.
+  addEventListener("load", () => {
+    if (handled) return;
+    clearMark();
 
     const url = new URL(location.href);
-    const hadRecoveryParam = RECOVERY_PARAMS.some((param) => url.searchParams.has(param));
-    if (!hadRecoveryParam) return;
-
-    RECOVERY_PARAMS.forEach((param) => url.searchParams.delete(param));
+    if (!LEGACY_PARAMS.some((param) => url.searchParams.has(param))) return;
+    LEGACY_PARAMS.forEach((param) => url.searchParams.delete(param));
     history.replaceState(history.state, "", url.toString());
-  }, 10000);
+  });
 })();

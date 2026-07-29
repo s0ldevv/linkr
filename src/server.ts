@@ -15,8 +15,10 @@ const CONTENT_SECURITY_POLICY = [
   "base-uri 'self'",
   "object-src 'none'",
   "frame-ancestors 'none'",
-  "script-src 'self' 'unsafe-inline' https://telegram.org https://static.cloudflareinsights.com",
-  "script-src-elem 'self' 'unsafe-inline' https://telegram.org https://static.cloudflareinsights.com",
+  // Cloudflare was removed from in front of Vercel on 2026-07-29; its beacon origin
+  // is no longer injected into responses and is deliberately not allowlisted here.
+  "script-src 'self' 'unsafe-inline' https://telegram.org",
+  "script-src-elem 'self' 'unsafe-inline' https://telegram.org",
   "script-src-attr 'none'",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com data:",
@@ -52,6 +54,8 @@ const DOCUMENT_CACHE_HEADERS = {
 
 const CSP_REPORT_PATH = "/api/csp-report";
 const CSP_REPORT_MAX_BYTES = 32 * 1024;
+const ASSET_FAILURE_PATH = "/api/asset-failure";
+const ASSET_FAILURE_MAX_BYTES = 4 * 1024;
 
 async function getServerEntry(): Promise<ServerEntry> {
   if (!serverEntryPromise) {
@@ -133,6 +137,40 @@ function applyDocumentCacheHeaders(
   }
 }
 
+// A chunk 404 means production served a different build than the one that rendered
+// the HTML. It is never a browser cache problem, so it is worth logging loudly:
+// silent client-side reloads are why the 2026-07-29 outage ran undiagnosed.
+async function handleAssetFailureReport(request: Request): Promise<Response> {
+  if (request.method !== "POST") {
+    return new Response(null, {
+      status: 405,
+      headers: { Allow: "POST", "Cache-Control": "no-store" },
+    });
+  }
+
+  const raw = await request.text();
+  if (new TextEncoder().encode(raw).byteLength > ASSET_FAILURE_MAX_BYTES) {
+    return new Response(null, { status: 413, headers: { "Cache-Control": "no-store" } });
+  }
+
+  try {
+    const payload = JSON.parse(raw) as Record<string, unknown>;
+    console.warn(
+      JSON.stringify({
+        event: "asset_load_failure",
+        asset: safeAssetPath(payload.asset),
+        outcome: safeReportToken(payload.outcome),
+        document: safePathname(payload.document),
+        deployment: process.env.VERCEL_DEPLOYMENT_ID ?? null,
+      }),
+    );
+  } catch {
+    // Malformed reports are deliberately ignored and never echoed.
+  }
+
+  return new Response(null, { status: 204, headers: { "Cache-Control": "no-store" } });
+}
+
 async function handleCspReport(request: Request): Promise<Response> {
   if (request.method !== "POST") {
     return new Response(null, {
@@ -199,12 +237,39 @@ function safeReportToken(value: unknown): string | null {
   return typeof value === "string" && /^[a-z0-9 _-]{1,100}$/i.test(value) ? value : null;
 }
 
+// The reported asset is expected to be an http(s) URL or an absolute path. Only the
+// pathname is kept, so a hostile scheme or a query string can never reach the logs.
+// safeReportLocation is not reused here: it renders a bare pathname as "invalid",
+// and the pathname is the field that actually identifies the failing chunk.
+function safeAssetPath(value: unknown): string | null {
+  return typeof value === "string" ? safePathname(pathnameOf(value)) : null;
+}
+
+function safePathname(value: unknown): string | null {
+  const raw = typeof value === "string" ? value.trim() : "";
+  return /^\/[\w./~%@:-]{0,300}$/.test(raw) ? raw : null;
+}
+
+function pathnameOf(raw: string): string {
+  const trimmed = raw.trim();
+  if (trimmed.startsWith("/")) return trimmed;
+  try {
+    const url = new URL(trimmed);
+    return url.protocol === "http:" || url.protocol === "https:" ? url.pathname : "";
+  } catch {
+    return "";
+  }
+}
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
       const url = new URL(request.url);
       if (url.pathname === CSP_REPORT_PATH) {
         return withSecurityHeaders(request, await handleCspReport(request));
+      }
+      if (url.pathname === ASSET_FAILURE_PATH) {
+        return withSecurityHeaders(request, await handleAssetFailureReport(request));
       }
       if (url.pathname.startsWith("/api/")) {
         return withSecurityHeaders(request, await handleAgentApiRequest(request));
