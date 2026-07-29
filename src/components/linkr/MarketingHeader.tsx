@@ -59,7 +59,7 @@ export function MarketingHeader({ onMobileMenuOpenChange }: MarketingHeaderProps
   const { user } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [copiedTokenCa, setCopiedTokenCa] = useState(false);
-  const [mobileTokenCaExpanded, setMobileTokenCaExpanded] = useState(false);
+  const [tokenCaExpanded, setTokenCaExpanded] = useState(false);
   const copyResetTimeoutRef = useRef<number | undefined>(undefined);
   const linkrCaQuery = useLinkrTokenCa();
   const profileQuery = useQuery({
@@ -145,7 +145,7 @@ export function MarketingHeader({ onMobileMenuOpenChange }: MarketingHeaderProps
   }
 
   function toggleHeaderTokenCa() {
-    setMobileTokenCaExpanded((expanded) => !expanded);
+    setTokenCaExpanded((expanded) => !expanded);
   }
 
   return (
@@ -175,20 +175,24 @@ export function MarketingHeader({ onMobileMenuOpenChange }: MarketingHeaderProps
             className="sm-header-token-pill"
             title={linkrCa}
             data-copied={copiedTokenCa}
-            data-expanded={mobileTokenCaExpanded}
+            data-expanded={tokenCaExpanded}
             data-loading={linkrCaQuery.isFetching}
           >
             <button
               className="sm-header-token-symbol"
               type="button"
-              aria-expanded={mobileTokenCaExpanded}
+              aria-expanded={tokenCaExpanded}
               aria-controls="sm-header-token-details"
-              aria-label={mobileTokenCaExpanded ? "Hide LINKR token CA" : "Show LINKR token CA"}
+              aria-label={tokenCaExpanded ? "Hide LINKR token CA" : "Show LINKR token CA"}
               onClick={toggleHeaderTokenCa}
             >
               $LINKR
             </button>
-            <span className="sm-header-token-details" id="sm-header-token-details">
+            <span
+              className="sm-header-token-details"
+              id="sm-header-token-details"
+              aria-hidden={!tokenCaExpanded}
+            >
               <code className="sm-header-token-ca">
                 <span className="sm-header-token-ca-full">{linkrCa}</span>
                 <span className="sm-header-token-ca-short">{compactLinkrCa}</span>
@@ -198,6 +202,7 @@ export function MarketingHeader({ onMobileMenuOpenChange }: MarketingHeaderProps
                 type="button"
                 onClick={copyHeaderTokenCa}
                 aria-label={copiedTokenCa ? "LINKR token CA copied" : "Copy LINKR token CA"}
+                tabIndex={tokenCaExpanded ? 0 : -1}
               >
                 {copiedTokenCa ? (
                   <Check size={16} strokeWidth={2.7} />
