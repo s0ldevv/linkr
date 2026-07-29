@@ -45652,6 +45652,21 @@ body .sm-app-content .app-scheduler-occurrence-row > a {
   -webkit-text-fill-color: #ffffff !important;
 }
 
+body[data-dashboard-theme="dark"] .sm-app-content .app-scheduler-page .app-history-actions a,
+body[data-dashboard-theme="dark"] .sm-app-content .app-scheduler-page .app-scheduler-occurrences summary,
+body[data-dashboard-theme="dark"] .sm-app-content .app-scheduler-page .app-scheduler-occurrence-row > a,
+body .sm-app-shell[data-dashboard-theme="dark"] .sm-app-content .app-scheduler-page .app-history-actions a,
+body .sm-app-shell[data-dashboard-theme="dark"] .sm-app-content .app-scheduler-page .app-scheduler-occurrences summary,
+body .sm-app-shell[data-dashboard-theme="dark"] .sm-app-content .app-scheduler-page .app-scheduler-occurrence-row > a {
+  color: #111111 !important;
+  -webkit-text-fill-color: #111111 !important;
+}
+
+body[data-dashboard-theme="dark"] .sm-app-content .app-scheduler-page .app-scheduler-occurrences summary::marker,
+body .sm-app-shell[data-dashboard-theme="dark"] .sm-app-content .app-scheduler-page .app-scheduler-occurrences summary::marker {
+  color: #111111 !important;
+}
+
 body .sm-app-content .app-history-error {
   background: var(--app-warning-soft) !important;
   color: var(--app-warning-ink) !important;
