@@ -5,6 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { publishAuthPopupResult, readPendingAuthPopupFlow } from "@/lib/linkr/auth-popup";
 
+const TELEGRAM_AUTH_SUCCESS_CLOSE_MS = 2_000;
+
 export const Route = createFileRoute("/auth/callback")({
   ssr: false,
   head: () => ({ meta: [{ title: "Signing you in..." }] }),
@@ -139,7 +141,7 @@ function Callback() {
           window.setTimeout(() => {
             if (app?.close) app.close();
             else window.close();
-          }, 900);
+          }, TELEGRAM_AUTH_SUCCESS_CLOSE_MS);
           return;
         }
         if (isPopupAuth) {
@@ -180,13 +182,6 @@ function Callback() {
             <CheckCircle2 className="telegram-auth-result-icon" aria-hidden="true" />
             <strong>Linkr is connected.</strong>
             <p>Return to the bot to chat, prepare actions, and confirm them in Telegram.</p>
-            <button
-              type="button"
-              onClick={() => window.Telegram?.WebApp?.close?.()}
-              className="app-login-x-button telegram-auth-x-button"
-            >
-              Back to Telegram
-            </button>
           </section>
         </main>
       </div>

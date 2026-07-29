@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { XLogo } from "@/components/linkr/XLogo";
-import { ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
+import { CheckCircle2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/telegram/auth")({
@@ -35,7 +35,9 @@ function TelegramAuthPage() {
       if (data?.type !== "linkr:telegram-auth") return;
       window.clearInterval(popupCheckRef.current);
       popupCheckRef.current = undefined;
-      popupRef.current?.close();
+      if (data.status !== "ok") {
+        popupRef.current?.close();
+      }
       popupRef.current = null;
       if (data.status === "ok") {
         setErrorMessage(null);
@@ -100,65 +102,47 @@ function TelegramAuthPage() {
   return (
     <div className="sm-auth-page app-rayo-launches-page app-rayo-login-page telegram-auth-page min-h-screen">
       <main className="app-login-shell telegram-auth-shell">
-        <section
-          className="app-login-copy telegram-auth-copy"
-          aria-labelledby="telegram-login-title"
-        >
-          <h1 id="telegram-login-title">
-            Linkr in <span>Telegram.</span>
-          </h1>
-          <p>
-            Connect the X account you use with Linkr. The login opens in a compact Linkr window and
-            this Telegram page updates when authorization finishes.
-          </p>
-
-          <div className="telegram-auth-route" aria-label="Authentication route">
-            <span>Telegram</span>
-            <ArrowRight aria-hidden="true" size={18} strokeWidth={2.6} />
-            <span>Linkr</span>
-            <ArrowRight aria-hidden="true" size={18} strokeWidth={2.6} />
-            <span>X</span>
-          </div>
-        </section>
-
         <section className="app-login-panel telegram-auth-panel" aria-label="Connect X account">
-          <div className="app-login-panel-top telegram-auth-panel-top">
-            <strong>Connect X</strong>
-            <p>Authorize once, then return to Telegram to chat with Linkr.</p>
-          </div>
-
-          {!token ? (
-            <p className="telegram-auth-status" data-state="error" role="alert">
-              This Telegram login link is missing or expired. Go back to the bot and tap /login
-              again.
-            </p>
+          {status === "connected" ? (
+            <div className="telegram-auth-success" aria-live="polite">
+              <CheckCircle2 className="telegram-auth-success-icon" aria-hidden="true" />
+              <strong>Authenticated</strong>
+            </div>
           ) : (
-            <Button
-              onClick={startXAuth}
-              disabled={status === "waiting" || status === "connected"}
-              size="lg"
-              className="app-login-x-button telegram-auth-x-button"
-            >
-              {status === "waiting" ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : status === "connected" ? (
-                <CheckCircle2 className="h-5 w-5" />
-              ) : (
-                <XLogo className="h-5 w-5" />
-              )}
-              {status === "waiting"
-                ? "Waiting for X..."
-                : status === "connected"
-                  ? "Connected"
-                  : "Continue with X"}
-            </Button>
-          )}
+            <>
+              <div className="app-login-panel-top telegram-auth-panel-top">
+                <strong>Connect X</strong>
+                <p>Authorize once, then return to Telegram to chat with Linkr.</p>
+              </div>
 
-          {token && errorMessage ? (
-            <p className="telegram-auth-status" data-state={status} role="alert">
-              {errorMessage}
-            </p>
-          ) : null}
+              {!token ? (
+                <p className="telegram-auth-status" data-state="error" role="alert">
+                  This Telegram login link is missing or expired. Go back to the bot and tap /login
+                  again.
+                </p>
+              ) : (
+                <Button
+                  onClick={startXAuth}
+                  disabled={status === "waiting"}
+                  size="lg"
+                  className="app-login-x-button telegram-auth-x-button"
+                >
+                  {status === "waiting" ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <XLogo className="h-5 w-5" />
+                  )}
+                  {status === "waiting" ? "Waiting for X..." : "Continue with X"}
+                </Button>
+              )}
+
+              {token && errorMessage ? (
+                <p className="telegram-auth-status" data-state={status} role="alert">
+                  {errorMessage}
+                </p>
+              ) : null}
+            </>
+          )}
         </section>
       </main>
     </div>

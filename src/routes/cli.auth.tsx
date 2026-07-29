@@ -288,17 +288,6 @@ function CliAuthPage() {
   return (
     <div className="sm-auth-page app-rayo-launches-page app-rayo-login-page cli-auth-page min-h-screen bg-background text-foreground">
       <main className="app-login-shell">
-        <section className="app-login-copy cli-auth-copy" aria-labelledby="cli-auth-title">
-          <h1 id="cli-auth-title">
-            Linkr CLI.
-            <span>X verified.</span>
-          </h1>
-          <p>
-            Authenticate with the X account that should own this CLI session. Linkr only shows the
-            terminal code after X verifies the browser.
-          </p>
-        </section>
-
         <section className="app-login-panel cli-auth-panel" aria-label="Linkr CLI authorization">
           {(state === "idle" ||
             state === "waiting" ||

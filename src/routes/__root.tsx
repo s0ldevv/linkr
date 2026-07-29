@@ -146,6 +146,7 @@ function RootComponent() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const normalizedPathname = pathname.replace(/\/+$/, "") || "/";
   const isAuthSurface = normalizedPathname.startsWith("/auth");
+  const isCliAuthSurface = normalizedPathname === "/cli/auth";
   const isTelegramAuthSurface = normalizedPathname.startsWith("/telegram");
   const isAuthCallbackSurface = normalizedPathname.startsWith("/auth/callback");
   const isLinksSurface = normalizedPathname === "/links";
@@ -153,20 +154,25 @@ function RootComponent() {
     normalizedPathname === "/terms-of-service" ||
     isLinksSurface ||
     isAuthSurface ||
+    isCliAuthSurface ||
     isTelegramAuthSurface ||
     normalizedPathname === "/secretpanel";
   const appContent = (
     <div id="linkr-app-content">
       <Outlet />
-      {!isAuthSurface && !isTelegramAuthSurface && !isAuthCallbackSurface && !isLinksSurface && (
-        <RayoChrome />
-      )}
+      {!isAuthSurface &&
+        !isCliAuthSurface &&
+        !isTelegramAuthSurface &&
+        !isAuthCallbackSurface &&
+        !isLinksSurface && <RayoChrome />}
     </div>
   );
 
   return (
     <QueryClientProvider client={queryClient}>
-      {!isTelegramAuthSurface && !isAuthSurface && !isLinksSurface && <MobileInstallBanner />}
+      {!isTelegramAuthSurface && !isAuthSurface && !isCliAuthSurface && !isLinksSurface && (
+        <MobileInstallBanner />
+      )}
       {hideEntryGate ? (
         appContent
       ) : (
@@ -174,7 +180,7 @@ function RootComponent() {
           {appContent}
         </AppEntryGate>
       )}
-      {!isLinksSurface && <CookiePrivacyNotice />}
+      {!isLinksSurface && !isTelegramAuthSurface && !isCliAuthSurface && <CookiePrivacyNotice />}
       <Toaster theme="light" position="top-right" />
     </QueryClientProvider>
   );

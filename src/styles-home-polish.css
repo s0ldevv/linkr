@@ -50099,6 +50099,8 @@ body:has(.telegram-auth-page.sm-auth-page) {
 
 body:has(.app-rayo-login-page.sm-auth-page) .sm-install-banner,
 body:has(.telegram-auth-page.sm-auth-page) .sm-install-banner,
+body:has(.telegram-auth-page.sm-auth-page) .sm-cookie-notice,
+body:has(.cli-auth-page.sm-auth-page) .sm-cookie-notice,
 body:has(.app-rayo-login-page.sm-auth-page) .sm-rayo-top,
 body:has(.telegram-auth-page.sm-auth-page) .sm-rayo-top,
 body:has(.app-rayo-login-page.sm-auth-page) .sm-marketing-header,
@@ -50892,6 +50894,202 @@ body .cli-auth-page .cli-auth-status {
   body .cli-auth-page .cli-auth-code-cell {
     border-radius: 9px !important;
     font-size: 0.75rem !important;
+  }
+}
+
+/* Telegram and CLI auth: centered single-card flow with no side copy. */
+body .telegram-auth-page .telegram-auth-shell,
+body .cli-auth-page .app-login-shell {
+  display: grid !important;
+  width: min(calc(100vw - 48px), 560px) !important;
+  max-width: 560px !important;
+  min-height: 100svh !important;
+  margin: 0 auto !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 0 !important;
+  place-items: center !important;
+  align-items: center !important;
+  padding: clamp(32px, 7vh, 76px) 0 !important;
+}
+
+body .telegram-auth-page .telegram-auth-copy,
+body .telegram-auth-page .telegram-auth-route,
+body .cli-auth-page .cli-auth-copy {
+  display: none !important;
+}
+
+body .telegram-auth-page .telegram-auth-panel,
+body .cli-auth-page .cli-auth-panel {
+  width: 100% !important;
+  max-width: none !important;
+  justify-self: stretch !important;
+  align-self: center !important;
+  gap: clamp(20px, 3vw, 28px) !important;
+  border-radius: 34px !important;
+  padding: clamp(30px, 4.5vw, 46px) !important;
+  animation: linkr-auth-panel-in 360ms cubic-bezier(0.22, 0.72, 0.2, 1) both !important;
+}
+
+body .telegram-auth-page .telegram-auth-panel-top,
+body .cli-auth-page .cli-auth-panel-top {
+  gap: 12px !important;
+}
+
+body .telegram-auth-page .telegram-auth-panel-top > strong,
+body .cli-auth-page .cli-auth-panel-top > strong {
+  font-size: clamp(2.35rem, 5vw, 3.75rem) !important;
+  line-height: 0.92 !important;
+}
+
+body .telegram-auth-page .telegram-auth-panel-top > p,
+body .cli-auth-page .cli-auth-panel-top > p {
+  max-width: 430px !important;
+  font-size: clamp(1rem, 1.5vw, 1.1rem) !important;
+  line-height: 1.5 !important;
+}
+
+body .telegram-auth-page .telegram-auth-x-button,
+body .cli-auth-page .cli-auth-copy-button {
+  min-height: 64px !important;
+  font-size: 1rem !important;
+}
+
+body .cli-auth-page .cli-auth-state-icon {
+  width: 52px !important;
+  height: 52px !important;
+}
+
+body .cli-auth-page .cli-auth-code-card {
+  border-radius: 30px !important;
+  padding: 18px !important;
+}
+
+body .cli-auth-page .cli-auth-code-group {
+  width: min(100%, 286px) !important;
+}
+
+body .telegram-auth-page .telegram-auth-success {
+  display: grid !important;
+  min-height: clamp(250px, 42vh, 340px) !important;
+  place-items: center !important;
+  align-content: center !important;
+  gap: 18px !important;
+  text-align: center !important;
+  animation: linkr-auth-success-in 460ms cubic-bezier(0.2, 0.9, 0.2, 1) both !important;
+}
+
+body .telegram-auth-page .telegram-auth-success-icon {
+  width: clamp(92px, 18vw, 128px) !important;
+  height: clamp(92px, 18vw, 128px) !important;
+  color: var(--auth-lime) !important;
+  filter: drop-shadow(0 0 26px rgb(204 255 0 / 26%)) !important;
+  animation: linkr-auth-check-in 520ms cubic-bezier(0.2, 0.9, 0.2, 1) 100ms both !important;
+}
+
+body .telegram-auth-page .telegram-auth-success > strong {
+  margin: 0 !important;
+  color: var(--auth-ink) !important;
+  -webkit-text-fill-color: var(--auth-ink) !important;
+  font-family: var(--rayo-display, "Funnel Display", sans-serif) !important;
+  font-size: clamp(2.55rem, 7vw, 4.45rem) !important;
+  font-weight: 950 !important;
+  letter-spacing: 0 !important;
+  line-height: 0.92 !important;
+}
+
+body .telegram-auth-callback-page .telegram-auth-result-panel {
+  gap: 18px !important;
+  padding: clamp(30px, 5vw, 46px) !important;
+  text-align: center !important;
+  animation: linkr-auth-panel-in 360ms cubic-bezier(0.22, 0.72, 0.2, 1) both !important;
+}
+
+body .telegram-auth-callback-page .telegram-auth-result-icon {
+  justify-self: center !important;
+  width: clamp(76px, 16vw, 104px) !important;
+  height: clamp(76px, 16vw, 104px) !important;
+  animation: linkr-auth-check-in 520ms cubic-bezier(0.2, 0.9, 0.2, 1) 100ms both !important;
+}
+
+body .telegram-auth-callback-page .telegram-auth-result-panel > strong,
+body .telegram-auth-callback-page .telegram-auth-result-panel > p {
+  text-align: center !important;
+}
+
+@keyframes linkr-auth-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes linkr-auth-success-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes linkr-auth-check-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.72);
+  }
+
+  70% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (max-width: 560px) {
+  body .telegram-auth-page .telegram-auth-shell,
+  body .cli-auth-page .app-login-shell {
+    width: calc(100vw - 32px) !important;
+    max-width: 430px !important;
+    padding: 24px 0 max(24px, env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  body .telegram-auth-page .telegram-auth-panel,
+  body .cli-auth-page .cli-auth-panel {
+    border-radius: 28px !important;
+    padding: 26px !important;
+  }
+
+  body .telegram-auth-page .telegram-auth-x-button,
+  body .cli-auth-page .cli-auth-copy-button {
+    min-height: 58px !important;
+  }
+
+  body .cli-auth-page .cli-auth-code-card {
+    padding: 14px !important;
+  }
+}
+
+@media (max-width: 380px) {
+  body .telegram-auth-page .telegram-auth-shell,
+  body .cli-auth-page .app-login-shell {
+    width: calc(100vw - 24px) !important;
+  }
+
+  body .telegram-auth-page .telegram-auth-panel,
+  body .cli-auth-page .cli-auth-panel {
+    padding: 22px !important;
   }
 }
 
