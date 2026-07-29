@@ -519,13 +519,12 @@ function CoinLauncherCard({ detail }: { detail: TokenDetail }) {
   const launchedAt = detail.createdAt ? relativeTime(detail.createdAt) : "Linkr launch";
 
   return (
-    <section className="sm-coin-side-card">
+    <section className="sm-coin-side-card sm-coin-launcher-card">
       <div className="sm-coin-side-title">
         <span>
           <UserRound aria-hidden="true" size={16} />
-          Launched by
+          Launched By
         </span>
-        <small>Creator</small>
       </div>
 
       <Link

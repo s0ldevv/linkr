@@ -28175,6 +28175,38 @@ body .sm-coin-page .sm-coin-creator-row b {
   padding: 8px 10px !important;
 }
 
+body .sm-coin-page .sm-coin-launcher-card .sm-coin-side-title {
+  justify-content: flex-start !important;
+}
+
+body .sm-coin-page .sm-coin-launcher-card .sm-coin-side-title span {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.45rem !important;
+  font-size: clamp(1.35rem, 4.8vw, 2.05rem) !important;
+  white-space: nowrap !important;
+}
+
+body .sm-coin-page .sm-coin-launcher-card .sm-coin-creator-row {
+  grid-template-columns: 46px minmax(0, 1fr) !important;
+}
+
+body .sm-coin-page .sm-coin-launcher-card .sm-coin-creator-row > div {
+  min-width: 0 !important;
+}
+
+body .sm-coin-page .sm-coin-launcher-card .sm-coin-creator-row > span img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+body .sm-coin-page .sm-coin-launcher-card .sm-coin-creator-row b {
+  grid-column: 2 !important;
+  justify-self: start !important;
+  width: fit-content !important;
+}
+
 body .sm-coin-page .sm-coin-info-list span,
 body .sm-coin-page .sm-coin-info-list a,
 body .sm-coin-page .sm-coin-link-list a {
