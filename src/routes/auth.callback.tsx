@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { publishAuthPopupResult, readPendingAuthPopupFlow } from "@/lib/linkr/auth-popup";
 
 const TELEGRAM_AUTH_SUCCESS_CLOSE_MS = 2_000;
+const AUTH_CALLBACK_STALL_MS = 8_000;
 
 export const Route = createFileRoute("/auth/callback")({
   ssr: false,
@@ -17,6 +18,23 @@ function Callback() {
   const navigate = useNavigate();
   const [telegramLinked, setTelegramLinked] = useState(false);
   const [telegramError, setTelegramError] = useState<string | null>(null);
+  const [stalled, setStalled] = useState(false);
+
+  // A popup either closes itself or renders a result. If neither happened,
+  // never leave the spinner running with no way out. Full-tab callbacks
+  // navigate away on their own and must not be interrupted.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const closesItself =
+      params.get("auth_popup") === "1" ||
+      params.has("auth_flow") ||
+      params.has("telegram_link") ||
+      params.get("telegram_auth") === "1" ||
+      Boolean(window.opener);
+    if (!closesItself) return;
+    const timer = window.setTimeout(() => setStalled(true), AUTH_CALLBACK_STALL_MS);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -31,141 +49,164 @@ function Callback() {
           url.searchParams.has("auth_flow") ||
           Boolean(pendingPopup));
       const authFlowId = url.searchParams.get("auth_flow") ?? pendingPopup?.flowId ?? null;
-      const isWalletExportAuth = isPopupAuth && url.searchParams.get("wallet_export") === "1";
-      const isCliAuth = isPopupAuth && url.searchParams.get("cli_auth") === "1";
-      if (isPopupAuth && url.searchParams.get("auth_status") === "banned") {
-        notifyAuthOpener("banned", undefined, authFlowId);
-        closeAuthPopup();
-        return;
-      }
-      const callbackError =
-        url.searchParams.get("error_description") ?? url.searchParams.get("error");
-      if (callbackError) {
-        if (!cancelled) {
+      try {
+        if (isPopupAuth && url.searchParams.get("auth_status") === "banned") {
+          notifyAuthOpener("banned", undefined, authFlowId);
+          closeAuthPopup();
+          return;
+        }
+        const callbackError =
+          url.searchParams.get("error_description") ?? url.searchParams.get("error");
+        if (callbackError) {
+          if (!cancelled) {
+            if (isTelegramAuth) {
+              notifyTelegramAuthOpener("error", callbackError);
+              setTelegramError(callbackError);
+              return;
+            }
+            if (isPopupAuth) {
+              notifyAuthOpener("error", callbackError, authFlowId);
+              closeAuthPopup();
+              return;
+            }
+            toast.error(callbackError);
+            navigate({ to: "/auth" });
+          }
+          return;
+        }
+
+        // Let the opener redeem the one-time handoff itself. Installing the
+        // session in the popup and waiting for cross-tab auth synchronization is
+        // racy in some browsers: the popup and the opener share one origin-wide
+        // auth lock, so the popup can block forever on this page. The code
+        // expires in 60 seconds, is single-use, and is sent only to the
+        // same-origin opener (never persisted).
+        const popupHandoffCode = url.searchParams.get("handoff_code");
+        if (isPopupAuth && popupHandoffCode) {
+          const handoffRedirect = new URL(url.toString());
+          handoffRedirect.searchParams.delete("handoff_code");
+          notifyAuthOpener("ok", undefined, authFlowId, undefined, {
+            code: popupHandoffCode,
+            redirectTo: handoffRedirect.toString(),
+          });
+          // Give BroadcastChannel delivery a brief window when X navigation has
+          // severed window.opener. The dashboard closes us immediately on receipt.
+          window.setTimeout(closeAuthPopup, 250);
+          return;
+        }
+
+        const { data, error } = await resolveAuthSession(url);
+        if (cancelled) return;
+        if (error) {
           if (isTelegramAuth) {
-            notifyTelegramAuthOpener("error", callbackError);
-            setTelegramError(callbackError);
+            notifyTelegramAuthOpener("error", error.message);
+            setTelegramError(error.message);
             return;
           }
           if (isPopupAuth) {
-            notifyAuthOpener("error", callbackError, authFlowId);
+            notifyAuthOpener("error", error.message, authFlowId);
             closeAuthPopup();
             return;
           }
-          toast.error(callbackError);
+          toast.error(error.message);
           navigate({ to: "/auth" });
-        }
-        return;
-      }
-
-      // Let the opener redeem the one-time handoff itself. Installing the
-      // session in the popup and waiting for cross-tab auth synchronization is
-      // racy in some browsers. The code expires in 60 seconds, is single-use,
-      // and is sent only to the same-origin opener (never persisted).
-      const popupHandoffCode = url.searchParams.get("handoff_code");
-      if ((isWalletExportAuth || isCliAuth) && popupHandoffCode) {
-        const handoffRedirect = new URL(url.toString());
-        handoffRedirect.searchParams.delete("handoff_code");
-        notifyAuthOpener("ok", undefined, authFlowId, undefined, {
-          code: popupHandoffCode,
-          redirectTo: handoffRedirect.toString(),
-        });
-        // Give BroadcastChannel delivery a brief window when X navigation has
-        // severed window.opener. The dashboard closes us immediately on receipt.
-        window.setTimeout(closeAuthPopup, 250);
-        return;
-      }
-
-      const { data, error } = await resolveAuthSession(url);
-      if (cancelled) return;
-      if (error) {
-        if (isTelegramAuth) {
-          notifyTelegramAuthOpener("error", error.message);
-          setTelegramError(error.message);
           return;
         }
-        if (isPopupAuth) {
-          notifyAuthOpener("error", error.message, authFlowId);
-          closeAuthPopup();
-          return;
-        }
-        toast.error(error.message);
-        navigate({ to: "/auth" });
-        return;
-      }
-      if (data.session) {
-        const supabaseUrl =
-          import.meta.env.VITE_SUPABASE_URL ||
-          (typeof process !== "undefined" ? process.env.SUPABASE_URL : undefined);
-        if (supabaseUrl) {
-          try {
-            const res = await fetch(
-              `${supabaseUrl.replace(/\/+$/, "")}/functions/v1/ensure-user-bootstrap`,
-              {
-                method: "POST",
-                headers: { Authorization: `Bearer ${data.session.access_token}` },
-              },
-            );
-            if (!res.ok) {
-              const body = await res.json().catch(() => ({}));
-              if (res.status === 403 && body.error === "banned_x_user") {
-                await supabase.auth.signOut();
-                if (isPopupAuth) {
-                  notifyAuthOpener("banned", undefined, authFlowId);
-                  closeAuthPopup();
+        if (data.session) {
+          const supabaseUrl =
+            import.meta.env.VITE_SUPABASE_URL ||
+            (typeof process !== "undefined" ? process.env.SUPABASE_URL : undefined);
+          if (supabaseUrl) {
+            try {
+              const res = await fetch(
+                `${supabaseUrl.replace(/\/+$/, "")}/functions/v1/ensure-user-bootstrap`,
+                {
+                  method: "POST",
+                  headers: { Authorization: `Bearer ${data.session.access_token}` },
+                },
+              );
+              if (!res.ok) {
+                const body = await res.json().catch(() => ({}));
+                if (res.status === 403 && body.error === "banned_x_user") {
+                  await supabase.auth.signOut();
+                  if (isPopupAuth) {
+                    notifyAuthOpener("banned", undefined, authFlowId);
+                    closeAuthPopup();
+                    return;
+                  }
+                  navigate({ to: "/auth/banned" });
                   return;
                 }
-                navigate({ to: "/auth/banned" });
-                return;
+                throw new Error(body.error ?? "Could not prepare your Linkr account.");
               }
-              throw new Error(body.error ?? "Could not prepare your Linkr account.");
+            } catch (bootstrapError) {
+              if (cancelled) return;
+              toast.warning(
+                bootstrapError instanceof Error
+                  ? bootstrapError.message
+                  : "Your Linkr account will finish preparing in the dashboard.",
+              );
             }
-          } catch (bootstrapError) {
-            if (cancelled) return;
-            toast.warning(
-              bootstrapError instanceof Error
-                ? bootstrapError.message
-                : "Your Linkr account will finish preparing in the dashboard.",
-            );
           }
+          if (cancelled) return;
+          if (isTelegramAuth) {
+            setTelegramLinked(true);
+            notifyTelegramAuthOpener("ok");
+            await loadTelegramWebAppScript();
+            const app = window.Telegram?.WebApp;
+            app?.ready?.();
+            app?.setHeaderColor?.("#111111");
+            app?.setBackgroundColor?.("#111111");
+            window.setTimeout(() => {
+              if (app?.close) app.close();
+              else window.close();
+            }, TELEGRAM_AUTH_SUCCESS_CLOSE_MS);
+            return;
+          }
+          if (isPopupAuth) {
+            notifyAuthOpener("ok", undefined, authFlowId, data.session.user.id);
+            closeAuthPopup();
+            return;
+          }
+          navigate({ to: "/app" });
+        } else {
+          if (isTelegramAuth) {
+            const message = "No Linkr session was returned. Try the Telegram login again.";
+            notifyTelegramAuthOpener("error", message);
+            setTelegramError(message);
+            return;
+          }
+          if (isPopupAuth) {
+            notifyAuthOpener(
+              "error",
+              "No Linkr session was returned. Try X login again.",
+              authFlowId,
+            );
+            closeAuthPopup();
+            return;
+          }
+          navigate({ to: "/auth" });
         }
+      } catch (unexpectedError) {
+        // An unhandled rejection here would leave this window spinning on
+        // "Finishing X login..." forever while the opener waits on a result
+        // that never arrives. Always report something the opener can act on.
         if (cancelled) return;
+        const message =
+          unexpectedError instanceof Error
+            ? unexpectedError.message
+            : "X login did not finish. Try again.";
         if (isTelegramAuth) {
-          setTelegramLinked(true);
-          notifyTelegramAuthOpener("ok");
-          await loadTelegramWebAppScript();
-          const app = window.Telegram?.WebApp;
-          app?.ready?.();
-          app?.setHeaderColor?.("#111111");
-          app?.setBackgroundColor?.("#111111");
-          window.setTimeout(() => {
-            if (app?.close) app.close();
-            else window.close();
-          }, TELEGRAM_AUTH_SUCCESS_CLOSE_MS);
-          return;
-        }
-        if (isPopupAuth) {
-          notifyAuthOpener("ok", undefined, authFlowId, data.session.user.id);
-          closeAuthPopup();
-          return;
-        }
-        navigate({ to: "/app" });
-      } else {
-        if (isTelegramAuth) {
-          const message = "No Linkr session was returned. Try the Telegram login again.";
           notifyTelegramAuthOpener("error", message);
           setTelegramError(message);
           return;
         }
         if (isPopupAuth) {
-          notifyAuthOpener(
-            "error",
-            "No Linkr session was returned. Try X login again.",
-            authFlowId,
-          );
+          notifyAuthOpener("error", message, authFlowId);
           closeAuthPopup();
           return;
         }
+        toast.error(message);
         navigate({ to: "/auth" });
       }
     })();
@@ -199,6 +240,30 @@ function Callback() {
             <AlertCircle className="telegram-auth-result-icon" aria-hidden="true" />
             <strong>{authErrorTitle(telegramError)}</strong>
             <p>{authErrorBody(telegramError)}</p>
+            <button
+              type="button"
+              onClick={() => window.close()}
+              className="app-login-x-button telegram-auth-x-button telegram-auth-muted-button"
+            >
+              Close window
+            </button>
+          </section>
+        </main>
+      </div>
+    );
+  }
+
+  if (stalled) {
+    return (
+      <div className="sm-auth-page app-rayo-launches-page app-rayo-login-page telegram-auth-page telegram-auth-callback-page min-h-screen">
+        <main className="telegram-auth-result-shell">
+          <section
+            className="app-login-panel telegram-auth-panel telegram-auth-result-panel"
+            role="status"
+          >
+            <AlertCircle className="telegram-auth-result-icon" aria-hidden="true" />
+            <strong>X login is taking longer than expected.</strong>
+            <p>You can close this window. If Linkr did not sign you in, start the login again.</p>
             <button
               type="button"
               onClick={() => window.close()}
