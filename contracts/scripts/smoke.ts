@@ -51,6 +51,8 @@ async function main() {
     ["TOKEN_SUPPLY", (await factory.TOKEN_SUPPLY()) === ethers.parseUnits("1000000000", 18)],
     ["STARTING_TICK", (await factory.STARTING_TICK()) === -200_400n],
     ["RANGE_WIDTH", (await factory.RANGE_WIDTH()) === 49_200n],
+    ["EXPECTED_TICK_SPACING", (await factory.EXPECTED_TICK_SPACING()) === 200n],
+    ["MAX_SALT_ATTEMPTS", (await factory.MAX_SALT_ATTEMPTS()) === 64n],
     ["CREATOR_SHARE_BPS", (await factory.CREATOR_SHARE_BPS()) === 8_000n],
     ["MIN_SUPPLY_USED_BPS", (await factory.MIN_SUPPLY_USED_BPS()) === 9_900n],
     ["GRADUATION_WETH", (await factory.GRADUATION_WETH()) === ethers.parseEther("23")],

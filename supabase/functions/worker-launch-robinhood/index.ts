@@ -180,6 +180,10 @@ Deno.serve((req) =>
           currentLaunch = updated.data;
         }
 
+        currentLaunch = await ensureRobinhoodLaunchSaltSeed(
+          admin,
+          currentLaunch,
+        );
         const walletId = String(currentLaunch.launch_signer_wallet_id ?? "");
         const wallet = await launchModule.loadWalletById(
           admin,
@@ -200,6 +204,7 @@ Deno.serve((req) =>
           symbol: currentLaunch.symbol,
           metadataURI: currentLaunch.metadata_uri,
           initialBuyWei,
+          saltSeed: currentLaunch.launch_metadata?.robinhood_launch_salt_seed,
         };
         const preflight = await launchModule.estimateSingleSidedLaunch(
           signer,
@@ -447,6 +452,26 @@ Deno.serve((req) =>
   })
 );
 
+async function ensureRobinhoodLaunchSaltSeed(admin: any, launch: any) {
+  const metadata = isRecord(launch.launch_metadata)
+    ? { ...launch.launch_metadata }
+    : {};
+  const existing = launchModule.normalizeLaunchSaltSeed(
+    metadata.robinhood_launch_salt_seed,
+  );
+  if (existing) {
+    if (metadata.robinhood_launch_salt_seed === existing) return launch;
+    metadata.robinhood_launch_salt_seed = existing;
+  } else {
+    metadata.robinhood_launch_salt_seed = launchModule.generateLaunchSaltSeed();
+  }
+  const updated = await admin.from("coin_launches").update({
+    launch_metadata: metadata,
+  }).eq("id", launch.id).select("*").single();
+  if (updated.error) throw updated.error;
+  return updated.data;
+}
+
 async function queueOnce(
   admin: any,
   sourceSurface: string,
@@ -471,6 +496,10 @@ function readBoolean(name: string, fallback: boolean): boolean {
   if (/^(1|true|yes|on)$/i.test(raw)) return true;
   if (/^(0|false|no|off)$/i.test(raw)) return false;
   return fallback;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
 function sanitizeError(error: unknown): string {

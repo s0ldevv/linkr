@@ -62,3 +62,27 @@ Deno.test("Robinhood launch receipt rejects a different predicted token", () => 
   }
   if (!rejected) throw new Error("mismatched launch event was accepted");
 });
+
+Deno.test("Robinhood launch receipt accepts emitted token when prediction moved", () => {
+  const factory = "0x1111111111111111111111111111111111111111";
+  const token = "0x2222222222222222222222222222222222222222";
+  const creator = "0x3333333333333333333333333333333333333333";
+  const pool = "0x4444444444444444444444444444444444444444";
+  const topic = (address: string) =>
+    `0x${address.slice(2).padStart(64, "0")}`;
+  const event = verifyRobinhoodLaunchReceipt({
+    status: "0x1",
+    logs: [{
+      address: factory,
+      topics: [
+        "0x5cd09150c40d7c6bc0e837fe9b4ce8aacf8aa2a9af5ed0e80341ef8535b7c10d",
+        topic(token),
+        topic(creator),
+        topic(pool),
+      ],
+    }],
+  }, { factory, creator });
+  if (event.token !== token || event.creator !== creator || event.pool !== pool) {
+    throw new Error("emitted launch identity was not accepted");
+  }
+});

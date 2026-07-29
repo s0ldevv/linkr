@@ -80,6 +80,8 @@ async function main() {
           tokenSupply: (await factory.TOKEN_SUPPLY()).toString(),
           startingTick: (await factory.STARTING_TICK()).toString(),
           rangeWidth: (await factory.RANGE_WIDTH()).toString(),
+          expectedTickSpacing: (await factory.EXPECTED_TICK_SPACING()).toString(),
+          maxSaltAttempts: (await factory.MAX_SALT_ATTEMPTS()).toString(),
           creatorShareBps: (await factory.CREATOR_SHARE_BPS()).toString(),
           minSupplyUsedBps: (await factory.MIN_SUPPLY_USED_BPS()).toString(),
           graduationWeth: (await factory.GRADUATION_WETH()).toString(),

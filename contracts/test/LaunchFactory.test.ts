@@ -310,11 +310,18 @@ describe("LaunchFactory", () => {
   });
 
   it("rejects zero liquidity and tiny token-use launches", async () => {
-    const { creator, factory, manager } = await deploySystem();
+    const { creator, factory, manager, wethAddress } = await deploySystem();
     const supply = await factory.TOKEN_SUPPLY();
     await manager.setNextMintResult(0, supply, 0, false);
+    const { params: zeroLiquidityParams } = await paramsForOrientation(
+      factory,
+      creator,
+      wethAddress,
+      true,
+      "zero-liquidity",
+    );
     await assertCustomError(
-      factory.connect(creator).launch(baseParams({ salt: ethers.id("zero-liquidity") }), {
+      factory.connect(creator).launch(zeroLiquidityParams, {
         value: await factory.launchFee(),
       }),
       factory,
@@ -322,8 +329,9 @@ describe("LaunchFactory", () => {
     );
 
     await manager.setNextMintResult(1, supply / 2n, 0, false);
+    const { params: lowUsedParams } = await paramsForOrientation(factory, creator, wethAddress, true, "low-used");
     await assertCustomError(
-      factory.connect(creator).launch(baseParams({ salt: ethers.id("low-used") }), {
+      factory.connect(creator).launch(lowUsedParams, {
         value: await factory.launchFee(),
       }),
       factory,
@@ -332,10 +340,10 @@ describe("LaunchFactory", () => {
   });
 
   it("clears the position manager token allowance after minting liquidity", async () => {
-    const { creator, factory, locker, manager } = await deploySystem();
+    const { creator, factory, locker, manager, wethAddress } = await deploySystem();
     const supply = await factory.TOKEN_SUPPLY();
     const minUsed = (supply * (await factory.MIN_SUPPLY_USED_BPS())) / 10_000n;
-    const params = baseParams({ salt: ethers.id("allowance-reset") });
+    const { params } = await paramsForOrientation(factory, creator, wethAddress, true, "allowance-reset");
 
     await manager.setNextMintResult(1, minUsed, 0, false);
     const { predicted } = await launch(factory, creator, params);

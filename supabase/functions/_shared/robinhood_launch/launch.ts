@@ -21,6 +21,7 @@ export type SingleSidedLaunchDraft = {
   symbol: string;
   metadataURI: string;
   initialBuyWei: bigint;
+  saltSeed?: string | null;
 };
 
 export type SingleSidedLaunchPreflight = {
@@ -339,6 +340,8 @@ function buildLaunchParams(draft: SingleSidedLaunchDraft) {
 }
 
 function buildLaunchSalt(draft: SingleSidedLaunchDraft): string {
+  const explicit = normalizeLaunchSaltSeed(draft.saltSeed);
+  if (explicit) return explicit;
   return ethers.id(
     [
       "linkr:single-sided-launch:v1",
@@ -350,6 +353,20 @@ function buildLaunchSalt(draft: SingleSidedLaunchDraft): string {
       ).toUpperCase(),
     ].join(":"),
   );
+}
+
+export function generateLaunchSaltSeed(): string {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return ethers.hexlify(bytes);
+}
+
+export function normalizeLaunchSaltSeed(value: unknown): string | null {
+  const text = String(value ?? "").trim();
+  if (!text) return null;
+  if (!/^0x[a-fA-F0-9]{64}$/.test(text)) return null;
+  if (/^0x0{64}$/i.test(text)) return null;
+  return ethers.hexlify(ethers.getBytes(text));
 }
 
 function withGasBuffer(gasEstimate: bigint): bigint {

@@ -91,10 +91,10 @@ export async function readRobinhoodReceipt(transactionHash: string): Promise<{
  */
 export function verifyRobinhoodLaunchReceipt(
   receipt: Record<string, unknown>,
-  expected: { factory: string; token: string; creator?: string },
+  expected: { factory: string; token?: string | null; creator?: string },
 ): RobinhoodLaunchEvent {
   const factory = normalizeEvmAddress(expected.factory);
-  const token = normalizeEvmAddress(expected.token);
+  const token = expected.token ? normalizeEvmAddress(expected.token) : null;
   const creator = expected.creator
     ? normalizeEvmAddress(expected.creator)
     : null;
@@ -119,7 +119,7 @@ export function verifyRobinhoodLaunchReceipt(
     const eventToken = topicAddress(topics[1]);
     const eventCreator = topicAddress(topics[2]);
     const eventPool = topicAddress(topics[3]);
-    if (eventToken !== token || (creator && eventCreator !== creator)) {
+    if ((token && eventToken !== token) || (creator && eventCreator !== creator)) {
       continue;
     }
     return {

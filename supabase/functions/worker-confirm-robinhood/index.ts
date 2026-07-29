@@ -8,6 +8,7 @@ import {
   transactionFence,
   transitionTransaction,
 } from "../_shared/transaction_outbox.ts";
+import { refreshRobinhoodLaunchMetadataForToken } from "../_shared/robinhood_launch/finalize_metadata.ts";
 
 const VERSION = "worker-confirm-robinhood-v1";
 const STAGE = "confirm_robinhood" as const;
@@ -40,12 +41,12 @@ Deno.serve((req) =>
       }
 
       const txHash = String(transaction.transaction_hash ?? "");
-      const token = String(
+      const predictedToken = String(
         transaction.predicted_address ?? launch.token_address ?? "",
       );
       if (
         !/^0x[a-fA-F0-9]{64}$/.test(txHash) ||
-        !/^0x[a-fA-F0-9]{40}$/.test(token)
+        (predictedToken && !/^0x[a-fA-F0-9]{40}$/.test(predictedToken))
       ) {
         return {
           kind: "dead_letter",
@@ -96,7 +97,6 @@ Deno.serve((req) =>
           }
           launchEvent = verifyRobinhoodLaunchReceipt(receipt.receipt!, {
             factory: launch.factory,
-            token,
             creator: launch.launch_signer_address,
           });
           await transitionTransaction(admin, transaction.id, txHash, fence, {
@@ -104,14 +104,40 @@ Deno.serve((req) =>
             newState: "confirmed",
           });
         }
+        if (!launchEvent) {
+          const receipt = await readRobinhoodReceipt(txHash);
+          if (receipt.state !== "confirmed") {
+            return {
+              kind: "retry",
+              errorCode: "robinhood_confirmed_receipt_unavailable",
+              delaySeconds: 20,
+            };
+          }
+          launchEvent = verifyRobinhoodLaunchReceipt(receipt.receipt!, {
+            factory: launch.factory,
+            creator: launch.launch_signer_address,
+          });
+        }
 
+        const token = launchEvent?.token ?? predictedToken;
+        if (!/^0x[a-fA-F0-9]{40}$/.test(token)) {
+          return {
+            kind: "dead_letter",
+            reasonCode: "launched_token_missing",
+          };
+        }
+        const finalizedLaunch = await refreshRobinhoodLaunchMetadataForToken(
+          admin,
+          launch,
+          token,
+        );
         // Post the raw contract address only — no links (X flags URL + CA combos).
         const reply = `Launched $${
-          String(launch.symbol).toUpperCase()
+          String(finalizedLaunch.symbol).toUpperCase()
         } on Robinhood Chain\nCA: ${token}`;
         const finalized = await admin.rpc("finalize_linkr_coin_launch_v2", {
           p_work_item_id: claim.work_item.id,
-          p_launch_id: launch.id,
+          p_launch_id: finalizedLaunch.id,
           p_transaction_id: transaction.id,
           p_chain: "robinhood",
           p_transaction_hash: txHash,
@@ -119,10 +145,10 @@ Deno.serve((req) =>
           p_explorer_url: `https://robinhoodchain.blockscout.com/tx/${txHash}`,
           p_reply_text: reply.slice(0, 280),
           p_details: {
-            factory: launchEvent?.factory ?? launch.factory ?? null,
+            factory: launchEvent?.factory ?? finalizedLaunch.factory ?? null,
             creator: launchEvent?.creator ??
-              launch.launch_signer_address ?? null,
-            pool: launchEvent?.pool ?? launch.pool ?? null,
+              finalizedLaunch.launch_signer_address ?? null,
+            pool: launchEvent?.pool ?? finalizedLaunch.pool ?? null,
             confirmed_by: VERSION,
           },
         });

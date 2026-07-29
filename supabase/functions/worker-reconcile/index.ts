@@ -15,6 +15,7 @@ import {
   transactionFence,
   transitionTransaction,
 } from "../_shared/transaction_outbox.ts";
+import { refreshRobinhoodLaunchMetadataForToken } from "../_shared/robinhood_launch/finalize_metadata.ts";
 
 const VERSION = "worker-reconcile-v2";
 const STAGE = "reconciliation" as const;
@@ -69,6 +70,35 @@ async function reconcileChain(
   const fence = transactionFence(claim, context);
 
   if (transaction.state === "confirmed") {
+    if (transaction.chain === "robinhood") {
+      try {
+        const receipt = await readRobinhoodReceipt(identity);
+        if (receipt.state === "confirmed") {
+          const launchEvent = verifyRobinhoodLaunchReceipt(receipt.receipt!, {
+            factory: launch.factory,
+            creator: launch.launch_signer_address,
+          });
+          return await finalizeConfirmed(
+            admin,
+            claim.work_item.id,
+            launch,
+            transaction,
+            launchEvent,
+          );
+        }
+        return {
+          kind: "retry",
+          errorCode: "robinhood_confirmed_receipt_unavailable",
+          delaySeconds: 20,
+        };
+      } catch (error) {
+        return {
+          kind: "retry",
+          errorCode: sanitizeError(error).slice(0, 120),
+          delaySeconds: 30,
+        };
+      }
+    }
     return await finalizeConfirmed(
       admin,
       claim.work_item.id,
@@ -97,7 +127,6 @@ async function reconcileChain(
       if (receipt.state === "confirmed") {
         const launchEvent = verifyRobinhoodLaunchReceipt(receipt.receipt!, {
           factory: launch.factory,
-          token,
           creator: launch.launch_signer_address,
         });
         await transitionTransaction(admin, transaction.id, identity, fence, {
@@ -278,6 +307,7 @@ async function finalizeConfirmed(
   transaction: any,
   launchEvent?: {
     factory: string;
+    token: string;
     creator: string;
     pool: string;
   },
@@ -285,23 +315,26 @@ async function finalizeConfirmed(
   const identity = String(
     transaction.transaction_hash ?? transaction.signature,
   );
-  const token = String(
-    transaction.predicted_address ?? launch.token_address ?? launch.mint,
-  );
   const isSolana = transaction.chain === "solana";
+  const token = !isSolana && launchEvent?.token
+    ? launchEvent.token
+    : String(transaction.predicted_address ?? launch.token_address ?? launch.mint);
+  const finalizedLaunch = isSolana
+    ? launch
+    : await refreshRobinhoodLaunchMetadataForToken(admin, launch, token);
   const explorer = isSolana
     ? `https://solscan.io/tx/${encodeURIComponent(identity)}`
     : `https://robinhoodchain.blockscout.com/tx/${identity}`;
   const reply = isSolana
     ? `Launched $${
-      String(launch.symbol).toUpperCase()
+      String(finalizedLaunch.symbol).toUpperCase()
     } on Solana. Token: https://pump.fun/${token}`
     : `Launched $${
-      String(launch.symbol).toUpperCase()
+      String(finalizedLaunch.symbol).toUpperCase()
     } on Robinhood Chain. Transaction: ${explorer}`;
   const finalized = await admin.rpc("finalize_linkr_coin_launch_v2", {
     p_work_item_id: workItemId,
-    p_launch_id: launch.id,
+    p_launch_id: finalizedLaunch.id,
     p_transaction_id: transaction.id,
     p_chain: transaction.chain,
     p_transaction_hash: identity,
