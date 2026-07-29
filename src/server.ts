@@ -42,6 +42,14 @@ const BASE_SECURITY_HEADERS = {
   "Content-Security-Policy": CONTENT_SECURITY_POLICY,
 } as const;
 
+const DOCUMENT_CACHE_HEADERS = {
+  "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+  "CDN-Cache-Control": "no-store",
+  "Vercel-CDN-Cache-Control": "no-store",
+  Pragma: "no-cache",
+  Expires: "0",
+} as const;
+
 const CSP_REPORT_PATH = "/api/csp-report";
 const CSP_REPORT_MAX_BYTES = 32 * 1024;
 
@@ -79,6 +87,7 @@ function withSecurityHeaders(request: Request, response: Response): Response {
     if (!headers.has(name)) headers.set(name, value);
   }
   const pathname = new URL(request.url).pathname;
+  applyDocumentCacheHeaders(request, response, headers, pathname);
   headers.set(
     "Referrer-Policy",
     pathname.startsWith("/auth") || pathname.startsWith("/app/wallet")
@@ -99,6 +108,29 @@ function withSecurityHeaders(request: Request, response: Response): Response {
     statusText: response.statusText,
     headers,
   });
+}
+
+function applyDocumentCacheHeaders(
+  request: Request,
+  response: Response,
+  headers: Headers,
+  pathname: string,
+) {
+  if (pathname.startsWith("/api/")) return;
+
+  const contentType = response.headers.get("content-type") ?? "";
+  const accept = request.headers.get("accept") ?? "";
+  const fetchDest = request.headers.get("sec-fetch-dest") ?? "";
+  const isDocument =
+    contentType.includes("text/html") ||
+    fetchDest === "document" ||
+    (accept.includes("text/html") && !pathname.includes("."));
+
+  if (!isDocument) return;
+
+  for (const [name, value] of Object.entries(DOCUMENT_CACHE_HEADERS)) {
+    headers.set(name, value);
+  }
 }
 
 async function handleCspReport(request: Request): Promise<Response> {
