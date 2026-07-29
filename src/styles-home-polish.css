@@ -52426,6 +52426,32 @@ body .sm-public-filter-toolbar .sm-public-launch-action:hover {
   transform: translateY(-1px) !important;
 }
 
+body .sm-public-launch-card-actions {
+  display: flex !important;
+  justify-content: center !important;
+  margin-top: 18px !important;
+}
+
+body .sm-public-launch-view-more {
+  min-height: 42px !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  background: rgb(250 247 246 / 9%) !important;
+  color: rgb(250 247 246 / 82%) !important;
+  cursor: pointer !important;
+  padding: 0 18px !important;
+}
+
+body .sm-public-launch-view-more:hover {
+  background: rgb(204 255 0 / 16%) !important;
+  color: #ccff00 !important;
+}
+
+body .sm-public-launch-view-more:focus-visible {
+  outline: 2px solid #ccff00 !important;
+  outline-offset: 3px !important;
+}
+
 body .sm-public-filter-toolbar .sm-public-chain-filter {
   display: flex !important;
   width: auto !important;

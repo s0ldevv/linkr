@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Rocket } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { ChevronDown, Rocket } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { TerminalCoinCard } from "@/components/linkr/home/terminal/TerminalCoinCard";
 import { PLACEHOLDER_TOKENS } from "@/components/linkr/home/terminal/terminal-data";
 import { MarketingHeader } from "@/components/linkr/MarketingHeader";
@@ -44,6 +44,10 @@ type LaunchCardRow = {
   token: PublicTokenRank;
 };
 
+const DEFAULT_CARDS_PER_ROW = 4;
+const INITIAL_VISIBLE_CARD_ROWS = 5;
+const ADDITIONAL_VISIBLE_CARD_ROWS = 2;
+
 export const Route = createFileRoute("/explore")({
   head: () => ({ meta: [{ title: "Explore - Linkr" }] }),
   component: PublicExplorePage,
@@ -51,7 +55,10 @@ export const Route = createFileRoute("/explore")({
 
 function PublicExplorePage() {
   const queryClient = useQueryClient();
+  const coinGridRef = useRef<HTMLDivElement | null>(null);
   const [chainFilter, setChainFilter] = useState<ChainFilter>("all");
+  const [cardsPerRow, setCardsPerRow] = useState(DEFAULT_CARDS_PER_ROW);
+  const [visibleCardRows, setVisibleCardRows] = useState(INITIAL_VISIBLE_CARD_ROWS);
   const homeQuery = useHomeDashboardData();
 
   const launchesQuery = useQuery({
@@ -123,6 +130,42 @@ function PublicExplorePage() {
     () => filterRowsByChain(launchRows, chainFilter),
     [chainFilter, launchRows],
   );
+  const visibleCardCount = Math.min(visibleRows.length, visibleCardRows * cardsPerRow);
+  const pagedRows = useMemo(
+    () => visibleRows.slice(0, visibleCardCount),
+    [visibleCardCount, visibleRows],
+  );
+  const hiddenCardCount = visibleRows.length - visibleCardCount;
+  const hasMoreRows = hiddenCardCount > 0;
+  const nextRowsToReveal = Math.min(
+    ADDITIONAL_VISIBLE_CARD_ROWS,
+    Math.ceil(hiddenCardCount / cardsPerRow),
+  );
+
+  const syncCardsPerRow = useCallback(() => {
+    setCardsPerRow(cardsPerRowFromGrid(coinGridRef.current));
+  }, []);
+
+  useEffect(() => {
+    setVisibleCardRows(INITIAL_VISIBLE_CARD_ROWS);
+  }, [chainFilter]);
+
+  useEffect(() => {
+    syncCardsPerRow();
+
+    const grid = coinGridRef.current;
+    if (!grid || typeof window === "undefined") return;
+
+    const observer = "ResizeObserver" in window ? new ResizeObserver(syncCardsPerRow) : undefined;
+    observer?.observe(grid);
+    window.addEventListener("resize", syncCardsPerRow);
+
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", syncCardsPerRow);
+    };
+  }, [syncCardsPerRow]);
+
   return (
     <div className="lkt-home min-h-screen sm-public-board-page sm-public-launches-page sm-public-explore-page">
       <MarketingHeader />
@@ -154,8 +197,8 @@ function PublicExplorePage() {
           aria-busy={launchesQuery.isLoading || homeQuery.isLoading || undefined}
           aria-label="Explore token cards"
         >
-          <div className="lkt-coin-grid">
-            {visibleRows.map(({ isDemo, launchSource, token }) => (
+          <div className="lkt-coin-grid" ref={coinGridRef}>
+            {pagedRows.map(({ isDemo, launchSource, token }) => (
               <div
                 className="sm-public-launch-card-wrap"
                 data-launch-source={launchSource ?? undefined}
@@ -168,6 +211,21 @@ function PublicExplorePage() {
               </div>
             ))}
           </div>
+          {hasMoreRows && (
+            <div className="sm-public-launch-card-actions">
+              <button
+                type="button"
+                className="lkt-view-all sm-public-launch-view-more"
+                aria-label={`View ${nextRowsToReveal} more rows of launched coins`}
+                onClick={() =>
+                  setVisibleCardRows((currentRows) => currentRows + ADDITIONAL_VISIBLE_CARD_ROWS)
+                }
+              >
+                <span>View more</span>
+                <ChevronDown aria-hidden="true" size={14} strokeWidth={2.6} />
+              </button>
+            </div>
+          )}
         </section>
       </main>
     </div>
@@ -232,6 +290,28 @@ function tokenStatusFromLaunchStatus(status: string | null): PublicTokenRank["st
 function filterRowsByChain(rows: LaunchCardRow[], chainFilter: ChainFilter) {
   if (chainFilter === "all") return rows;
   return rows.filter(({ token }) => chainKeyForToken(token) === chainFilter);
+}
+
+function cardsPerRowFromGrid(grid: HTMLDivElement | null): number {
+  if (!grid || typeof window === "undefined") return DEFAULT_CARDS_PER_ROW;
+
+  const renderedCards = Array.from(grid.children).filter(
+    (element): element is HTMLElement => element instanceof HTMLElement,
+  );
+  const firstCardTop = renderedCards[0]?.offsetTop;
+  if (typeof firstCardTop === "number") {
+    const firstNextRowIndex = renderedCards.findIndex(
+      (element) => element.offsetTop !== firstCardTop,
+    );
+    return Math.max(1, firstNextRowIndex > 0 ? firstNextRowIndex : renderedCards.length);
+  }
+
+  const templateColumns = window.getComputedStyle(grid).gridTemplateColumns;
+  const columnCount = templateColumns
+    .split(/\s+/)
+    .filter((column) => column && column !== "none").length;
+
+  return Math.max(1, columnCount || DEFAULT_CARDS_PER_ROW);
 }
 
 function cardCounts(rows: LaunchCardRow[]): Record<ChainFilter, number> {
