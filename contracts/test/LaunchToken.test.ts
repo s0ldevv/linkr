@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { network } from "hardhat";
+import { assertCustomError } from "../test-support/helpers.js";
 
 const { ethers } = await network.create();
 
@@ -15,6 +16,17 @@ describe("LaunchToken", () => {
     assert.equal(await token.tokenURI(), "ipfs://metadata");
     assert.equal(await token.totalSupply(), ethers.parseUnits("1000000000", 18));
     assert.equal(await token.balanceOf(factory.address), await token.totalSupply());
+  });
+
+  it("rejects a zero creator", async () => {
+    const [factory] = await ethers.getSigners();
+    const Token = await ethers.getContractFactory("LaunchToken", factory);
+
+    await assertCustomError(
+      Token.deploy("Launch", "LCH", ethers.ZeroAddress, "ipfs://metadata"),
+      Token,
+      "ZeroAddress",
+    );
   });
 
   it("has no transfer restrictions", async () => {

@@ -26,6 +26,9 @@ contract LaunchFactory is ReentrancyGuard, IUniswapV3SwapCallback {
     error FeeTransferFailed();
     error UnauthorizedSwapCallback();
     error InvalidSwapCallback();
+    error InvalidPool();
+    error InvalidSalt();
+    error NoUsableSalt();
 
     struct LaunchParams {
         string name;
@@ -50,11 +53,28 @@ contract LaunchFactory is ReentrancyGuard, IUniswapV3SwapCallback {
         uint256 graduationWeth;
     }
 
+    struct SaltCandidate {
+        address predictedToken;
+        bytes32 salt;
+        uint8 attempt;
+        bool launchTokenIsToken0;
+        address token0;
+        address token1;
+        int24 startingTick;
+        int24 tickLower;
+        int24 tickUpper;
+        uint160 sqrtPriceX96;
+        address existingPool;
+        bool poolInitialized;
+    }
+
     address public immutable WETH;
     IUniswapV3Factory public immutable v3Factory;
     INonfungiblePositionManager public immutable positionManager;
     LaunchLocker public immutable locker;
     uint24 public constant POOL_FEE = 10_000;
+    int24 public constant EXPECTED_TICK_SPACING = 200;
+    uint8 public constant MAX_SALT_ATTEMPTS = 64;
     uint256 public constant TOKEN_SUPPLY = 1_000_000_000 ether;
     /// Starting tick when the launch token sorts as token0 (mirrored to
     /// -STARTING_TICK when it sorts as token1). 1.0001^-200400 ~= 1.98e-9 WETH
@@ -77,6 +97,15 @@ contract LaunchFactory is ReentrancyGuard, IUniswapV3SwapCallback {
 
     mapping(address => LaunchRecord) public launchByToken;
 
+    event LaunchSaltSelected(address indexed token, address indexed creator, bytes32 salt, uint8 attempt);
+    event LaunchSaltSkipped(
+        address indexed predictedToken,
+        address indexed creator,
+        address indexed pool,
+        uint8 attempt,
+        uint160 currentSqrtPriceX96,
+        uint160 expectedSqrtPriceX96
+    );
     event TokenLaunched(
         address indexed token,
         address indexed creator,
@@ -109,6 +138,10 @@ contract LaunchFactory is ReentrancyGuard, IUniswapV3SwapCallback {
             weth_ == address(0) || v3Factory_ == address(0) || positionManager_ == address(0)
                 || locker_ == address(0) || treasury_ == address(0)
         ) revert ZeroAddress();
+        if (
+            weth_.code.length == 0 || v3Factory_.code.length == 0 || positionManager_.code.length == 0
+                || locker_.code.length == 0
+        ) revert InvalidParams();
         WETH = weth_;
         v3Factory = IUniswapV3Factory(v3Factory_);
         positionManager = INonfungiblePositionManager(positionManager_);
@@ -117,7 +150,7 @@ contract LaunchFactory is ReentrancyGuard, IUniswapV3SwapCallback {
         launchFee = launchFee_;
 
         int24 spacing = IUniswapV3Factory(v3Factory_).feeAmountTickSpacing(POOL_FEE);
-        if (spacing <= 0) revert InvalidParams();
+        if (spacing != EXPECTED_TICK_SPACING) revert InvalidParams();
         if (
             INonfungiblePositionManager(positionManager_).factory() != v3Factory_
                 || INonfungiblePositionManager(positionManager_).WETH9() != weth_
@@ -131,13 +164,36 @@ contract LaunchFactory is ReentrancyGuard, IUniswapV3SwapCallback {
     }
 
     function predictTokenAddress(LaunchParams calldata p, address creator) external view returns (address predicted) {
-        bytes32 salt = _boundSalt(p.salt, creator);
-        bytes memory bytecode = abi.encodePacked(
-            type(LaunchToken).creationCode,
-            abi.encode(p.name, p.symbol, creator, p.metadataURI)
-        );
-        predicted = address(
-            uint160(uint256(keccak256(abi.encodePacked(bytes1(0xff), address(this), salt, keccak256(bytecode)))))
+        SaltCandidate memory candidate = _findSaltCandidate(p, creator);
+        predicted = candidate.predictedToken;
+    }
+
+    function previewLaunch(LaunchParams calldata p, address creator)
+        external
+        view
+        returns (
+            address predictedToken,
+            bytes32 salt,
+            uint8 attempt,
+            address existingPool,
+            bool poolInitialized,
+            bool launchTokenIsToken0,
+            int24 tickLower,
+            int24 tickUpper,
+            uint160 sqrtPriceX96
+        )
+    {
+        SaltCandidate memory candidate = _findSaltCandidate(p, creator);
+        return (
+            candidate.predictedToken,
+            candidate.salt,
+            candidate.attempt,
+            candidate.existingPool,
+            candidate.poolInitialized,
+            candidate.launchTokenIsToken0,
+            candidate.tickLower,
+            candidate.tickUpper,
+            candidate.sqrtPriceX96
         );
     }
 
@@ -149,17 +205,18 @@ contract LaunchFactory is ReentrancyGuard, IUniswapV3SwapCallback {
     {
         _validateLaunchParams(p);
 
-        bytes32 salt = _boundSalt(p.salt, msg.sender);
-        token = address(new LaunchToken{salt: salt}(p.name, p.symbol, msg.sender, p.metadataURI));
+        SaltCandidate memory candidate = _selectSaltCandidate(p, msg.sender);
+        token = address(new LaunchToken{salt: candidate.salt}(p.name, p.symbol, msg.sender, p.metadataURI));
+        if (token != candidate.predictedToken) revert InvalidSalt();
         if (IERC20(token).totalSupply() != TOKEN_SUPPLY) revert WrongTokenAmount();
 
-        bool isToken0 = token < WETH;
-        int24 startingTick = _startingTickFor(isToken0);
-        (int24 tickLower, int24 tickUpper) = _rangeFor(startingTick, RANGE_WIDTH, isToken0);
-        uint160 sqrtPriceX96 = TickMath.getSqrtRatioAtTick(startingTick);
+        bool isToken0 = candidate.launchTokenIsToken0;
+        int24 tickLower = candidate.tickLower;
+        int24 tickUpper = candidate.tickUpper;
+        uint160 sqrtPriceX96 = candidate.sqrtPriceX96;
 
-        address token0 = isToken0 ? token : WETH;
-        address token1 = isToken0 ? WETH : token;
+        address token0 = candidate.token0;
+        address token1 = candidate.token1;
         pool = _resolvePool(token0, token1, sqrtPriceX96);
 
         IERC20(token).forceApprove(address(positionManager), TOKEN_SUPPLY);
@@ -197,7 +254,7 @@ contract LaunchFactory is ReentrancyGuard, IUniswapV3SwapCallback {
 
         locker.register(tokenId, msg.sender, token0, token1, CREATOR_SHARE_BPS);
 
-        uint256 initialBuyTokensOut;
+        uint256 initialBuyTokensOut = 0;
         if (p.initialBuyWeth > 0) {
             initialBuyTokensOut = _executeInitialBuy(pool, msg.sender, isToken0, p.initialBuyWeth);
         }
@@ -219,6 +276,7 @@ contract LaunchFactory is ReentrancyGuard, IUniswapV3SwapCallback {
         launchCount++;
         accruedLaunchFees += launchFee;
 
+        emit LaunchSaltSelected(token, msg.sender, candidate.salt, candidate.attempt);
         emit TokenLaunched(
             token,
             msg.sender,
@@ -250,11 +308,16 @@ contract LaunchFactory is ReentrancyGuard, IUniswapV3SwapCallback {
     }
 
     function _validateLaunchParams(LaunchParams calldata p) internal view {
+        _validateLaunchParamFields(p);
+        if (msg.value != launchFee + p.initialBuyWeth) revert InvalidParams();
+        _validateLaunchDefaults();
+    }
+
+    function _validateLaunchParamFields(LaunchParams calldata p) internal pure {
         if (
-            msg.value != launchFee + p.initialBuyWeth || bytes(p.name).length == 0 || bytes(p.symbol).length == 0
+            p.salt == bytes32(0) || bytes(p.name).length == 0 || bytes(p.symbol).length == 0
                 || bytes(p.metadataURI).length == 0 || p.initialBuyWeth > uint256(type(int256).max)
         ) revert InvalidParams();
-        _validateLaunchDefaults();
     }
 
     function _validateLaunchDefaults() internal view {
@@ -291,20 +354,127 @@ contract LaunchFactory is ReentrancyGuard, IUniswapV3SwapCallback {
         tickUpper = int24(upper);
     }
 
+    function _findSaltCandidate(LaunchParams calldata p, address creator)
+        internal
+        view
+        returns (SaltCandidate memory candidate)
+    {
+        if (creator == address(0)) revert ZeroAddress();
+        _validateLaunchParamFields(p);
+        bytes32 bytecodeHash = _launchTokenBytecodeHash(p, creator);
+        for (uint8 attempt = 0; attempt < MAX_SALT_ATTEMPTS; attempt++) {
+            candidate = _candidateAt(p, creator, bytecodeHash, attempt);
+            if (candidate.predictedToken.code.length != 0) continue;
+            (bool usable, address existingPool, bool initialized,) =
+                _poolUsability(candidate.token0, candidate.token1, candidate.sqrtPriceX96);
+            if (usable) {
+                candidate.existingPool = existingPool;
+                candidate.poolInitialized = initialized;
+                return candidate;
+            }
+        }
+        revert NoUsableSalt();
+    }
+
+    function _selectSaltCandidate(LaunchParams calldata p, address creator)
+        internal
+        returns (SaltCandidate memory candidate)
+    {
+        if (creator == address(0)) revert ZeroAddress();
+        _validateLaunchParamFields(p);
+        bytes32 bytecodeHash = _launchTokenBytecodeHash(p, creator);
+        for (uint8 attempt = 0; attempt < MAX_SALT_ATTEMPTS; attempt++) {
+            candidate = _candidateAt(p, creator, bytecodeHash, attempt);
+            if (candidate.predictedToken.code.length != 0) continue;
+            (bool usable, address existingPool, bool initialized, uint160 currentSqrtPriceX96) =
+                _poolUsability(candidate.token0, candidate.token1, candidate.sqrtPriceX96);
+
+            if (usable) {
+                candidate.existingPool = existingPool;
+                candidate.poolInitialized = initialized;
+                return candidate;
+            }
+            emit LaunchSaltSkipped(
+                candidate.predictedToken,
+                creator,
+                existingPool,
+                attempt,
+                currentSqrtPriceX96,
+                candidate.sqrtPriceX96
+            );
+        }
+        revert NoUsableSalt();
+    }
+
+    function _candidateAt(LaunchParams calldata p, address creator, bytes32 bytecodeHash, uint8 attempt)
+        internal
+        view
+        returns (SaltCandidate memory candidate)
+    {
+        bytes32 salt = _candidateSalt(p.salt, creator, attempt);
+        address predictedToken = _create2Address(salt, bytecodeHash);
+        bool isToken0 = predictedToken < WETH;
+        int24 startingTick = _startingTickFor(isToken0);
+        (int24 tickLower, int24 tickUpper) = _rangeFor(startingTick, RANGE_WIDTH, isToken0);
+        uint160 sqrtPriceX96 = TickMath.getSqrtRatioAtTick(startingTick);
+        return SaltCandidate({
+            predictedToken: predictedToken,
+            salt: salt,
+            attempt: attempt,
+            launchTokenIsToken0: isToken0,
+            token0: isToken0 ? predictedToken : WETH,
+            token1: isToken0 ? WETH : predictedToken,
+            startingTick: startingTick,
+            tickLower: tickLower,
+            tickUpper: tickUpper,
+            sqrtPriceX96: sqrtPriceX96,
+            existingPool: address(0),
+            poolInitialized: false
+        });
+    }
+
     function _resolvePool(address token0, address token1, uint160 expectedSqrtPriceX96) internal returns (address pool) {
         address existing = v3Factory.getPool(token0, token1, POOL_FEE);
         if (existing == address(0)) {
-            return positionManager.createAndInitializePoolIfNecessary(token0, token1, POOL_FEE, expectedSqrtPriceX96);
+            pool = positionManager.createAndInitializePoolIfNecessary(token0, token1, POOL_FEE, expectedSqrtPriceX96);
+            _validatePoolIdentity(pool, token0, token1);
+            return pool;
         }
 
+        _validatePoolIdentity(existing, token0, token1);
         (uint160 currentSqrtPriceX96,,,,,,) = IUniswapV3Pool(existing).slot0();
         if (currentSqrtPriceX96 == 0) {
-            return positionManager.createAndInitializePoolIfNecessary(token0, token1, POOL_FEE, expectedSqrtPriceX96);
+            pool = positionManager.createAndInitializePoolIfNecessary(token0, token1, POOL_FEE, expectedSqrtPriceX96);
+            _validatePoolIdentity(pool, token0, token1);
+            return pool;
         }
         if (currentSqrtPriceX96 != expectedSqrtPriceX96) {
             revert ExistingPoolWrongPrice(currentSqrtPriceX96, expectedSqrtPriceX96);
         }
         return existing;
+    }
+
+    function _poolUsability(address token0, address token1, uint160 expectedSqrtPriceX96)
+        internal
+        view
+        returns (bool usable, address pool, bool initialized, uint160 currentSqrtPriceX96)
+    {
+        pool = v3Factory.getPool(token0, token1, POOL_FEE);
+        if (pool == address(0)) return (true, address(0), false, 0);
+        _validatePoolIdentity(pool, token0, token1);
+        (currentSqrtPriceX96,,,,,,) = IUniswapV3Pool(pool).slot0();
+        if (currentSqrtPriceX96 == 0) return (true, pool, false, 0);
+        return (currentSqrtPriceX96 == expectedSqrtPriceX96, pool, true, currentSqrtPriceX96);
+    }
+
+    function _validatePoolIdentity(address pool, address token0, address token1) internal view {
+        if (pool == address(0) || pool.code.length == 0) revert InvalidPool();
+        if (
+            IUniswapV3Pool(pool).token0() != token0 || IUniswapV3Pool(pool).token1() != token1
+                || IUniswapV3Pool(pool).fee() != POOL_FEE
+        ) {
+            revert InvalidPool();
+        }
     }
 
     function _executeInitialBuy(address pool, address creator, bool launchTokenIsToken0, uint256 amountIn)
@@ -350,7 +520,17 @@ contract LaunchFactory is ReentrancyGuard, IUniswapV3SwapCallback {
         IERC20(WETH).safeTransfer(msg.sender, amountToPay);
     }
 
-    function _boundSalt(bytes32 userSalt, address creator) internal pure returns (bytes32) {
-        return keccak256(abi.encodePacked(creator, userSalt));
+    function _launchTokenBytecodeHash(LaunchParams calldata p, address creator) internal pure returns (bytes32) {
+        return keccak256(
+            abi.encodePacked(type(LaunchToken).creationCode, abi.encode(p.name, p.symbol, creator, p.metadataURI))
+        );
+    }
+
+    function _candidateSalt(bytes32 userSalt, address creator, uint8 attempt) internal view returns (bytes32) {
+        return keccak256(abi.encode(block.chainid, address(this), creator, userSalt, attempt));
+    }
+
+    function _create2Address(bytes32 salt, bytes32 bytecodeHash) internal view returns (address) {
+        return address(uint160(uint256(keccak256(abi.encodePacked(bytes1(0xff), address(this), salt, bytecodeHash)))));
     }
 }

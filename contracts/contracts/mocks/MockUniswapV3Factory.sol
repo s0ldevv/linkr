@@ -25,7 +25,7 @@ contract MockUniswapV3Factory {
         bytes32 key = _key(token0, token1, fee);
         pool = pools[key];
         if (pool == address(0)) {
-            pool = address(new MockUniswapV3Pool(token0, token1));
+            pool = address(new MockUniswapV3Pool(token0, token1, fee));
             pools[key] = pool;
         }
     }

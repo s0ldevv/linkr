@@ -5,9 +5,6 @@ import { assertCustomError } from "../test-support/helpers.js";
 
 const { ethers } = await network.create();
 
-const MAX_ADDRESS = "0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF";
-const MIN_ADDRESS = "0x0000000000000000000000000000000000000001";
-
 function baseParams(overrides: Record<string, unknown> = {}) {
   return {
     name: "Sherwood",
@@ -19,8 +16,13 @@ function baseParams(overrides: Record<string, unknown> = {}) {
   };
 }
 
-async function deploySystem(weth: string = MAX_ADDRESS, treasuryOverride?: string, launchFee = 0n) {
+async function deploySystem(weth?: string, treasuryOverride?: string, launchFee = 0n) {
   const [deployer, creator, treasury] = await ethers.getSigners();
+  if (!weth) {
+    const WETH = await ethers.getContractFactory("MockWETH");
+    const deployedWeth = await WETH.deploy();
+    weth = await deployedWeth.getAddress();
+  }
   const V3Factory = await ethers.getContractFactory("MockUniswapV3Factory");
   const v3Factory = await V3Factory.deploy();
   const Manager = await ethers.getContractFactory("MockNonfungiblePositionManager");
@@ -39,7 +41,7 @@ async function deploySystem(weth: string = MAX_ADDRESS, treasuryOverride?: strin
   await locker.setFactory(await factory.getAddress());
   const TickMath = await ethers.getContractFactory("TickMathHarness");
   const tickMath = await TickMath.deploy();
-  return { deployer, creator, treasury, v3Factory, manager, locker, factory, tickMath };
+  return { deployer, creator, treasury, v3Factory, manager, locker, factory, tickMath, wethAddress: weth };
 }
 
 async function launch(factory: any, creator: any, params = baseParams()) {
@@ -82,8 +84,10 @@ describe("LaunchFactory", () => {
     const [deployer, treasury] = await ethers.getSigners();
     const V3Factory = await ethers.getContractFactory("MockUniswapV3Factory");
     const v3Factory = await V3Factory.deploy();
+    const WETH = await ethers.getContractFactory("MockWETH");
+    const weth = await WETH.deploy();
     const Manager = await ethers.getContractFactory("MockNonfungiblePositionManager");
-    const manager = await Manager.deploy(await v3Factory.getAddress(), MAX_ADDRESS);
+    const manager = await Manager.deploy(await v3Factory.getAddress(), await weth.getAddress());
     const Locker = await ethers.getContractFactory("LaunchLocker");
     const locker = await Locker.deploy(await manager.getAddress(), treasury.address, deployer.address);
     const Factory = await ethers.getContractFactory("LaunchFactory");
@@ -100,28 +104,31 @@ describe("LaunchFactory", () => {
     const V3Factory = await ethers.getContractFactory("MockUniswapV3Factory");
     const v3Factory = await V3Factory.deploy();
     const otherV3Factory = await V3Factory.deploy();
+    const WETH = await ethers.getContractFactory("MockWETH");
+    const weth = await WETH.deploy();
+    const wrongWeth = await WETH.deploy();
     const Manager = await ethers.getContractFactory("MockNonfungiblePositionManager");
-    const manager = await Manager.deploy(await v3Factory.getAddress(), MAX_ADDRESS);
-    const wrongFactoryManager = await Manager.deploy(await otherV3Factory.getAddress(), MAX_ADDRESS);
-    const wrongWethManager = await Manager.deploy(await v3Factory.getAddress(), MIN_ADDRESS);
+    const manager = await Manager.deploy(await v3Factory.getAddress(), await weth.getAddress());
+    const wrongFactoryManager = await Manager.deploy(await otherV3Factory.getAddress(), await weth.getAddress());
+    const wrongWethManager = await Manager.deploy(await v3Factory.getAddress(), await wrongWeth.getAddress());
     const Locker = await ethers.getContractFactory("LaunchLocker");
     const locker = await Locker.deploy(await manager.getAddress(), treasury.address, deployer.address);
     const wrongLocker = await Locker.deploy(await wrongFactoryManager.getAddress(), treasury.address, deployer.address);
     const Factory = await ethers.getContractFactory("LaunchFactory");
-    const args = [MAX_ADDRESS, await v3Factory.getAddress(), await manager.getAddress(), await locker.getAddress(), treasury.address, 0] as const;
+    const args = [await weth.getAddress(), await v3Factory.getAddress(), await manager.getAddress(), await locker.getAddress(), treasury.address, 0] as const;
 
     await assertCustomError(
-      Factory.deploy(MAX_ADDRESS, await v3Factory.getAddress(), await wrongFactoryManager.getAddress(), await locker.getAddress(), treasury.address, 0),
+      Factory.deploy(await weth.getAddress(), await v3Factory.getAddress(), await wrongFactoryManager.getAddress(), await locker.getAddress(), treasury.address, 0),
       Factory,
       "InvalidParams",
     );
     await assertCustomError(
-      Factory.deploy(MAX_ADDRESS, await v3Factory.getAddress(), await wrongWethManager.getAddress(), await locker.getAddress(), treasury.address, 0),
+      Factory.deploy(await weth.getAddress(), await v3Factory.getAddress(), await wrongWethManager.getAddress(), await locker.getAddress(), treasury.address, 0),
       Factory,
       "InvalidParams",
     );
     await assertCustomError(
-      Factory.deploy(MAX_ADDRESS, await v3Factory.getAddress(), await manager.getAddress(), await wrongLocker.getAddress(), treasury.address, 0),
+      Factory.deploy(await weth.getAddress(), await v3Factory.getAddress(), await manager.getAddress(), await wrongLocker.getAddress(), treasury.address, 0),
       Factory,
       "InvalidParams",
     );
@@ -130,15 +137,15 @@ describe("LaunchFactory", () => {
     await factory.waitForDeployment();
     await locker.setFactory(await factory.getAddress());
     await assertCustomError(
-      Factory.deploy(MAX_ADDRESS, await v3Factory.getAddress(), await manager.getAddress(), await locker.getAddress(), treasury.address, 0),
+      Factory.deploy(await weth.getAddress(), await v3Factory.getAddress(), await manager.getAddress(), await locker.getAddress(), treasury.address, 0),
       Factory,
       "InvalidParams",
     );
   });
 
   it("launches when the launch token sorts as token0", async () => {
-    const { creator, factory, locker, manager } = await deploySystem(MAX_ADDRESS);
-    const params = baseParams({ salt: ethers.id("token0") });
+    const { creator, factory, locker, manager, wethAddress } = await deploySystem();
+    const { params } = await paramsForOrientation(factory, creator, wethAddress, true, "token0");
     const { predicted, graduation } = await launch(factory, creator, params);
     const record = await factory.launchByToken(predicted);
     const supply = await factory.TOKEN_SUPPLY();
@@ -154,8 +161,8 @@ describe("LaunchFactory", () => {
   });
 
   it("launches when the launch token sorts as token1", async () => {
-    const { creator, factory } = await deploySystem(MIN_ADDRESS);
-    const params = baseParams({ salt: ethers.id("token1") });
+    const { creator, factory, wethAddress } = await deploySystem();
+    const { params } = await paramsForOrientation(factory, creator, wethAddress, false, "token1");
     const { predicted } = await launch(factory, creator, params);
     const record = await factory.launchByToken(predicted);
 
@@ -165,7 +172,7 @@ describe("LaunchFactory", () => {
   });
 
   it("requires exact launch fee and valid params", async () => {
-    const { creator, factory } = await deploySystem(MAX_ADDRESS);
+    const { creator, factory } = await deploySystem();
     await assertCustomError(
       factory.connect(creator).launch(baseParams(), { value: 1n }),
       factory,
@@ -195,17 +202,22 @@ describe("LaunchFactory", () => {
       factory,
       "InvalidParams",
     );
+    await assertCustomError(
+      factory.connect(creator).launch(baseParams({ salt: ethers.ZeroHash }), { value: await factory.launchFee() }),
+      factory,
+      "InvalidParams",
+    );
   });
 
   it("sets launch fee immutably from the constructor", async () => {
-    const { creator, factory } = await deploySystem(MAX_ADDRESS);
+    const { creator, factory } = await deploySystem();
 
     assert.equal(await factory.launchFee(), 0n);
     await launch(factory, creator, baseParams({ salt: ethers.id("zero-constructor-fee") }));
     assert.equal(await factory.accruedLaunchFees(), 0n);
 
     const fee = ethers.parseEther("0.0005");
-    const { creator: paidCreator, factory: paidFactory } = await deploySystem(MAX_ADDRESS, undefined, fee);
+    const { creator: paidCreator, factory: paidFactory } = await deploySystem(undefined, undefined, fee);
     assert.equal(await paidFactory.launchFee(), fee);
     await assertCustomError(
       paidFactory.connect(paidCreator).launch(baseParams({ salt: ethers.id("wrong-constructor-fee") }), { value: 0 }),
@@ -218,7 +230,7 @@ describe("LaunchFactory", () => {
   });
 
   it("hardwires launchpad defaults in the factory and token", async () => {
-    const { creator, factory } = await deploySystem(MAX_ADDRESS);
+    const { creator, factory } = await deploySystem();
     assert.equal(await factory.TOKEN_SUPPLY(), ethers.parseUnits("1000000000", 18));
     assert.equal(await factory.STARTING_TICK(), -200_400n);
     assert.equal(await factory.RANGE_WIDTH(), 49_200n);
@@ -232,70 +244,73 @@ describe("LaunchFactory", () => {
   });
 
   it("handles an existing uninitialized pool", async () => {
-    const { creator, factory, v3Factory } = await deploySystem(MAX_ADDRESS);
+    const { creator, factory, v3Factory, wethAddress } = await deploySystem();
     const params = baseParams({ salt: ethers.id("existing-uninitialized") });
     const predicted = await factory.predictTokenAddress(params, creator.address);
-    await v3Factory.createPool(predicted, MAX_ADDRESS, 10_000);
-
-    await launch(factory, creator, params);
-    const record = await factory.launchByToken(predicted);
-    assert.equal(record.pool, await v3Factory.getPool(predicted, MAX_ADDRESS, 10_000));
-  });
-
-  it("accepts an existing pool at the expected price", async () => {
-    const { creator, factory, v3Factory, tickMath } = await deploySystem(MAX_ADDRESS);
-    const params = baseParams({ salt: ethers.id("existing-right-price") });
-    const predicted = await factory.predictTokenAddress(params, creator.address);
-    const pool = await v3Factory.createPool.staticCall(predicted, MAX_ADDRESS, 10_000);
-    await v3Factory.createPool(predicted, MAX_ADDRESS, 10_000);
-    const MockPool = await ethers.getContractFactory("MockUniswapV3Pool");
-    await MockPool.attach(pool).setSlot0(await tickMath.getSqrtRatioAtTick(-200_400), -200_400);
+    const pool = await v3Factory.createPool.staticCall(predicted, wethAddress, 10_000);
+    await v3Factory.createPool(predicted, wethAddress, 10_000);
 
     await launch(factory, creator, params);
     const record = await factory.launchByToken(predicted);
     assert.equal(record.pool, pool);
   });
 
-  it("rejects an existing initialized pool at the wrong price", async () => {
-    const { creator, factory, v3Factory } = await deploySystem(MAX_ADDRESS);
-    const params = baseParams({ salt: ethers.id("existing-wrong-price") });
-    const predicted = await factory.predictTokenAddress(params, creator.address);
-    const pool = await v3Factory.createPool.staticCall(predicted, MAX_ADDRESS, 10_000);
-    await v3Factory.createPool(predicted, MAX_ADDRESS, 10_000);
+  it("accepts an existing pool at the expected price", async () => {
+    const { creator, factory, v3Factory, wethAddress } = await deploySystem();
+    const params = baseParams({ salt: ethers.id("existing-right-price") });
+    const preview = await factory.previewLaunch(params, creator.address);
+    const predicted = preview[0];
+    const expectedSqrtPriceX96 = preview[8];
+    const pool = await v3Factory.createPool.staticCall(predicted, wethAddress, 10_000);
+    await v3Factory.createPool(predicted, wethAddress, 10_000);
     const MockPool = await ethers.getContractFactory("MockUniswapV3Pool");
-    await MockPool.attach(pool).setSlot0(123n, 0);
+    await MockPool.attach(pool).setSlot0(expectedSqrtPriceX96, 0);
 
-    await assertCustomError(
-      factory.connect(creator).launch(params, { value: await factory.launchFee() }),
-      factory,
-      "ExistingPoolWrongPrice",
-    );
+    await launch(factory, creator, params);
+    const record = await factory.launchByToken(predicted);
+    assert.equal(record.pool, pool);
   });
 
-  it("recovers from a wrong-price precreated pool by retrying with a fresh salt", async () => {
-    const { creator, factory, v3Factory } = await deploySystem(MAX_ADDRESS);
-    const blockedParams = baseParams({ salt: ethers.id("precreated-wrong-price") });
-    const blockedToken = await factory.predictTokenAddress(blockedParams, creator.address);
-    const blockedPool = await v3Factory.createPool.staticCall(blockedToken, MAX_ADDRESS, 10_000);
-    await v3Factory.createPool(blockedToken, MAX_ADDRESS, 10_000);
+  it("skips an existing initialized pool at the wrong price", async () => {
+    const { creator, factory, v3Factory, wethAddress } = await deploySystem();
+    const params = baseParams({ salt: ethers.id("existing-wrong-price") });
+    const blockedToken = await factory.predictTokenAddress(params, creator.address);
+    const blockedPool = await v3Factory.createPool.staticCall(blockedToken, wethAddress, 10_000);
+    await v3Factory.createPool(blockedToken, wethAddress, 10_000);
     const MockPool = await ethers.getContractFactory("MockUniswapV3Pool");
     await MockPool.attach(blockedPool).setSlot0(123n, 0);
 
-    await assertCustomError(
-      factory.connect(creator).launch(blockedParams, { value: await factory.launchFee() }),
-      factory,
-      "ExistingPoolWrongPrice",
-    );
-
-    const retryParams = baseParams({ salt: ethers.id("precreated-wrong-price-retry") });
-    const { predicted } = await launch(factory, creator, retryParams);
+    const retryToken = await factory.predictTokenAddress(params, creator.address);
+    assert.notEqual(retryToken, blockedToken);
+    const { predicted } = await launch(factory, creator, params);
     const record = await factory.launchByToken(predicted);
-    assert.equal(record.token, predicted);
+    assert.equal(predicted, retryToken);
+    assert.equal(record.token, retryToken);
     assert.notEqual(record.pool, blockedPool);
   });
 
+  it("reverts only after every bounded salt candidate is poisoned", async () => {
+    const { creator, factory, v3Factory, wethAddress } = await deploySystem();
+    const params = baseParams({ salt: ethers.id("all-candidates-poisoned") });
+    const MockPool = await ethers.getContractFactory("MockUniswapV3Pool");
+
+    for (let i = 0; i < Number(await factory.MAX_SALT_ATTEMPTS()); i++) {
+      const predicted = await factory.predictTokenAddress(params, creator.address);
+      const pool = await v3Factory.createPool.staticCall(predicted, wethAddress, 10_000);
+      await v3Factory.createPool(predicted, wethAddress, 10_000);
+      await MockPool.attach(pool).setSlot0(123n, 0);
+    }
+
+    await assertCustomError(factory.predictTokenAddress(params, creator.address), factory, "NoUsableSalt");
+    await assertCustomError(
+      factory.connect(creator).launch(params, { value: await factory.launchFee() }),
+      factory,
+      "NoUsableSalt",
+    );
+  });
+
   it("rejects zero liquidity and tiny token-use launches", async () => {
-    const { creator, factory, manager } = await deploySystem(MAX_ADDRESS);
+    const { creator, factory, manager } = await deploySystem();
     const supply = await factory.TOKEN_SUPPLY();
     await manager.setNextMintResult(0, supply, 0, false);
     await assertCustomError(
@@ -317,7 +332,7 @@ describe("LaunchFactory", () => {
   });
 
   it("clears the position manager token allowance after minting liquidity", async () => {
-    const { creator, factory, locker, manager } = await deploySystem(MAX_ADDRESS);
+    const { creator, factory, locker, manager } = await deploySystem();
     const supply = await factory.TOKEN_SUPPLY();
     const minUsed = (supply * (await factory.MIN_SUPPLY_USED_BPS())) / 10_000n;
     const params = baseParams({ salt: ethers.id("allowance-reset") });
@@ -333,7 +348,7 @@ describe("LaunchFactory", () => {
 
   it("accrues launch fees and uses pull claims", async () => {
     const fee = ethers.parseEther("0.0005");
-    const { creator, treasury, factory } = await deploySystem(MAX_ADDRESS, undefined, fee);
+    const { creator, treasury, factory } = await deploySystem(undefined, undefined, fee);
     await launch(factory, creator, baseParams({ salt: ethers.id("fees") }));
     assert.equal(await factory.accruedLaunchFees(), fee);
     await assertCustomError(factory.connect(creator).claimLaunchFees(), factory, "OnlyTreasury");
@@ -492,14 +507,14 @@ describe("LaunchFactory", () => {
   });
 
   it("rejects direct swap callbacks outside an active initial buy", async () => {
-    const { factory } = await deploySystem(MAX_ADDRESS);
+    const { factory } = await deploySystem();
     await assertCustomError(factory.uniswapV3SwapCallback(1, -1, "0x"), factory, "UnauthorizedSwapCallback");
   });
 
   it("does not let a reverting treasury brick launches", async () => {
     const RevertingTreasury = await ethers.getContractFactory("RevertingTreasury");
     const rejectingTreasury = await RevertingTreasury.deploy();
-    const { creator, factory } = await deploySystem(MAX_ADDRESS, await rejectingTreasury.getAddress(), ethers.parseEther("0.0005"));
+    const { creator, factory } = await deploySystem(undefined, await rejectingTreasury.getAddress(), ethers.parseEther("0.0005"));
     await launch(factory, creator, baseParams({ salt: ethers.id("reverting-treasury") }));
     assert.equal(await factory.accruedLaunchFees(), await factory.launchFee());
   });
