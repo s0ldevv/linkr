@@ -8370,6 +8370,17 @@ body
   padding: 0.2rem 0.42rem;
 }
 
+.sm-coin-launcher-pill {
+  color: inherit;
+  text-decoration: none;
+}
+
+.sm-coin-launcher-pill:hover,
+.sm-coin-launcher-pill:focus-visible {
+  color: var(--sm-cream);
+  text-decoration: underline;
+}
+
 .sm-coin-title-block p {
   max-width: 42rem;
   margin-top: 1.15rem;
@@ -8922,6 +8933,12 @@ body
 .sm-coin-creator-row > span {
   background: var(--sm-lime);
   color: var(--sm-black);
+}
+
+.sm-coin-creator-row > span img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .sm-coin-info-list,
@@ -26852,6 +26869,18 @@ body .sm-coin-page .sm-coin-about-meta span {
   text-transform: uppercase !important;
 }
 
+body .sm-coin-page .sm-coin-launcher-pill {
+  color: inherit !important;
+  text-decoration: none !important;
+}
+
+body .sm-coin-page .sm-coin-launcher-pill:hover,
+body .sm-coin-page .sm-coin-launcher-pill:focus-visible {
+  color: var(--coin-ink) !important;
+  text-decoration: underline !important;
+  text-underline-offset: 3px !important;
+}
+
 body .sm-coin-page .sm-coin-title-block p {
   max-width: 760px !important;
   margin-top: 20px !important;
@@ -27249,6 +27278,12 @@ body .sm-coin-page .sm-coin-creator-row > span {
   border-radius: 16px !important;
   background: var(--coin-lime) !important;
   color: var(--coin-ink) !important;
+}
+
+body .sm-coin-page .sm-coin-creator-row > span img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
 }
 
 body .sm-coin-page .sm-coin-similar-list strong,

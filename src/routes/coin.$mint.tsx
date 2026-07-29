@@ -7,6 +7,7 @@ import { MarketingHeader } from "@/components/linkr/MarketingHeader";
 import { CoinComments } from "@/components/linkr/coin/CoinComments";
 import { formatEth, relativeTime, shortAddress } from "@/lib/linkr/format";
 import { resolveIpfsUrl } from "@/lib/linkr/ipfs";
+import { normalizeProfileHandle } from "@/lib/linkr/profile-links";
 import {
   ArrowRight,
   Check,
@@ -16,10 +17,14 @@ import {
   Link2,
   Share2,
   ShieldCheck,
+  UserRound,
   X,
 } from "lucide-react";
 
 type Launch = Tables<"coin_launches">;
+type LaunchWithLauncher = Launch & {
+  launcher: LauncherProfile | null;
+};
 type DexWindow = "m5" | "h1" | "h6" | "h24";
 type MarketChain = "robinhood" | "solana";
 type TradeSide = "buy" | "sell";
@@ -73,6 +78,7 @@ type TokenDetail = {
   imageUrl?: string | null;
   imageSources: TokenImageSource[];
   isLaunch: boolean;
+  launcher: LauncherProfile | null;
   launchSource: string | null;
   name: string;
   nativeSymbol: "ETH" | "SOL";
@@ -81,6 +87,28 @@ type TokenDetail = {
   tweetId: string | null;
   txSignature: string | null;
   userId: string | null;
+};
+
+type LauncherProfile = {
+  name: string | null;
+  profileImageUrl: string | null;
+  username: string;
+};
+
+type PublicProfileRow = {
+  twitter_name: string | null;
+  twitter_profile_image_url: string | null;
+  twitter_username: string | null;
+  user_id: string;
+};
+
+type RpcError = { message?: string };
+
+const profileRpc = supabase as unknown as {
+  rpc: (
+    fn: "get_public_profiles",
+    args: { _user_ids: string[] },
+  ) => Promise<{ data: PublicProfileRow[] | null; error: RpcError | null }>;
 };
 
 type TokenImageSource = {
@@ -318,6 +346,18 @@ function CoinPage() {
                   </div>
                   <div className="sm-coin-subline">
                     <span>{detail.status}</span>
+                    {detail.launcher && (
+                      <span>
+                        by{" "}
+                        <Link
+                          className="sm-coin-launcher-pill"
+                          to="/u/$username"
+                          params={{ username: detail.launcher.username }}
+                        >
+                          @{detail.launcher.username}
+                        </Link>
+                      </span>
+                    )}
                     {detail.launchSource === "website" && <span>Website launch</span>}
                     {detail.createdAt && <span>{relativeTime(detail.createdAt)}</span>}
                     {pair?.dexId && <span>{pair.dexId}</span>}
@@ -449,6 +489,7 @@ function CoinPage() {
             </div>
 
             <aside className="sm-coin-side" aria-label="Coin actions and related data">
+              <CoinLauncherCard detail={detail} />
               <TradeCommandCard
                 detail={detail}
                 liquidityUsd={pair?.liquidity?.usd}
@@ -467,6 +508,42 @@ function CoinPage() {
         )}
       </main>
     </div>
+  );
+}
+
+function CoinLauncherCard({ detail }: { detail: TokenDetail }) {
+  if (!detail.launcher) return null;
+
+  const { launcher } = detail;
+  const initials = initialsFor(launcher.name ?? launcher.username);
+  const launchedAt = detail.createdAt ? relativeTime(detail.createdAt) : "Linkr launch";
+
+  return (
+    <section className="sm-coin-side-card">
+      <div className="sm-coin-side-title">
+        <span>
+          <UserRound aria-hidden="true" size={16} />
+          Launched by
+        </span>
+        <small>Creator</small>
+      </div>
+
+      <Link
+        className="sm-coin-creator-row"
+        to="/u/$username"
+        params={{ username: launcher.username }}
+        aria-label={`View @${launcher.username}'s profile`}
+      >
+        <span>
+          {launcher.profileImageUrl ? <img src={launcher.profileImageUrl} alt="" /> : initials}
+        </span>
+        <div>
+          <strong>@{launcher.username}</strong>
+          <small>{launcher.name ?? "Linkr launcher"}</small>
+        </div>
+        <b>{launchedAt}</b>
+      </Link>
+    </section>
   );
 }
 
@@ -1014,7 +1091,10 @@ async function fetchDexPairs(mint: string, chain: MarketChain): Promise<DexPair[
   return Array.isArray(data) ? data : Array.isArray(data?.pairs) ? data.pairs : [];
 }
 
-async function fetchLaunch(address: string, chain: MarketChain): Promise<Launch | null> {
+async function fetchLaunch(
+  address: string,
+  chain: MarketChain,
+): Promise<LaunchWithLauncher | null> {
   const normalized = normalizeMarketAddress(address);
   if (!normalized || normalized.chain !== chain) return null;
 
@@ -1031,15 +1111,40 @@ async function fetchLaunch(address: string, chain: MarketChain): Promise<Launch 
     sameMarketAddress(row.token_address ?? row.mint, normalized.address),
   );
 
-  if (chain === "robinhood") {
-    return (
-      matchingRows.find((row) => row.chain_id === ROBINHOOD_CHAIN_ID) ??
-      matchingRows.find((row) => row.chain_id == null) ??
-      null
-    );
-  }
+  const launch =
+    chain === "robinhood"
+      ? (matchingRows.find((row) => row.chain_id === ROBINHOOD_CHAIN_ID) ??
+        matchingRows.find((row) => row.chain_id == null) ??
+        null)
+      : (matchingRows.find((row) => row.chain_id !== ROBINHOOD_CHAIN_ID) ?? null);
 
-  return matchingRows.find((row) => row.chain_id !== ROBINHOOD_CHAIN_ID) ?? null;
+  if (!launch) return null;
+
+  return {
+    ...launch,
+    launcher: await fetchLauncherProfile(launch.user_id),
+  };
+}
+
+async function fetchLauncherProfile(userId: string | null): Promise<LauncherProfile | null> {
+  if (!userId) return null;
+
+  try {
+    const { data, error } = await profileRpc.rpc("get_public_profiles", { _user_ids: [userId] });
+    if (error) return null;
+
+    const row = (data ?? []).find((profile) => profile.user_id === userId);
+    const username = normalizeProfileHandle(row?.twitter_username);
+    if (!username) return null;
+
+    return {
+      name: stringValue(row?.twitter_name),
+      profileImageUrl: normalizeImageUrl(row?.twitter_profile_image_url),
+      username,
+    };
+  } catch {
+    return null;
+  }
 }
 
 async function fetchBlockscoutTokenMetadata(
@@ -1402,7 +1507,7 @@ function collectTokenImageSources({
   pair,
 }: {
   blockscoutMetadata: BlockscoutTokenMetadata | null;
-  launch: Launch | null;
+  launch: LaunchWithLauncher | null;
   pair: DexPair | null;
 }): TokenImageSource[] {
   const candidates: TokenImageSource[] = [
@@ -1489,7 +1594,7 @@ function buildTokenDetail({
 }: {
   blockscoutMetadata: BlockscoutTokenMetadata | null;
   chain: MarketChain;
-  launch: Launch | null;
+  launch: LaunchWithLauncher | null;
   mint: string;
   pair: DexPair | null;
 }): TokenDetail | null {
@@ -1520,6 +1625,7 @@ function buildTokenDetail({
     imageUrl: imageSources[0]?.url ?? null,
     imageSources,
     isLaunch,
+    launcher: launch?.launcher ?? null,
     launchSource: launch?.launch_source ?? null,
     name,
     nativeSymbol: chain === "solana" ? "SOL" : "ETH",
@@ -1791,6 +1897,11 @@ function titleCase(value: string): string {
   return value
     .replace(/[_-]/g, " ")
     .replace(/\w\S*/g, (word) => word.slice(0, 1).toUpperCase() + word.slice(1).toLowerCase());
+}
+
+function initialsFor(value: string): string {
+  const parts = value.replace(/^@/, "").split(/\s+/).filter(Boolean).slice(0, 2);
+  return (parts.map((part) => part[0]).join("") || "U").toUpperCase();
 }
 
 function xIntent(text: string): string {
