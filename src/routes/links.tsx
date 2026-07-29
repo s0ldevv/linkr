@@ -187,6 +187,25 @@ function LinksPage() {
           <h1 id="linkr-links-title">LINKR</h1>
         </div>
 
+        <section className="linkr-links-token" aria-labelledby="linkr-token-ca-title">
+          <div className="linkr-links-token-head">
+            <h2 id="linkr-token-ca-title">Official $LINKR CA</h2>
+            {linkrCaQuery.isFetching && <span>Syncing</span>}
+          </div>
+          <div className="linkr-links-token-row">
+            <code>{linkrCa}</code>
+            <button
+              type="button"
+              onClick={copyTokenCa}
+              className="linkr-links-copy"
+              aria-label="Copy LINKR token CA"
+            >
+              <Copy aria-hidden="true" size={18} strokeWidth={2.3} />
+              <span>{copied ? "Copied" : "Copy"}</span>
+            </button>
+          </div>
+        </section>
+
         <div className="linkr-links-list" aria-label="Official Linkr destinations">
           {LINKS.map((item) => (
             <a
@@ -208,25 +227,6 @@ function LinksPage() {
             </a>
           ))}
         </div>
-
-        <section className="linkr-links-token" aria-labelledby="linkr-token-ca-title">
-          <div className="linkr-links-token-head">
-            <h2 id="linkr-token-ca-title">Official $LINKR CA</h2>
-            {linkrCaQuery.isFetching && <span>Syncing</span>}
-          </div>
-          <div className="linkr-links-token-row">
-            <code>{linkrCa}</code>
-            <button
-              type="button"
-              onClick={copyTokenCa}
-              className="linkr-links-copy"
-              aria-label="Copy LINKR token CA"
-            >
-              <Copy aria-hidden="true" size={18} strokeWidth={2.3} />
-              <span>{copied ? "Copied" : "Copy"}</span>
-            </button>
-          </div>
-        </section>
       </section>
     </main>
   );

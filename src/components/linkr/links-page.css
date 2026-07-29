@@ -207,11 +207,13 @@
 }
 
 .linkr-links-token {
-  background: var(--links-row);
+  background:
+    linear-gradient(135deg, rgb(204 255 0 / 16%), rgb(204 255 0 / 5%)),
+    var(--links-row);
   border-radius: 18px;
   display: grid;
   gap: 12px;
-  margin-top: 3px;
+  margin-top: 0;
   padding: 14px;
 }
 
@@ -242,7 +244,7 @@
 
 .linkr-links-token-row {
   align-items: center;
-  background: rgb(255 255 255 / 6%);
+  background: rgb(0 0 0 / 20%);
   border-radius: 15px;
   display: grid;
   gap: 10px;
