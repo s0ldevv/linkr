@@ -9,7 +9,7 @@ import {LaunchToken} from "./LaunchToken.sol";
 import {LaunchLocker} from "./LaunchLocker.sol";
 import {INonfungiblePositionManager} from "./interfaces/INonfungiblePositionManager.sol";
 import {IUniswapV3Factory} from "./interfaces/IUniswapV3Factory.sol";
-import {IUniswapV3Pool} from "./interfaces/IUniswapV3Pool.sol";
+import {IUniswapV3Pool, IUniswapV3PoolPrice} from "./interfaces/IUniswapV3Pool.sol";
 import {IUniswapV3SwapCallback} from "./interfaces/IUniswapV3SwapCallback.sol";
 import {IWETH9} from "./interfaces/IWETH9.sol";
 
@@ -74,6 +74,8 @@ contract LaunchFactory is ReentrancyGuard, IUniswapV3SwapCallback {
     LaunchLocker public immutable locker;
     uint24 public constant POOL_FEE = 10_000;
     int24 public constant EXPECTED_TICK_SPACING = 200;
+    /// Attempt 0 is deterministic for UX. Fallback attempts include execution
+    /// entropy so public mempool observers cannot precompute every rescue token.
     uint8 public constant MAX_SALT_ATTEMPTS = 64;
     uint256 public constant TOKEN_SUPPLY = 1_000_000_000 ether;
     /// Starting tick when the launch token sorts as token0 (mirrored to
@@ -94,6 +96,8 @@ contract LaunchFactory is ReentrancyGuard, IUniswapV3SwapCallback {
     uint256 public launchCount;
     uint256 public accruedLaunchFees;
     address private activeSwapPool;
+    uint256 private activeSwapMaxWeth;
+    uint256 private activeSwapPaidWeth;
 
     mapping(address => LaunchRecord) public launchByToken;
 
@@ -164,7 +168,7 @@ contract LaunchFactory is ReentrancyGuard, IUniswapV3SwapCallback {
     }
 
     function predictTokenAddress(LaunchParams calldata p, address creator) external view returns (address predicted) {
-        SaltCandidate memory candidate = _findSaltCandidate(p, creator);
+        SaltCandidate memory candidate = _findSaltCandidate(p, creator, _launchSaltEntropy());
         predicted = candidate.predictedToken;
     }
 
@@ -183,7 +187,36 @@ contract LaunchFactory is ReentrancyGuard, IUniswapV3SwapCallback {
             uint160 sqrtPriceX96
         )
     {
-        SaltCandidate memory candidate = _findSaltCandidate(p, creator);
+        SaltCandidate memory candidate = _findSaltCandidate(p, creator, _launchSaltEntropy());
+        return (
+            candidate.predictedToken,
+            candidate.salt,
+            candidate.attempt,
+            candidate.existingPool,
+            candidate.poolInitialized,
+            candidate.launchTokenIsToken0,
+            candidate.tickLower,
+            candidate.tickUpper,
+            candidate.sqrtPriceX96
+        );
+    }
+
+    function previewLaunchWithEntropy(LaunchParams calldata p, address creator, bytes32 entropy)
+        external
+        view
+        returns (
+            address predictedToken,
+            bytes32 salt,
+            uint8 attempt,
+            address existingPool,
+            bool poolInitialized,
+            bool launchTokenIsToken0,
+            int24 tickLower,
+            int24 tickUpper,
+            uint160 sqrtPriceX96
+        )
+    {
+        SaltCandidate memory candidate = _findSaltCandidate(p, creator, entropy);
         return (
             candidate.predictedToken,
             candidate.salt,
@@ -205,7 +238,7 @@ contract LaunchFactory is ReentrancyGuard, IUniswapV3SwapCallback {
     {
         _validateLaunchParams(p);
 
-        SaltCandidate memory candidate = _selectSaltCandidate(p, msg.sender);
+        SaltCandidate memory candidate = _selectSaltCandidate(p, msg.sender, _launchSaltEntropy());
         token = address(new LaunchToken{salt: candidate.salt}(p.name, p.symbol, msg.sender, p.metadataURI));
         if (token != candidate.predictedToken) revert InvalidSalt();
         if (IERC20(token).totalSupply() != TOKEN_SUPPLY) revert WrongTokenAmount();
@@ -247,7 +280,7 @@ contract LaunchFactory is ReentrancyGuard, IUniswapV3SwapCallback {
 
         uint256 usedLaunch = isToken0 ? used0 : used1;
         uint256 minUsed = TOKEN_SUPPLY * MIN_SUPPLY_USED_BPS / 10_000;
-        if (liquidity == 0 || usedLaunch < minUsed || usedLaunch > TOKEN_SUPPLY) revert WrongTokenAmount();
+        if (liquidity < 1 || usedLaunch < minUsed || usedLaunch > TOKEN_SUPPLY) revert WrongTokenAmount();
 
         uint256 dust = IERC20(token).balanceOf(address(this));
         if (dust > 0) IERC20(token).safeTransfer(address(locker), dust);
@@ -354,7 +387,7 @@ contract LaunchFactory is ReentrancyGuard, IUniswapV3SwapCallback {
         tickUpper = int24(upper);
     }
 
-    function _findSaltCandidate(LaunchParams calldata p, address creator)
+    function _findSaltCandidate(LaunchParams calldata p, address creator, bytes32 entropy)
         internal
         view
         returns (SaltCandidate memory candidate)
@@ -363,7 +396,7 @@ contract LaunchFactory is ReentrancyGuard, IUniswapV3SwapCallback {
         _validateLaunchParamFields(p);
         bytes32 bytecodeHash = _launchTokenBytecodeHash(p, creator);
         for (uint8 attempt = 0; attempt < MAX_SALT_ATTEMPTS; attempt++) {
-            candidate = _candidateAt(p, creator, bytecodeHash, attempt);
+            candidate = _candidateAt(p, creator, bytecodeHash, entropy, attempt);
             if (candidate.predictedToken.code.length != 0) continue;
             (bool usable, address existingPool, bool initialized,) =
                 _poolUsability(candidate.token0, candidate.token1, candidate.sqrtPriceX96);
@@ -376,7 +409,7 @@ contract LaunchFactory is ReentrancyGuard, IUniswapV3SwapCallback {
         revert NoUsableSalt();
     }
 
-    function _selectSaltCandidate(LaunchParams calldata p, address creator)
+    function _selectSaltCandidate(LaunchParams calldata p, address creator, bytes32 entropy)
         internal
         returns (SaltCandidate memory candidate)
     {
@@ -384,7 +417,7 @@ contract LaunchFactory is ReentrancyGuard, IUniswapV3SwapCallback {
         _validateLaunchParamFields(p);
         bytes32 bytecodeHash = _launchTokenBytecodeHash(p, creator);
         for (uint8 attempt = 0; attempt < MAX_SALT_ATTEMPTS; attempt++) {
-            candidate = _candidateAt(p, creator, bytecodeHash, attempt);
+            candidate = _candidateAt(p, creator, bytecodeHash, entropy, attempt);
             if (candidate.predictedToken.code.length != 0) continue;
             (bool usable, address existingPool, bool initialized, uint160 currentSqrtPriceX96) =
                 _poolUsability(candidate.token0, candidate.token1, candidate.sqrtPriceX96);
@@ -406,12 +439,18 @@ contract LaunchFactory is ReentrancyGuard, IUniswapV3SwapCallback {
         revert NoUsableSalt();
     }
 
-    function _candidateAt(LaunchParams calldata p, address creator, bytes32 bytecodeHash, uint8 attempt)
+    function _candidateAt(
+        LaunchParams calldata p,
+        address creator,
+        bytes32 bytecodeHash,
+        bytes32 entropy,
+        uint8 attempt
+    )
         internal
         view
         returns (SaltCandidate memory candidate)
     {
-        bytes32 salt = _candidateSalt(p.salt, creator, attempt);
+        bytes32 salt = _candidateSalt(p.salt, creator, entropy, attempt);
         address predictedToken = _create2Address(salt, bytecodeHash);
         bool isToken0 = predictedToken < WETH;
         int24 startingTick = _startingTickFor(isToken0);
@@ -442,7 +481,7 @@ contract LaunchFactory is ReentrancyGuard, IUniswapV3SwapCallback {
         }
 
         _validatePoolIdentity(existing, token0, token1);
-        (uint160 currentSqrtPriceX96,,,,,,) = IUniswapV3Pool(existing).slot0();
+        uint160 currentSqrtPriceX96 = IUniswapV3PoolPrice(existing).slot0();
         if (currentSqrtPriceX96 == 0) {
             pool = positionManager.createAndInitializePoolIfNecessary(token0, token1, POOL_FEE, expectedSqrtPriceX96);
             _validatePoolIdentity(pool, token0, token1);
@@ -462,7 +501,7 @@ contract LaunchFactory is ReentrancyGuard, IUniswapV3SwapCallback {
         pool = v3Factory.getPool(token0, token1, POOL_FEE);
         if (pool == address(0)) return (true, address(0), false, 0);
         _validatePoolIdentity(pool, token0, token1);
-        (currentSqrtPriceX96,,,,,,) = IUniswapV3Pool(pool).slot0();
+        currentSqrtPriceX96 = IUniswapV3PoolPrice(pool).slot0();
         if (currentSqrtPriceX96 == 0) return (true, pool, false, 0);
         return (currentSqrtPriceX96 == expectedSqrtPriceX96, pool, true, currentSqrtPriceX96);
     }
@@ -487,6 +526,8 @@ contract LaunchFactory is ReentrancyGuard, IUniswapV3SwapCallback {
         uint160 sqrtPriceLimitX96 = zeroForOne ? TickMath.MIN_SQRT_RATIO + 1 : TickMath.MAX_SQRT_RATIO - 1;
 
         activeSwapPool = pool;
+        activeSwapMaxWeth = amountIn;
+        activeSwapPaidWeth = 0;
         (int256 amount0, int256 amount1) = IUniswapV3Pool(pool).swap(
             creator,
             zeroForOne,
@@ -494,12 +535,16 @@ contract LaunchFactory is ReentrancyGuard, IUniswapV3SwapCallback {
             sqrtPriceLimitX96,
             abi.encode(launchTokenIsToken0)
         );
+        uint256 callbackPaidWeth = activeSwapPaidWeth;
         activeSwapPool = address(0);
+        activeSwapMaxWeth = 0;
+        activeSwapPaidWeth = 0;
 
         int256 launchAmount = launchTokenIsToken0 ? amount0 : amount1;
         if (launchAmount >= 0) revert InvalidSwapCallback();
         uint256 spentWeth = launchTokenIsToken0 ? uint256(amount1) : uint256(amount0);
         if (spentWeth > amountIn) revert InvalidSwapCallback();
+        if (callbackPaidWeth != spentWeth) revert InvalidSwapCallback();
         tokensOut = uint256(-launchAmount);
         uint256 refundWeth = amountIn - spentWeth;
         if (refundWeth > 0) IERC20(WETH).safeTransfer(creator, refundWeth);
@@ -517,6 +562,9 @@ contract LaunchFactory is ReentrancyGuard, IUniswapV3SwapCallback {
             if (amount0Delta <= 0 || amount1Delta >= 0) revert InvalidSwapCallback();
             amountToPay = uint256(amount0Delta);
         }
+        uint256 paidWeth = activeSwapPaidWeth + amountToPay;
+        if (paidWeth > activeSwapMaxWeth) revert InvalidSwapCallback();
+        activeSwapPaidWeth = paidWeth;
         IERC20(WETH).safeTransfer(msg.sender, amountToPay);
     }
 
@@ -526,8 +574,21 @@ contract LaunchFactory is ReentrancyGuard, IUniswapV3SwapCallback {
         );
     }
 
-    function _candidateSalt(bytes32 userSalt, address creator, uint8 attempt) internal view returns (bytes32) {
-        return keccak256(abi.encode(block.chainid, address(this), creator, userSalt, attempt));
+    function _launchSaltEntropy() internal view returns (bytes32) {
+        // Used only for anti-grief fallback salt selection, not for economic randomness.
+        return bytes32(block.prevrandao);
+    }
+
+    function _candidateSalt(bytes32 userSalt, address creator, bytes32 entropy, uint8 attempt)
+        internal
+        view
+        returns (bytes32)
+    {
+        if (attempt == 0) {
+            return keccak256(abi.encode(block.chainid, address(this), creator, userSalt, attempt));
+        }
+        if (entropy == bytes32(0)) revert NoUsableSalt();
+        return keccak256(abi.encode(block.chainid, address(this), creator, userSalt, entropy, attempt));
     }
 
     function _create2Address(bytes32 salt, bytes32 bytecodeHash) internal view returns (address) {

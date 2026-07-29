@@ -15,7 +15,10 @@ contract MockUniswapV3Pool {
     int24 private tick_;
     int256 public nextSwapAmount0;
     int256 public nextSwapAmount1;
+    int256 public nextCallbackAmount0;
+    int256 public nextCallbackAmount1;
     bool public useNextSwapAmounts;
+    bool public useNextCallbackAmounts;
 
     constructor(address token0_, address token1_, uint24 fee_) {
         token0 = token0_;
@@ -37,6 +40,12 @@ contract MockUniswapV3Pool {
         nextSwapAmount0 = amount0;
         nextSwapAmount1 = amount1;
         useNextSwapAmounts = useNext;
+    }
+
+    function setNextCallback(int256 amount0, int256 amount1, bool useNext) external {
+        nextCallbackAmount0 = amount0;
+        nextCallbackAmount1 = amount1;
+        useNextCallbackAmounts = useNext;
     }
 
     function slot0()
@@ -71,7 +80,9 @@ contract MockUniswapV3Pool {
             amount1 = amountSpecified;
         }
 
-        IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amount0, amount1, data);
+        int256 callbackAmount0 = useNextCallbackAmounts ? nextCallbackAmount0 : amount0;
+        int256 callbackAmount1 = useNextCallbackAmounts ? nextCallbackAmount1 : amount1;
+        IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(callbackAmount0, callbackAmount1, data);
         if (amount0 < 0) IERC20(token0).safeTransfer(recipient, uint256(-amount0));
         if (amount1 < 0) IERC20(token1).safeTransfer(recipient, uint256(-amount1));
     }

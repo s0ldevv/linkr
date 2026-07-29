@@ -49,8 +49,32 @@ async function launch(factory: any, creator: any, params = baseParams()) {
   const graduation = await factory.GRADUATION_WETH();
   const predicted = await factory.predictTokenAddress(params, creator.address);
   const tx = await factory.connect(creator).launch(params, { value: fee + (params.initialBuyWeth as bigint) });
-  await tx.wait();
-  return { predicted, graduation };
+  const receipt = await tx.wait();
+  const factoryAddress = (await factory.getAddress()).toLowerCase();
+  let launched: any = null;
+  let saltSelected: any = null;
+  for (const log of receipt.logs) {
+    if (String(log.address).toLowerCase() !== factoryAddress) continue;
+    let parsed;
+    try {
+      parsed = factory.interface.parseLog(log);
+    } catch (_) {
+      continue;
+    }
+    if (parsed?.name === "TokenLaunched") launched = parsed;
+    if (parsed?.name === "LaunchSaltSelected") saltSelected = parsed;
+  }
+  if (!launched) throw new Error("TokenLaunched event missing");
+  if (!saltSelected) throw new Error("LaunchSaltSelected event missing");
+  return {
+    predicted,
+    token: launched.args.token,
+    pool: launched.args.pool,
+    tokenId: launched.args.positionId,
+    selectedSalt: saltSelected.args.salt,
+    selectedAttempt: Number(saltSelected.args.attempt),
+    graduation,
+  };
 }
 
 async function deploySystemWithMockWeth() {
@@ -77,6 +101,14 @@ async function precreatePool(v3Factory: any, token: string, weth: string) {
   const pool = await v3Factory.createPool.staticCall(token, weth, 10_000);
   await v3Factory.createPool(token, weth, 10_000);
   return ethers.getContractAt("MockUniswapV3Pool", pool);
+}
+
+function entropy(label: string) {
+  return ethers.id(`entropy-${label}`);
+}
+
+async function setNextPrevRandao(value: string) {
+  await ethers.provider.send("hardhat_setPrevRandao", [value]);
 }
 
 describe("LaunchFactory", () => {
@@ -280,11 +312,15 @@ describe("LaunchFactory", () => {
     const MockPool = await ethers.getContractFactory("MockUniswapV3Pool");
     await MockPool.attach(blockedPool).setSlot0(123n, 0);
 
-    const retryToken = await factory.predictTokenAddress(params, creator.address);
+    const launchEntropy = entropy("existing-wrong-price");
+    const retryPreview = await factory.previewLaunchWithEntropy(params, creator.address, launchEntropy);
+    const retryToken = retryPreview[0];
     assert.notEqual(retryToken, blockedToken);
-    const { predicted } = await launch(factory, creator, params);
-    const record = await factory.launchByToken(predicted);
-    assert.equal(predicted, retryToken);
+    await setNextPrevRandao(launchEntropy);
+    const { token, selectedAttempt } = await launch(factory, creator, params);
+    const record = await factory.launchByToken(token);
+    assert.equal(token, retryToken);
+    assert.equal(selectedAttempt, 1);
     assert.equal(record.token, retryToken);
     assert.notEqual(record.pool, blockedPool);
   });
@@ -293,15 +329,22 @@ describe("LaunchFactory", () => {
     const { creator, factory, v3Factory, wethAddress } = await deploySystem();
     const params = baseParams({ salt: ethers.id("all-candidates-poisoned") });
     const MockPool = await ethers.getContractFactory("MockUniswapV3Pool");
+    const launchEntropy = entropy("all-candidates-poisoned");
 
     for (let i = 0; i < Number(await factory.MAX_SALT_ATTEMPTS()); i++) {
-      const predicted = await factory.predictTokenAddress(params, creator.address);
+      const preview = await factory.previewLaunchWithEntropy(params, creator.address, launchEntropy);
+      const predicted = preview[0];
       const pool = await v3Factory.createPool.staticCall(predicted, wethAddress, 10_000);
       await v3Factory.createPool(predicted, wethAddress, 10_000);
       await MockPool.attach(pool).setSlot0(123n, 0);
     }
 
-    await assertCustomError(factory.predictTokenAddress(params, creator.address), factory, "NoUsableSalt");
+    await assertCustomError(
+      factory.previewLaunchWithEntropy(params, creator.address, launchEntropy),
+      factory,
+      "NoUsableSalt",
+    );
+    await setNextPrevRandao(launchEntropy);
     await assertCustomError(
       factory.connect(creator).launch(params, { value: await factory.launchFee() }),
       factory,
@@ -506,6 +549,29 @@ describe("LaunchFactory", () => {
     await pool.setNextSwap(-initialBuy, initialBuy + 1n, true);
     await weth.deposit({ value: 1n });
     await weth.transfer(await factory.getAddress(), 1n);
+
+    await assertCustomError(
+      factory.connect(creator).launch(params, { value: (await factory.launchFee()) + initialBuy }),
+      factory,
+      "InvalidSwapCallback",
+    );
+  });
+
+  it("rejects an initial buy whose callback payment differs from the returned swap delta", async () => {
+    const { creator, factory, v3Factory, weth } = await deploySystemWithMockWeth();
+    const initialBuy = ethers.parseEther("0.02");
+    const reportedSpent = ethers.parseEther("0.01");
+    const { params, predicted } = await paramsForOrientation(
+      factory,
+      creator,
+      await weth.getAddress(),
+      true,
+      "initial-buy-callback-mismatch",
+      { initialBuyWeth: initialBuy },
+    );
+    const pool = await precreatePool(v3Factory, predicted, await weth.getAddress());
+    await pool.setNextSwap(-reportedSpent, reportedSpent, true);
+    await pool.setNextCallback(-reportedSpent, initialBuy, true);
 
     await assertCustomError(
       factory.connect(creator).launch(params, { value: (await factory.launchFee()) + initialBuy }),

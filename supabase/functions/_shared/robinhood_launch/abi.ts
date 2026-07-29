@@ -17,6 +17,7 @@ export const SINGLE_SIDED_LAUNCH_FACTORY_ABI = [
   "function accruedLaunchFees() view returns (uint256)",
   "function predictTokenAddress((string name,string symbol,string metadataURI,uint256 initialBuyWeth,bytes32 salt) p,address creator) view returns (address predicted)",
   "function previewLaunch((string name,string symbol,string metadataURI,uint256 initialBuyWeth,bytes32 salt) p,address creator) view returns (address predictedToken,bytes32 salt,uint8 attempt,address existingPool,bool poolInitialized,bool launchTokenIsToken0,int24 tickLower,int24 tickUpper,uint160 sqrtPriceX96)",
+  "function previewLaunchWithEntropy((string name,string symbol,string metadataURI,uint256 initialBuyWeth,bytes32 salt) p,address creator,bytes32 entropy) view returns (address predictedToken,bytes32 salt,uint8 attempt,address existingPool,bool poolInitialized,bool launchTokenIsToken0,int24 tickLower,int24 tickUpper,uint160 sqrtPriceX96)",
   "function launch((string name,string symbol,string metadataURI,uint256 initialBuyWeth,bytes32 salt) p) payable returns (address token,address pool,uint256 tokenId)",
   "function launchByToken(address token) view returns (address token,address creator,address pool,uint256 positionId,int24 tickLower,int24 tickUpper,uint128 liquidity,uint256 usedLaunch,uint256 dust,uint256 initialBuyWeth,uint256 initialBuyTokensOut,uint256 graduationWeth)",
   "event LaunchSaltSelected(address indexed token,address indexed creator,bytes32 salt,uint8 attempt)",

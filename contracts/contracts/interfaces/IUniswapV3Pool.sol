@@ -23,3 +23,7 @@ interface IUniswapV3Pool {
         external
         returns (int256 amount0, int256 amount1);
 }
+
+interface IUniswapV3PoolPrice {
+    function slot0() external view returns (uint160 sqrtPriceX96);
+}
