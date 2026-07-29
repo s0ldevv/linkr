@@ -1,3 +1,5 @@
+import { isLinkrPublicOrigin, isLoopbackOrigin, LINKR_PUBLIC_ORIGINS } from "./app_origins.ts";
+
 export const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -6,7 +8,7 @@ export const corsHeaders = {
 };
 
 const DEFAULT_BROWSER_ORIGINS = [
-  "https://linkr.cash",
+  ...LINKR_PUBLIC_ORIGINS,
   "http://localhost:3000",
   "http://localhost:5173",
   "http://127.0.0.1:3000",
@@ -50,15 +52,7 @@ export function withSensitiveCors(req: Request, response: Response): Response {
 }
 
 function isTrustedBrowserOrigin(origin: string): boolean {
-  try {
-    const url = new URL(origin);
-    const host = url.hostname.toLowerCase();
-    return origin === "https://linkr.cash" ||
-      ((host === "localhost" || host === "127.0.0.1") &&
-        ["http:", "https:"].includes(url.protocol));
-  } catch (_) {
-    return false;
-  }
+  return isLinkrPublicOrigin(origin) || isLoopbackOrigin(origin);
 }
 
 export function jsonResponse(body: unknown, init: ResponseInit = {}): Response {

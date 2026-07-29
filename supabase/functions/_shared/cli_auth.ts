@@ -1,8 +1,9 @@
 // deno-lint-ignore-file no-explicit-any
 import { type AgentScope, normalizeScopes } from "./agent_api_core.ts";
+import { isLinkrPublicOrigin, isLoopbackOrigin, LINKR_APEX_ORIGIN } from "./app_origins.ts";
 
 const BASE32_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
-const DEFAULT_APP_ORIGIN = "https://linkr.cash";
+const DEFAULT_APP_ORIGIN = LINKR_APEX_ORIGIN;
 export const CLI_AUTH_RECENT_X_AUTH_MAX_AGE_MS = 5 * 60 * 1000;
 const CLI_AUTH_REQUEST_CLOCK_SKEW_MS = 30 * 1000;
 
@@ -232,14 +233,5 @@ function originFromValue(raw: string | null | undefined): string | null {
 }
 
 function isTrustedPublicOrigin(origin: string): boolean {
-  try {
-    const { hostname, protocol } = new URL(origin);
-    if (!["http:", "https:"].includes(protocol)) return false;
-    const host = hostname.toLowerCase();
-    return host === "linkr.cash" ||
-      host === "localhost" ||
-      host === "127.0.0.1";
-  } catch {
-    return false;
-  }
+  return isLinkrPublicOrigin(origin) || isLoopbackOrigin(origin);
 }

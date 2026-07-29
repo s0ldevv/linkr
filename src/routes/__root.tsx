@@ -28,7 +28,16 @@ const OG_DESCRIPTION =
 const OG_IMAGE_URL =
   "https://raw.githubusercontent.com/s0ldevv/linkr/main/public/linkr/linkr-og-c9ef0be9d1b6.png";
 const OG_IMAGE_ALT = "Linkr app preview";
-const MANIFEST_LINK = { rel: "manifest", href: "/manifest.webmanifest" } as const;
+// Without a crossorigin setting the browser fetches the manifest with no
+// credentials, so the edge in front of the app sees a cookie-less request and
+// answers the bot challenge with 403. "use-credentials" sends the same-origin
+// cookies the document already holds. Same-origin CORS-mode fetches are not
+// subject to an Access-Control-Allow-Origin check, so nothing else changes.
+const MANIFEST_LINK = {
+  rel: "manifest",
+  href: "/manifest.webmanifest",
+  crossOrigin: "use-credentials",
+} as const;
 
 function isAuthenticatedAppRoute(matches: Array<{ pathname: string; routeId: string }>): boolean {
   return matches.some(

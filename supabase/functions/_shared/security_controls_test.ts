@@ -1,4 +1,5 @@
 import { assert, assertEquals, assertFalse } from "jsr:@std/assert@1";
+import { linkrUrlHostVariants } from "./app_origins.ts";
 import { sensitiveCorsHeaders, withSensitiveCors } from "./cors.ts";
 import { verifyTelegramWebhookRequest } from "./telegram.ts";
 
@@ -34,6 +35,53 @@ Deno.test("sensitive CORS reflects exact canonical origins only", () => {
     );
     assertFalse("Access-Control-Allow-Origin" in legacy);
   });
+});
+
+Deno.test("sensitive CORS allows both linkr.cash host spellings", () => {
+  withEnv("LINKR_BROWSER_ORIGINS", undefined, () => {
+    for (const origin of ["https://linkr.cash", "https://www.linkr.cash"]) {
+      const headers = sensitiveCorsHeaders(
+        new Request("https://edge.test", { headers: { Origin: origin } }),
+      );
+      assertEquals(headers["Access-Control-Allow-Origin"], origin);
+    }
+
+    // A lookalike host must not inherit the apex/www allowance.
+    for (
+      const origin of [
+        "https://linkr.cash.evil.example",
+        "https://wwwlinkr.cash",
+        "http://linkr.cash",
+      ]
+    ) {
+      const headers = sensitiveCorsHeaders(
+        new Request("https://edge.test", { headers: { Origin: origin } }),
+      );
+      assertFalse("Access-Control-Allow-Origin" in headers);
+    }
+  });
+});
+
+Deno.test("linkr URL host variants cover apex and www only", () => {
+  const variants = linkrUrlHostVariants(
+    "https://www.linkr.cash/auth/callback?auth_popup=1&auth_flow=abc",
+  );
+  assertEquals(variants.length, 2);
+  assert(
+    variants.includes(
+      "https://www.linkr.cash/auth/callback?auth_popup=1&auth_flow=abc",
+    ),
+  );
+  assert(
+    variants.includes(
+      "https://linkr.cash/auth/callback?auth_popup=1&auth_flow=abc",
+    ),
+  );
+
+  // Untrusted hosts are never expanded, so a code stays bound to one URL.
+  assertEquals(linkrUrlHostVariants("https://evil.example/auth/callback"), [
+    "https://evil.example/auth/callback",
+  ]);
 });
 
 Deno.test("sensitive CORS removes a legacy wildcard", () => {

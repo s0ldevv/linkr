@@ -4,6 +4,13 @@ import {
   jsonResponse,
   withSensitiveCors,
 } from "../_shared/cors.ts";
+import {
+  isLinkrPublicOrigin,
+  isLoopbackOrigin,
+  LINKR_APEX_ORIGIN,
+  LINKR_PUBLIC_ORIGINS,
+  linkrUrlHostVariants,
+} from "../_shared/app_origins.ts";
 import { readJsonBody } from "../_shared/http.ts";
 import { serviceClient } from "../_shared/supabase.ts";
 import { decryptXToken, encryptXToken } from "../_shared/x_token_crypto.ts";
@@ -25,10 +32,10 @@ const X_AUTHORIZE_URL = "https://twitter.com/i/oauth2/authorize";
 const X_TOKEN_URL = "https://api.x.com/2/oauth2/token";
 const X_ME_URL =
   "https://api.x.com/2/users/me?user.fields=profile_image_url,public_metrics";
-const CANONICAL_APP_ORIGIN = "https://linkr.cash";
+const CANONICAL_APP_ORIGIN = LINKR_APEX_ORIGIN;
 const FALLBACK_APP_CALLBACK = `${CANONICAL_APP_ORIGIN}/auth/callback`;
 const STATIC_ALLOWED_APP_CALLBACK_ORIGINS = [
-  CANONICAL_APP_ORIGIN,
+  ...LINKR_PUBLIC_ORIGINS,
   "http://localhost:3000",
   "http://127.0.0.1:3000",
   "http://localhost:5173",
@@ -282,15 +289,7 @@ function allowedAppCallbackOrigins(): Set<string> {
 }
 
 function isAllowedAppCallbackOrigin(origin: string): boolean {
-  try {
-    const url = new URL(origin);
-    const host = url.hostname.toLowerCase();
-    return origin === CANONICAL_APP_ORIGIN ||
-      ((host === "localhost" || host === "127.0.0.1") &&
-        ["http:", "https:"].includes(url.protocol));
-  } catch (_) {
-    return false;
-  }
+  return isLinkrPublicOrigin(origin) || isLoopbackOrigin(origin);
 }
 
 function sanitizeRedirectTo(raw: string | null): string {
@@ -367,7 +366,10 @@ async function exchangeAuthHandoff(req: Request): Promise<Response> {
     .from("auth_handoff_codes")
     .update({ used_at: new Date().toISOString() })
     .eq("code_hash", await sha256Hex(code))
-    .eq("redirect_to", redirectTo)
+    // The code is bound to the exact callback URL it was issued for, but an
+    // apex/www redirect between issuing and redeeming rewrites only the host.
+    // Accept both spellings of the same trusted deployment.
+    .in("redirect_to", linkrUrlHostVariants(redirectTo))
     .is("used_at", null)
     .gt("expires_at", new Date().toISOString())
     .select(
