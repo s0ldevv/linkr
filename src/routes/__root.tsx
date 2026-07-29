@@ -20,6 +20,15 @@ import { Toaster } from "@/components/ui/sonner";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 
+const APP_TITLE = "Linkr - Your Robinhood Chain wallet bot on X";
+const APP_DESCRIPTION =
+  "A Robinhood Chain wallet bot for X. Reply with @linkrcash to trade, send, launch, or read a thread.";
+const OG_DESCRIPTION =
+  "Reply on X. Linkr reads the thread, checks your rules, and handles the wallet action.";
+const OG_IMAGE_URL =
+  "https://raw.githubusercontent.com/s0ldevv/linkr/main/public/linkr/linkr-og-c9ef0be9d1b6.png";
+const OG_IMAGE_ALT = "Linkr app preview";
+
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -81,31 +90,51 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Linkr - Your Robinhood Chain wallet bot on X" },
+      { title: APP_TITLE },
       {
         name: "description",
-        content:
-          "A Robinhood Chain wallet bot for X. Reply with @linkrcash to trade, send, launch, or read a thread.",
+        content: APP_DESCRIPTION,
       },
+      {
+        name: "robots",
+        content: "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+      },
+      {
+        name: "googlebot",
+        content: "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+      },
+      {
+        name: "bingbot",
+        content: "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+      },
+      { name: "twitterbot", content: "index, follow" },
       { name: "author", content: "Linkr" },
       { name: "theme-color", content: "#ccff00" },
       { name: "mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-title", content: "Linkr" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
-      { property: "og:title", content: "Linkr - Your Robinhood Chain wallet bot on X" },
-      {
-        property: "og:description",
-        content:
-          "Reply on X. Linkr reads the thread, checks your rules, and handles the wallet action.",
-      },
+      { property: "og:site_name", content: "Linkr" },
+      { property: "og:title", content: APP_TITLE },
+      { property: "og:description", content: OG_DESCRIPTION },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
+      { property: "og:image", content: OG_IMAGE_URL },
+      { property: "og:image:secure_url", content: OG_IMAGE_URL },
+      { property: "og:image:type", content: "image/png" },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      { property: "og:image:alt", content: OG_IMAGE_ALT },
+      { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:site", content: "@linkrcash" },
+      { name: "twitter:title", content: APP_TITLE },
+      { name: "twitter:description", content: OG_DESCRIPTION },
+      { name: "twitter:image", content: OG_IMAGE_URL },
+      { name: "twitter:image:alt", content: OG_IMAGE_ALT },
     ],
     links: [
       { rel: "icon", href: "/linkr-favi.png", type: "image/png" },
       { rel: "apple-touch-icon", href: "/linkr-favi.png" },
+      { rel: "image_src", href: OG_IMAGE_URL },
       { rel: "manifest", href: "/manifest.webmanifest" },
       {
         rel: "stylesheet",
