@@ -38786,17 +38786,20 @@ body .sm-marketing-header .sm-header-token-pill {
   gap: 10px !important;
   border: 0 !important;
   border-radius: 999px !important;
-  appearance: none !important;
   background: #242424 !important;
   padding: 0 10px 0 12px !important;
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
   box-shadow: none !important;
-  cursor: pointer !important;
   font-family: var(--rayo-font, inherit) !important;
   line-height: 1 !important;
+  overflow: hidden !important;
   text-decoration: none !important;
   transition:
+    width 260ms cubic-bezier(0.22, 0.72, 0.2, 1),
+    max-width 260ms cubic-bezier(0.22, 0.72, 0.2, 1),
+    gap 260ms cubic-bezier(0.22, 0.72, 0.2, 1),
+    padding 260ms cubic-bezier(0.22, 0.72, 0.2, 1),
     transform 160ms ease,
     background-color 160ms ease !important;
   white-space: nowrap !important;
@@ -38808,30 +38811,55 @@ body .sm-marketing-header .sm-header-token-pill:hover {
   transform: translateY(-1px) !important;
 }
 
-body .sm-header-actions .sm-header-token-pill:focus-visible,
-body .sm-marketing-header .sm-header-token-pill:focus-visible {
+body .sm-header-actions .sm-header-token-pill:focus-within,
+body .sm-marketing-header .sm-header-token-pill:focus-within {
   outline: 3px solid #ccff00 !important;
   outline-offset: 3px !important;
 }
 
 body .sm-header-token-symbol {
+  appearance: none !important;
   display: inline-flex !important;
   flex: 0 0 auto !important;
   height: 30px !important;
   align-items: center !important;
   justify-content: center !important;
+  border: 0 !important;
   border-radius: 999px !important;
   background: #ccff00 !important;
   padding: 0 11px !important;
   color: #111111 !important;
   -webkit-text-fill-color: #111111 !important;
+  cursor: pointer !important;
+  font-family: var(--rayo-font, inherit) !important;
   font-size: 0.76rem !important;
   font-weight: 950 !important;
   letter-spacing: 0 !important;
+  line-height: 1 !important;
+  transition:
+    width 260ms cubic-bezier(0.22, 0.72, 0.2, 1),
+    min-width 260ms cubic-bezier(0.22, 0.72, 0.2, 1),
+    height 260ms cubic-bezier(0.22, 0.72, 0.2, 1),
+    padding 260ms cubic-bezier(0.22, 0.72, 0.2, 1),
+    transform 160ms ease !important;
+  white-space: nowrap !important;
+}
+
+body .sm-header-token-symbol::before {
+  content: none !important;
+}
+
+body .sm-header-token-details {
+  display: inline-flex !important;
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  align-items: center !important;
+  gap: 10px !important;
 }
 
 body .sm-header-token-ca {
   display: block !important;
+  flex: 1 1 auto !important;
   min-width: 0 !important;
   overflow: hidden !important;
   color: #ffffff !important;
@@ -38852,15 +38880,32 @@ body .sm-header-token-ca-short {
 }
 
 body .sm-header-token-copy {
+  appearance: none !important;
   display: inline-grid !important;
   flex: 0 0 34px !important;
   width: 34px !important;
   height: 34px !important;
   place-items: center !important;
+  border: 0 !important;
   border-radius: 999px !important;
   background: rgb(255 255 255 / 12%) !important;
+  padding: 0 !important;
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
+  cursor: pointer !important;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease !important;
+}
+
+body .sm-header-token-symbol:focus-visible,
+body .sm-header-token-copy:focus-visible {
+  outline: 0 !important;
+}
+
+body .sm-header-token-copy:hover {
+  transform: scale(1.04) !important;
 }
 
 body .sm-header-token-pill[data-copied="true"] .sm-header-token-copy {
@@ -38882,20 +38927,76 @@ body .sm-header-token-pill[data-copied="true"] .sm-header-token-copy {
 @media (max-width: 640px) {
   body .sm-header-actions .sm-header-token-pill,
   body .sm-marketing-header .sm-header-token-pill {
+    flex: 0 0 68px !important;
+    width: 68px !important;
     height: 48px !important;
-    max-width: min(48vw, 190px) !important;
+    max-width: 68px !important;
+    gap: 0 !important;
+    background: transparent !important;
+    padding: 0 !important;
+  }
+
+  body .sm-header-actions .sm-header-token-pill:hover,
+  body .sm-marketing-header .sm-header-token-pill:hover {
+    background: transparent !important;
+  }
+
+  body .sm-header-actions .sm-header-token-pill[data-expanded="true"],
+  body .sm-marketing-header .sm-header-token-pill[data-expanded="true"] {
+    flex-basis: min(46vw, calc(100vw - 210px), 184px) !important;
+    width: min(46vw, calc(100vw - 210px), 184px) !important;
+    max-width: min(46vw, calc(100vw - 210px), 184px) !important;
     gap: 7px !important;
-    padding: 0 8px 0 9px !important;
+    background: #242424 !important;
+    padding: 0 8px !important;
+  }
+
+  body .sm-header-actions .sm-header-token-pill[data-expanded="true"]:hover,
+  body .sm-marketing-header .sm-header-token-pill[data-expanded="true"]:hover {
+    background: #2d2d2d !important;
   }
 
   body .sm-header-token-symbol {
-    height: 26px !important;
-    padding: 0 8px !important;
+    width: 68px !important;
+    min-width: 68px !important;
+    height: 48px !important;
+    padding: 0 11px !important;
     font-size: 0.68rem !important;
+  }
+
+  body .sm-header-token-pill[data-expanded="true"] .sm-header-token-symbol {
+    width: 52px !important;
+    min-width: 52px !important;
+    height: 28px !important;
+    padding: 0 7px !important;
+  }
+
+  body .sm-header-token-details {
+    flex: 1 1 auto !important;
+    max-width: 0 !important;
+    gap: 0 !important;
+    overflow: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transform: translateX(-8px) !important;
+    transition:
+      max-width 260ms cubic-bezier(0.22, 0.72, 0.2, 1),
+      gap 260ms cubic-bezier(0.22, 0.72, 0.2, 1),
+      opacity 170ms ease,
+      transform 240ms cubic-bezier(0.22, 0.72, 0.2, 1) !important;
+  }
+
+  body .sm-header-token-pill[data-expanded="true"] .sm-header-token-details {
+    max-width: calc(100% - 59px) !important;
+    gap: 6px !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    transform: translateX(0) !important;
   }
 
   body .sm-header-token-ca {
     font-size: 0.7rem !important;
+    text-overflow: ellipsis !important;
   }
 
   body .sm-header-token-copy {
@@ -39000,6 +39101,39 @@ body .sm-header-x-button .sm-header-x-mark {
   body .sm-header-actions .sm-header-token-pill,
   body .sm-marketing-header .sm-header-token-pill {
     max-width: 128px !important;
+  }
+
+  body .sm-header-actions .sm-header-token-pill[data-expanded="true"],
+  body .sm-marketing-header .sm-header-token-pill[data-expanded="true"] {
+    flex-basis: min(47vw, calc(100vw - 180px), 176px) !important;
+    width: min(47vw, calc(100vw - 180px), 176px) !important;
+    max-width: min(47vw, calc(100vw - 180px), 176px) !important;
+    gap: 5px !important;
+    padding: 0 6px !important;
+  }
+
+  body .sm-header-token-pill[data-expanded="true"] .sm-header-token-symbol {
+    width: 34px !important;
+    min-width: 34px !important;
+    padding: 0 !important;
+    font-size: 0 !important;
+  }
+
+  body .sm-header-token-pill[data-expanded="true"] .sm-header-token-symbol::before {
+    content: "$" !important;
+    font-size: 0.72rem !important;
+    line-height: 1 !important;
+  }
+
+  body .sm-header-token-pill[data-expanded="true"] .sm-header-token-details {
+    max-width: calc(100% - 39px) !important;
+    gap: 5px !important;
+  }
+
+  body .sm-header-token-copy {
+    flex-basis: 28px !important;
+    width: 28px !important;
+    height: 28px !important;
   }
 
   body .sm-header-actions .sm-header-x-button,
