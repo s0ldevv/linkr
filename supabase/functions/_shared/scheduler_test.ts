@@ -87,13 +87,13 @@ Deno.test("transaction-backed scheduled actions require execution proof", () => 
   );
   assertTransactionBackedScheduledExecution(
     { action_type: "claim_creator_rewards" },
-    { raw: { signature: "5Ks..." } },
+    { txSignature: "5Ks..." },
   );
   assertThrows(
     () =>
       assertTransactionBackedScheduledExecution(
         { action_type: "buy" },
-        { raw: { accepted: true } },
+        {},
       ),
     Error,
     "scheduled_buy_missing_transaction_proof",
@@ -103,6 +103,6 @@ Deno.test("transaction-backed scheduled actions require execution proof", () => 
 Deno.test("non-transaction scheduled actions can complete without tx proof", () => {
   assertTransactionBackedScheduledExecution(
     { action_type: "launch_coin" },
-    { raw: { accepted: true } },
+    {},
   );
 });

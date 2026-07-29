@@ -41,10 +41,36 @@ type SchedulerActionType =
   | "collect_liquidity_fees";
 type SchedulerTriggerType = "time" | "market_cap";
 type ScheduleKind = "one_time" | "interval" | "daily" | "weekly";
+type FirstRunMode = "after_interval" | "soon" | "at_time";
 type BuyUnit = "eth" | "sol" | "usd";
 type TransferUnit = "eth" | "sol" | "usd";
 type SellMode = "all" | "percent";
 type TriggerDirection = "below" | "above";
+type ScheduleOccurrence = {
+  attempt_count: number | null;
+  completed_at: string | null;
+  due_at: string;
+  error: string | null;
+  id: string;
+  observed_value_usd: number | null;
+  occurrence_key: string;
+  schedule_id: string;
+  started_at: string | null;
+  status: string;
+  transaction_hash: string | null;
+  transaction_id: string | null;
+  transaction_signature: string | null;
+};
+type UntypedSupabaseQuery = {
+  eq: (column: string, value: unknown) => UntypedSupabaseQuery;
+  in: (column: string, values: readonly string[]) => UntypedSupabaseQuery;
+  limit: (count: number) => Promise<{ data: unknown; error: { message?: string } | null }>;
+  order: (column: string, options: { ascending: boolean }) => UntypedSupabaseQuery;
+  select: (columns: string) => UntypedSupabaseQuery;
+};
+type UntypedSupabaseClient = {
+  from: (table: string) => UntypedSupabaseQuery;
+};
 
 const ACTION_OPTIONS: Array<{ value: SchedulerActionType; label: string }> = [
   { value: "buy", label: "Buy" },
@@ -115,10 +141,14 @@ function SchedulerPage() {
 
   useEffect(() => {
     if (!user) return;
-    const invalidate = () =>
-      queryClient.invalidateQueries({
+    const invalidate = () => {
+      void queryClient.invalidateQueries({
         queryKey: ["scheduled-actions", user.id],
       });
+      void queryClient.invalidateQueries({
+        queryKey: ["schedule-occurrences", user.id],
+      });
+    };
     const channel = supabase
       .channel("scheduled-actions-" + user.id)
       .on(
@@ -131,6 +161,16 @@ function SchedulerPage() {
         },
         invalidate,
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "linkr_schedule_occurrences",
+          filter: "user_id=eq." + user.id,
+        },
+        invalidate,
+      )
       .subscribe();
 
     return () => {
@@ -139,6 +179,28 @@ function SchedulerPage() {
   }, [queryClient, user]);
 
   const rows = useMemo(() => schedulerQuery.data ?? [], [schedulerQuery.data]);
+  const scheduleIds = useMemo(() => rows.map((row) => row.id), [rows]);
+  const occurrenceQuery = useQuery({
+    queryKey: ["schedule-occurrences", user?.id, scheduleIds.join(",")],
+    enabled: Boolean(user?.id && scheduleIds.length > 0),
+    queryFn: async () => {
+      const { data, error } = await (supabase as unknown as UntypedSupabaseClient)
+        .from("linkr_schedule_occurrences")
+        .select(
+          "id,schedule_id,occurrence_key,due_at,started_at,completed_at,status,attempt_count,transaction_id,transaction_hash,transaction_signature,observed_value_usd,error",
+        )
+        .eq("user_id", user!.id)
+        .in("schedule_id", scheduleIds)
+        .order("due_at", { ascending: false })
+        .limit(600);
+      if (error) throw error;
+      return (data ?? []) as ScheduleOccurrence[];
+    },
+  });
+  const occurrencesBySchedule = useMemo(
+    () => groupOccurrencesBySchedule(occurrenceQuery.data ?? []),
+    [occurrenceQuery.data],
+  );
   const timed = useMemo(() => rows.filter((row) => row.trigger_type === "time"), [rows]);
   const market = useMemo(() => rows.filter((row) => row.trigger_type === "market_cap"), [rows]);
   const stats = useMemo(
@@ -207,6 +269,7 @@ function SchedulerPage() {
         loading={schedulerQuery.isLoading}
         busyId={controlMutation.isPending ? (controlMutation.variables?.id ?? null) : null}
         onControl={(id, action) => controlMutation.mutate({ id, action })}
+        occurrencesBySchedule={occurrencesBySchedule}
         rows={timed}
       />
 
@@ -217,6 +280,7 @@ function SchedulerPage() {
         loading={schedulerQuery.isLoading}
         busyId={controlMutation.isPending ? (controlMutation.variables?.id ?? null) : null}
         onControl={(id, action) => controlMutation.mutate({ id, action })}
+        occurrencesBySchedule={occurrencesBySchedule}
         rows={market}
       />
     </div>
@@ -228,6 +292,7 @@ function SchedulerCreateForm({ onCreated }: { onCreated: () => void }) {
   const [actionType, setActionType] = useState<SchedulerActionType>("buy");
   const [triggerType, setTriggerType] = useState<SchedulerTriggerType>("time");
   const [scheduleKind, setScheduleKind] = useState<ScheduleKind>("one_time");
+  const [firstRunMode, setFirstRunMode] = useState<FirstRunMode>("after_interval");
   const [tokenAddress, setTokenAddress] = useState("");
   const [recipient, setRecipient] = useState("");
   const [buyAmount, setBuyAmount] = useState("");
@@ -378,9 +443,15 @@ function SchedulerCreateForm({ onCreated }: { onCreated: () => void }) {
 
       if (triggerType === "time") {
         body.schedule_kind = scheduleKind;
-        body.scheduled_for = new Date(scheduledFor).toISOString();
         if (scheduleKind === "interval") {
           body.interval_seconds = intervalSeconds.trim();
+          if (firstRunMode === "soon") {
+            body.scheduled_for = new Date(Date.now() + 60_000).toISOString();
+          } else if (firstRunMode === "at_time") {
+            body.scheduled_for = new Date(scheduledFor).toISOString();
+          }
+        } else {
+          body.scheduled_for = new Date(scheduledFor).toISOString();
         }
       } else {
         body.schedule_kind = scheduleKind;
@@ -429,6 +500,7 @@ function SchedulerCreateForm({ onCreated }: { onCreated: () => void }) {
       setLiquidityPositionId("");
       setLiquidityPercent("100");
       setScheduleKind("one_time");
+      setFirstRunMode("after_interval");
       setScheduledFor(toDateTimeLocal(Date.now() + 60 * 60_000));
       onCreated();
     },
@@ -485,7 +557,11 @@ function SchedulerCreateForm({ onCreated }: { onCreated: () => void }) {
         ? liquidityTokenAmount.trim().length === 0
         : liquidityNativeAmount.trim().length === 0)) ||
     (actionType === "remove_liquidity" && liquidityPercent.trim().length === 0) ||
-    (triggerType === "time" && scheduledFor.trim().length === 0) ||
+    (triggerType === "time" && scheduleKind !== "interval" && scheduledFor.trim().length === 0) ||
+    (triggerType === "time" &&
+      scheduleKind === "interval" &&
+      firstRunMode === "at_time" &&
+      scheduledFor.trim().length === 0) ||
     (triggerType === "time" &&
       scheduleKind === "interval" &&
       intervalSeconds.trim().length === 0) ||
@@ -872,16 +948,6 @@ function SchedulerCreateForm({ onCreated }: { onCreated: () => void }) {
             <div className="app-scheduler-form-grid app-scheduler-timing-grid">
               {triggerType === "time" ? (
                 <>
-                  <Field label="Run at" htmlFor="scheduled-for">
-                    <input
-                      id="scheduled-for"
-                      className="app-scheduler-input"
-                      type="datetime-local"
-                      min={minScheduledFor}
-                      value={scheduledFor}
-                      onChange={(event) => setScheduledFor(event.target.value)}
-                    />
-                  </Field>
                   <Field label="Repeat" htmlFor="schedule-kind">
                     <SchedulerSelect<ScheduleKind>
                       id="schedule-kind"
@@ -890,6 +956,41 @@ function SchedulerCreateForm({ onCreated }: { onCreated: () => void }) {
                       onChange={setScheduleKind}
                     />
                   </Field>
+                  {scheduleKind === "interval" ? (
+                    <SegmentedControl<FirstRunMode>
+                      label="First run"
+                      value={firstRunMode}
+                      options={[
+                        { value: "after_interval", label: "After interval" },
+                        { value: "soon", label: "Soon" },
+                        { value: "at_time", label: "At time" },
+                      ]}
+                      onChange={setFirstRunMode}
+                    />
+                  ) : (
+                    <Field label="Run at" htmlFor="scheduled-for">
+                      <input
+                        id="scheduled-for"
+                        className="app-scheduler-input"
+                        type="datetime-local"
+                        min={minScheduledFor}
+                        value={scheduledFor}
+                        onChange={(event) => setScheduledFor(event.target.value)}
+                      />
+                    </Field>
+                  )}
+                  {scheduleKind === "interval" && firstRunMode === "at_time" && (
+                    <Field label="First run at" htmlFor="scheduled-for">
+                      <input
+                        id="scheduled-for"
+                        className="app-scheduler-input"
+                        type="datetime-local"
+                        min={minScheduledFor}
+                        value={scheduledFor}
+                        onChange={(event) => setScheduledFor(event.target.value)}
+                      />
+                    </Field>
+                  )}
                   {scheduleKind === "interval" && (
                     <Field label="Every seconds" htmlFor="interval-seconds">
                       <input
@@ -1094,6 +1195,7 @@ function SchedulerSection({
   empty,
   loading,
   onControl,
+  occurrencesBySchedule,
   rows,
 }: {
   busyId: string | null;
@@ -1102,6 +1204,7 @@ function SchedulerSection({
   empty: string;
   loading: boolean;
   onControl: (id: string, action: ScheduleControlAction) => void;
+  occurrencesBySchedule: Map<string, ScheduleOccurrence[]>;
   rows: ScheduledAction[];
 }) {
   return (
@@ -1120,7 +1223,13 @@ function SchedulerSection({
       {rows.length > 0 && (
         <div className="app-history-feed" role="list" aria-label={title}>
           {rows.map((row) => (
-            <SchedulerRow key={row.id} busy={busyId === row.id} onControl={onControl} row={row} />
+            <SchedulerRow
+              key={row.id}
+              busy={busyId === row.id}
+              occurrences={occurrencesBySchedule.get(row.id) ?? []}
+              onControl={onControl}
+              row={row}
+            />
           ))}
         </div>
       )}
@@ -1130,15 +1239,22 @@ function SchedulerSection({
 
 function SchedulerRow({
   busy,
+  occurrences,
   onControl,
   row,
 }: {
   busy: boolean;
+  occurrences: ScheduleOccurrence[];
   onControl: (id: string, action: ScheduleControlAction) => void;
   row: ScheduledAction;
 }) {
   const chain = row.chain === "solana" ? "solana" : "robinhood";
   const target = scheduleTarget(row);
+  const latestOccurrence = occurrences[0] ?? null;
+  const displayStatus = scheduleDisplayStatus(row, latestOccurrence);
+  const runSummary = scheduleRunSummary(row, latestOccurrence);
+  const transactionHash = latestTransactionHash(row, latestOccurrence);
+  const txUrl = transactionExplorerUrl(chain, transactionHash);
   const canPause = row.status === "pending" || row.status === "processing";
   const canResume = row.status === "paused";
   const canCancel = ["pending", "processing", "paused"].includes(row.status);
@@ -1147,13 +1263,20 @@ function SchedulerRow({
       <div className="app-history-summary">
         <strong>{actionTitle(row)}</strong>
         <p>{triggerText(row)}</p>
+        {runSummary && <p className="app-scheduler-run-summary">{runSummary}</p>}
       </div>
       <footer className="app-history-footer" aria-label="Scheduled action details">
         <div className="app-history-meta">
           <ChainPill className="app-history-chain-pill" chain={chain} />
-          <span className={statusClass(row.status)}>{row.status}</span>
+          <span className={displayStatus.className}>{displayStatus.label}</span>
           <code>{shortAddress(target)}</code>
           <span>{amountText(row)}</span>
+          {latestOccurrence && (
+            <span>
+              occurrence {latestOccurrence.status}
+              {latestOccurrence.completed_at ? ` ${timeAgo(latestOccurrence.completed_at)}` : ""}
+            </span>
+          )}
           {row.last_observed_value_usd != null && (
             <span>last {formatUsd(row.last_observed_value_usd)}</span>
           )}
@@ -1164,8 +1287,26 @@ function SchedulerRow({
           )}
         </div>
         <div className="app-history-actions">
-          {row.transaction_hash && (
-            <span className="app-status">TX {shortAddress(row.transaction_hash)}</span>
+          {transactionHash && txUrl ? (
+            <a href={txUrl} target="_blank" rel="noreferrer">
+              TX {shortAddress(transactionHash)}
+            </a>
+          ) : transactionHash ? (
+            <span className="app-status">TX {shortAddress(transactionHash)}</span>
+          ) : null}
+          {occurrences.length > 0 && (
+            <details className="app-scheduler-occurrences">
+              <summary>Runs</summary>
+              <div className="app-scheduler-occurrence-list">
+                {occurrences.slice(0, 5).map((occurrence) => (
+                  <ScheduleOccurrenceRow
+                    chain={chain}
+                    key={occurrence.id}
+                    occurrence={occurrence}
+                  />
+                ))}
+              </div>
+            </details>
           )}
           {row.source_tweet_url && (
             <a href={row.source_tweet_url} target="_blank" rel="noreferrer">
@@ -1215,6 +1356,33 @@ function SchedulerRow({
         </div>
       </footer>
     </article>
+  );
+}
+
+function ScheduleOccurrenceRow({
+  chain,
+  occurrence,
+}: {
+  chain: SchedulerChain;
+  occurrence: ScheduleOccurrence;
+}) {
+  const txHash = occurrence.transaction_signature ?? occurrence.transaction_hash;
+  const txUrl = transactionExplorerUrl(chain, txHash);
+  return (
+    <div className="app-scheduler-occurrence-row">
+      <span className={statusClass(occurrence.status)}>{occurrence.status}</span>
+      <span>due {timeAgo(occurrence.due_at)}</span>
+      {occurrence.completed_at && <span>done {timeAgo(occurrence.completed_at)}</span>}
+      {occurrence.attempt_count != null && <span>attempts {occurrence.attempt_count}</span>}
+      {occurrence.error && <span className="app-history-error">{occurrence.error}</span>}
+      {txHash && txUrl ? (
+        <a href={txUrl} target="_blank" rel="noreferrer">
+          TX {shortAddress(txHash)}
+        </a>
+      ) : txHash ? (
+        <span>TX {shortAddress(txHash)}</span>
+      ) : null}
+    </div>
   );
 }
 
@@ -1337,8 +1505,91 @@ function actionTitle(row: ScheduledAction): string {
   return `${action} on ${chain}`;
 }
 
+function groupOccurrencesBySchedule(
+  occurrences: ScheduleOccurrence[],
+): Map<string, ScheduleOccurrence[]> {
+  const grouped = new Map<string, ScheduleOccurrence[]>();
+  for (const occurrence of occurrences) {
+    const list = grouped.get(occurrence.schedule_id) ?? [];
+    list.push(occurrence);
+    grouped.set(occurrence.schedule_id, list);
+  }
+  for (const list of grouped.values()) {
+    list.sort((left, right) => new Date(right.due_at).getTime() - new Date(left.due_at).getTime());
+  }
+  return grouped;
+}
+
+function isRecurringRow(row: ScheduledAction): boolean {
+  return ["interval", "daily", "weekly"].includes(String(row.schedule_kind ?? ""));
+}
+
+function scheduleDisplayStatus(
+  row: ScheduledAction,
+  latestOccurrence: ScheduleOccurrence | null,
+): { className: string; label: string } {
+  if (row.status === "processing") {
+    return { className: statusClass("processing"), label: "Running" };
+  }
+  if (row.status === "pending" && isRecurringRow(row)) {
+    if (latestOccurrence?.status === "retrying") {
+      return { className: statusClass("processing"), label: "Retrying" };
+    }
+    if (latestOccurrence?.status === "failed") {
+      return { className: statusClass("failed"), label: "Needs attention" };
+    }
+    if (
+      latestOccurrence?.status === "succeeded" ||
+      Number(row.successful_occurrence_count ?? 0) > 0
+    ) {
+      return { className: statusClass("succeeded"), label: "Active" };
+    }
+    if (Number(row.failed_occurrence_count ?? 0) > 0) {
+      return { className: statusClass("failed"), label: "Needs attention" };
+    }
+    return { className: statusClass("pending"), label: "Waiting first run" };
+  }
+  return { className: statusClass(row.status), label: row.status };
+}
+
+function scheduleRunSummary(
+  row: ScheduledAction,
+  latestOccurrence: ScheduleOccurrence | null,
+): string | null {
+  const latestStatus = latestOccurrence?.status;
+  const latestCompletedAt = latestOccurrence?.completed_at ?? row.last_execution_at;
+  if (latestStatus === "succeeded" || Number(row.successful_occurrence_count ?? 0) > 0) {
+    const last = latestCompletedAt ? `Last run succeeded ${timeAgo(latestCompletedAt)}.` : "";
+    const next =
+      row.scheduled_for && row.status === "pending"
+        ? ` Next run ${futureTime(row.scheduled_for)}.`
+        : "";
+    return `${last}${next}`.trim() || null;
+  }
+  if (latestStatus === "retrying") {
+    const next = row.scheduled_for ?? row.next_check_at;
+    return next
+      ? `Last run is retrying. Next attempt ${futureTime(next)}.`
+      : "Last run is retrying.";
+  }
+  if (latestStatus === "failed" || row.status === "failed") {
+    return row.error ? `Last run failed: ${row.error}` : "Last run failed.";
+  }
+  if (row.status === "processing") return "Executing this scheduled action now.";
+  if (isRecurringRow(row) && row.status === "pending") {
+    return row.scheduled_for
+      ? `First run ${futureTime(row.scheduled_for)}.`
+      : "Waiting for first run.";
+  }
+  return null;
+}
+
 function triggerText(row: ScheduledAction): string {
   if (row.trigger_type === "time") {
+    if (isRecurringRow(row)) {
+      const prefix = Number(row.occurrence_count ?? 0) > 0 ? "Next run" : "First run";
+      return row.scheduled_for ? `${prefix} ${futureTime(row.scheduled_for)}` : `${prefix} soon`;
+    }
     return row.scheduled_for
       ? `Runs ${futureTime(row.scheduled_for)}`
       : "Runs at the scheduled time";
@@ -1348,6 +1599,30 @@ function triggerText(row: ScheduledAction): string {
     row.trigger_value_usd == null ? "the trigger" : formatUsd(row.trigger_value_usd);
   const next = row.next_check_at ? ` Next check ${futureTime(row.next_check_at)}.` : "";
   return `Runs when market cap is ${direction} ${threshold}.${next}`;
+}
+
+function latestTransactionHash(
+  row: ScheduledAction,
+  latestOccurrence: ScheduleOccurrence | null,
+): string | null {
+  return (
+    latestOccurrence?.transaction_signature ??
+    latestOccurrence?.transaction_hash ??
+    row.transaction_signature ??
+    row.transaction_hash ??
+    null
+  );
+}
+
+function transactionExplorerUrl(
+  chain: SchedulerChain,
+  txHash: string | null | undefined,
+): string | null {
+  const hash = String(txHash ?? "").trim();
+  if (!hash) return null;
+  return chain === "solana"
+    ? `https://solscan.io/tx/${encodeURIComponent(hash)}`
+    : `https://robinhoodchain.blockscout.com/tx/${encodeURIComponent(hash)}`;
 }
 
 function amountText(row: ScheduledAction): string {
@@ -1534,10 +1809,13 @@ function timeAgo(value: string): string {
 
 function statusClass(status: string): string {
   const base = "app-status";
-  if (status === "executed") return `${base} app-status-success`;
+  if (status === "executed" || status === "succeeded" || status === "confirmed") {
+    return `${base} app-status-success`;
+  }
   if (status === "failed" || status === "expired" || status === "cancelled") {
     return `${base} app-status-danger`;
   }
+  if (status === "retrying" || status === "paused") return `${base} app-status-pending`;
   return base;
 }
 

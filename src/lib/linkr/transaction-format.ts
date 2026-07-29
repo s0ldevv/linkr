@@ -37,6 +37,8 @@ export function formatTransactionAmount(tx: TransactionAmountLike): string {
 }
 
 function normalizeUnit(value: string | null | undefined): string | null {
-  const unit = String(value ?? "").trim().toUpperCase();
+  const unit = String(value ?? "")
+    .trim()
+    .toUpperCase();
   return unit || null;
 }

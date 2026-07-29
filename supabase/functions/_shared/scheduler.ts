@@ -112,27 +112,24 @@ export function scheduledActionRequiresTransactionProof(
 
 export function assertTransactionBackedScheduledExecution(
   row: { action_type?: unknown; id?: unknown },
-  execution: {
-    transactionId?: unknown;
-    txHash?: unknown;
-    txSignature?: unknown;
-    raw?: any;
-  } | null | undefined,
+  execution:
+    | {
+      transactionId?: unknown;
+      txHash?: unknown;
+      txSignature?: unknown;
+    }
+    | null
+    | undefined,
 ) {
   if (!scheduledActionRequiresTransactionProof(row?.action_type)) return;
   const transactionId = cleanProofValue(execution?.transactionId);
   const txHash = cleanProofValue(execution?.txHash);
   const txSignature = cleanProofValue(execution?.txSignature);
-  const raw = execution?.raw ?? {};
-  const rawTxHash = cleanProofValue(
-    raw.tx_hash ?? raw.txHash ?? raw.hash ?? raw.signature,
-  );
-  const rawTxSignature = cleanProofValue(raw.tx_signature ?? raw.txSignature);
-  if (transactionId || txHash || txSignature || rawTxHash || rawTxSignature) {
-    return;
-  }
+  if (transactionId || txHash || txSignature) return;
   throw new Error(
-    `scheduled_${String(row?.action_type ?? "action")}_missing_transaction_proof`,
+    `scheduled_${
+      String(row?.action_type ?? "action")
+    }_missing_transaction_proof`,
   );
 }
 

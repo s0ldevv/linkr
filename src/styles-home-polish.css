@@ -45589,6 +45589,69 @@ body .sm-app-content .app-history-actions .app-status {
   padding: 0 11px !important;
 }
 
+body .sm-app-content .app-scheduler-run-summary {
+  color: var(--app-muted) !important;
+  -webkit-text-fill-color: var(--app-muted) !important;
+}
+
+body .sm-app-content .app-scheduler-occurrences {
+  min-width: min(100%, 320px) !important;
+}
+
+body .sm-app-content .app-scheduler-occurrences summary {
+  display: inline-flex !important;
+  min-height: 30px !important;
+  align-items: center !important;
+  border-radius: 999px !important;
+  background: var(--app-ink) !important;
+  padding: 0 11px !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  cursor: pointer !important;
+  font-size: 0.68rem !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.04em !important;
+  line-height: 1 !important;
+  text-transform: uppercase !important;
+}
+
+body .sm-app-content .app-scheduler-occurrence-list {
+  display: grid !important;
+  width: min(100%, 480px) !important;
+  gap: 7px !important;
+  margin-top: 8px !important;
+}
+
+body .sm-app-content .app-scheduler-occurrence-row {
+  display: flex !important;
+  min-width: 0 !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+body .sm-app-content .app-scheduler-occurrence-row > span,
+body .sm-app-content .app-scheduler-occurrence-row > a {
+  display: inline-flex !important;
+  min-height: 28px !important;
+  align-items: center !important;
+  border-radius: 999px !important;
+  background: var(--app-panel) !important;
+  padding: 0 10px !important;
+  color: var(--app-muted) !important;
+  -webkit-text-fill-color: var(--app-muted) !important;
+  font-size: 0.7rem !important;
+  font-weight: 850 !important;
+  line-height: 1 !important;
+  text-decoration: none !important;
+}
+
+body .sm-app-content .app-scheduler-occurrence-row > a {
+  background: var(--app-ink) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
 body .sm-app-content .app-history-error {
   background: var(--app-warning-soft) !important;
   color: var(--app-warning-ink) !important;
