@@ -141,6 +141,10 @@ export const LINKR_TOOL_REGISTRY: Record<string, LinkrToolDefinition> = {
     "Prepare an exact-input SOL/USDC swap on Solana.",
     ["chain", "direction", "amount"],
   ),
+  // Only `chain` and `name` come from the user (see launch_contract.ts). The
+  // rest are filled by enrichment and image generation, which now run *before*
+  // this validation — so this list is a post-autofill assertion that the
+  // pipeline produced a complete payload, not a gate the user has to satisfy.
   "action.prepare_launch": prepare(
     "action.prepare_launch",
     "Prepare a token launch.",

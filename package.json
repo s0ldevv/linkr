@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "lint": "eslint src",
     "typecheck": "tsc --noEmit",
-    "test:edge": "deno test --allow-env supabase/functions/_shared",
+    "test:edge": "deno test --allow-env --allow-read supabase/functions/_shared",
     "test:security-edge": "deno test --allow-env supabase/functions/_shared/wallet_key_verification_test.ts supabase/functions/_shared/security_controls_test.ts",
     "check:edge-budget": "node scripts/edge-function-budget.mjs",
     "verify:production": "node scripts/verify-single-production.mjs && node scripts/verify-production-assets.mjs",

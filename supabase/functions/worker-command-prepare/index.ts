@@ -21,6 +21,7 @@ import {
   mergeSlotProvenanceContext,
   reconcileLaunchDraftWithAi,
 } from "../_shared/launch_slot_reconciler.ts";
+import { withLaunchStateEcho } from "../_shared/launch_contract.ts";
 import { parseXTradeCommand } from "../_shared/x_trade_command.ts";
 import {
   classifyNftCommandWithAi,
@@ -436,6 +437,16 @@ Deno.serve((req) =>
       const fields = slotPatch.filledFields;
       const provenance = slotPatch.fieldProvenance;
 
+      // A clarification round only counts when we actually stop and ask. Two
+      // rounds without the required slots getting any closer means the loop is
+      // not converging, and asking a third time will not help.
+      const priorRounds = Number(
+        existingDraft?.generation_context?.clarification_rounds ?? 0,
+      );
+      const clarificationRounds = Number.isFinite(priorRounds) && priorRounds > 0
+        ? Math.min(priorRounds, 10)
+        : 0;
+
       const generationContext = {
         ...mergeSlotProvenanceContext(
           (existingDraft?.generation_context ?? {}) as Record<string, unknown>,
@@ -444,6 +455,7 @@ Deno.serve((req) =>
         explicit_launch_intent: launchCommand ||
           existingDraft?.generation_context?.explicit_launch_intent === true,
         last_input_tweet_id: tweetId,
+        clarification_rounds: clarificationRounds,
       };
       const draftResult = await admin.rpc("upsert_linkr_launch_draft_v2", {
         p_input_work_item_id: claim.work_item.id,
@@ -456,37 +468,72 @@ Deno.serve((req) =>
       const draft = draftResult.data;
       const missing = missingLaunchFields(draft.filled_fields as LaunchFields);
 
-      if (slotPatch.needsClarification) {
-        if (missing.length === 0) {
-          const paused = await admin.rpc("pause_linkr_launch_preparation_v1", {
-            p_draft_id: draft.id,
-            p_reason_code: "launch_slot_clarification_required",
+      // A launch may only be stopped for a slot the user actually has to
+      // supply. `clarificationReply` must never be handed a synthetic missing
+      // list: it previously received a hardcoded ["name"] whenever a
+      // clarification was wanted but nothing was missing, which is how the bot
+      // asked a user to name a token it had been holding for four turns.
+      const stalling = clarificationRounds >= 2;
+      if (slotPatch.needsClarification && !stalling) {
+        const question = slotPatch.clarificationQuestion ??
+          (missing.length > 0
+            ? clarificationReply(missing, draft.filled_fields as LaunchFields)
+            : null);
+        if (question) {
+          if (missing.length === 0) {
+            const paused = await admin.rpc("pause_linkr_launch_preparation_v1", {
+              p_draft_id: draft.id,
+              p_reason_code: "launch_slot_clarification_required",
+            });
+            if (paused.error) throw paused.error;
+          }
+          await recordClarificationRound(admin, draft, clarificationRounds + 1);
+          logLaunchClarification({
+            surface: "x",
+            draftId: draft.id,
+            round: clarificationRounds + 1,
+            missing,
+            blockingSlots: slotPatch.blockedSlots.filter((slot) =>
+              missing.includes(slot)
+            ),
+            advisorySlots: slotPatch.advisorySlots,
+            questionSource: slotPatch.clarificationQuestion ? "model" : "contract",
           });
-          if (paused.error) throw paused.error;
+          await queueReply(
+            admin,
+            claim.work_item.id,
+            "launch_clarification",
+            Number(draft.version),
+            withLaunchStateEcho(draft.filled_fields, question),
+          );
+          await markTweetCompleted(admin, tweetId);
+          return {
+            kind: "complete",
+            state: "waiting_user_input",
+            resultRef: `draft:${draft.id}`,
+          };
         }
-        await queueReply(
-          admin,
-          claim.work_item.id,
-          "launch_clarification",
-          Number(draft.version),
-          slotPatch.clarificationQuestion ??
-            clarificationReply(missing.length > 0 ? missing : ["name"]),
-        );
-        await markTweetCompleted(admin, tweetId);
-        return {
-          kind: "complete",
-          state: "waiting_user_input",
-          resultRef: `draft:${draft.id}`,
-        };
+        // Nothing required is outstanding and there is no honest question to
+        // ask. Never stall: fall through and let enrichment fill the rest.
       }
 
       if (missing.length > 0) {
+        logLaunchClarification({
+          surface: "x",
+          draftId: draft.id,
+          round: clarificationRounds + 1,
+          missing,
+          blockingSlots: missing,
+          advisorySlots: slotPatch.advisorySlots,
+          questionSource: "contract",
+        });
+        await recordClarificationRound(admin, draft, clarificationRounds + 1);
         await queueReply(
           admin,
           claim.work_item.id,
           "launch_clarification",
           Number(draft.version),
-          clarificationReply(missing),
+          clarificationReply(missing, draft.filled_fields as LaunchFields),
         );
         await markTweetCompleted(admin, tweetId);
         return draft.work_item_id === claim.work_item.id
@@ -534,8 +581,61 @@ function launchReconcilerIntentCanMutate(
 
 function savedLaunchClarification(fields: LaunchFields): string {
   const missing = missingLaunchFields(fields);
-  if (missing.length > 0) return clarificationReply(missing);
-  return 'Your launch is still saved. Reply with the launch change you want, or "cancel launch".';
+  if (missing.length > 0) return clarificationReply(missing, fields);
+  return withLaunchStateEcho(
+    fields,
+    'Reply with the launch change you want, or "cancel launch".',
+  );
+}
+
+/**
+ * Count how many times this draft has stopped to ask. Two rounds without the
+ * required slots getting closer means asking again will not help, so the
+ * pipeline proceeds on autofill instead of looping.
+ *
+ * Never allowed to fail a launch: a counter that cannot be written is a
+ * telemetry problem, not a reason to stop.
+ */
+async function recordClarificationRound(
+  admin: any,
+  draft: any,
+  round: number,
+): Promise<void> {
+  try {
+    const context = {
+      ...((draft?.generation_context ?? {}) as Record<string, unknown>),
+      clarification_rounds: round,
+    };
+    const result = await admin.from("linkr_action_drafts")
+      .update({ generation_context: context })
+      .eq("id", draft.id);
+    if (result.error) throw result.error;
+  } catch (error) {
+    console.error(
+      JSON.stringify({
+        event: "launch_clarification_round_not_recorded",
+        draft_id: draft?.id ?? null,
+        message: String(error instanceof Error ? error.message : error).slice(
+          0,
+          200,
+        ),
+      }),
+    );
+  }
+}
+
+function logLaunchClarification(entry: {
+  surface: string;
+  draftId: string | null;
+  round: number;
+  missing: string[];
+  blockingSlots: string[];
+  advisorySlots: string[];
+  questionSource: "model" | "contract";
+}): void {
+  console.log(
+    JSON.stringify({ event: "launch_clarification_emitted", ...entry }),
+  );
 }
 
 async function loadLaunchThreadContext(

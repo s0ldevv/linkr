@@ -13,6 +13,16 @@ import {
 import { extractFromText } from "./extract.ts";
 import { readWalletContext } from "./linkr_action_dispatch.ts";
 import { buildAgentCoinDetail } from "./coin_detail.ts";
+// The launch contract is the one definition of what a user must supply.
+// `launch_contract.ts` is pure policy with no dependencies, so it costs the
+// boot budget nothing. Enrichment and image generation are loaded lazily in
+// prepareAction instead — see the note at the top of this file.
+import {
+  type LaunchFields,
+  launchStateSummary,
+  missingLaunchSlots,
+  withLaunchStateEcho,
+} from "./launch_contract.ts";
 
 // USDC mint inlined so this runtime does not import solana_usdc.ts (which pulls
 // @solana/web3.js).
@@ -403,10 +413,15 @@ async function loadRuntimeState(
         .eq("status", "pending")
         .order("created_at", { ascending: false })
         .limit(10),
+      // Scoped to this conversation. These drafts are now merged back into the
+      // next turn's payload, so a draft belonging to another chat must never
+      // leak into this one.
       admin
         .from("linkr_action_drafts")
         .select("*")
         .eq("user_id", input.user_id)
+        .eq("surface", input.surface)
+        .eq("surface_conversation_id", input.surface_conversation_id)
         .in("status", ["open", "awaiting_clarification", "ready"])
         .order("updated_at", { ascending: false })
         .limit(10),
@@ -522,7 +537,7 @@ async function safeSupabaseResult(query: any) {
   }
 }
 
-function decideRoute(
+export function decideRoute(
   input: LinkrTurnInput,
   refs: ResolvedReference[],
   state: RuntimeState,
@@ -530,13 +545,25 @@ function decideRoute(
   const text = input.text;
   const normalized = text.trim().toLowerCase();
   const hasImageAttachment = hasTerminalImageAttachment(input.attachments);
+  const openLaunchDraft = openDraftFor(state, input, "launch_coin");
   if (!normalized && hasImageAttachment) {
+    // A bare image only means "launch" when a launch is already underway.
+    // Otherwise it is just an image, and assuming otherwise starts an
+    // interrogation the user never asked for.
+    if (openLaunchDraft) {
+      return {
+        route: "prepare_action",
+        intent: "prepare_action",
+        action_type: "launch_coin",
+        confidence: 0.9,
+        reason: "image attachment continues an open launch draft",
+      };
+    }
     return {
-      route: "prepare_action",
-      intent: "prepare_action",
-      action_type: "launch_coin",
-      confidence: 0.79,
-      reason: "image attachment with no text",
+      route: "conversation",
+      intent: "image_intent_unclear",
+      confidence: 0.7,
+      reason: "image attachment with no text and no open launch",
     };
   }
   if (
@@ -723,6 +750,22 @@ function decideRoute(
       intent: "small_talk",
       confidence: 0.82,
       reason: "small talk",
+    };
+  }
+  // Anything still unclassified while a launch is being assembled is almost
+  // always the user answering the agent's own question — "Name: test and
+  // ticker: test", "solana", "0 dev buy". These carry no action keyword, so
+  // they used to fall through to small talk while the draft sat untouched, and
+  // the next "launch it" started over from an empty payload. Every explicit
+  // intent above still wins, so a mid-launch balance or token question is
+  // unaffected.
+  if (openLaunchDraft) {
+    return {
+      route: "prepare_action",
+      intent: "prepare_action",
+      action_type: String(openLaunchDraft.action_type ?? "launch_coin"),
+      confidence: 0.8,
+      reason: "continuing an open launch draft",
     };
   }
   if (state.conversation?.summary) {
@@ -1473,6 +1516,392 @@ async function maybeRememberTerminalTurn(
   return memoryEvent?.id ?? null;
 }
 
+function readDraftProvenance(draft: any): Record<string, unknown> {
+  const value = draft?.field_provenance;
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? { ...(value as Record<string, unknown>) }
+    : {};
+}
+
+/**
+ * Ask the shared launch slot reconciler what this message changes.
+ *
+ * The same module drives the X pipeline, so a launch means the same thing in
+ * the terminal, the CLI, Telegram and a tweet. Loaded lazily: this runtime's
+ * boot graph is budgeted (see the note at the top of the file) and a plain
+ * "what's my balance?" turn must not pay for launch machinery.
+ *
+ * Fails soft. If the model is unavailable the deterministic seed stands, which
+ * degrades to the previous behaviour rather than to an error.
+ */
+async function reconcileLaunchTurn(
+  ctx: LinkrRuntimeContext,
+  state: RuntimeState,
+  args: {
+    carried: Record<string, unknown>;
+    provenance: Record<string, unknown>;
+    deterministic: Record<string, unknown>;
+  },
+): Promise<{
+  fields: Record<string, unknown>;
+  provenance: Record<string, unknown>;
+  needsClarification: boolean;
+  clarificationQuestion: string | null;
+}> {
+  const { input } = ctx;
+  const deterministicProvenance = seedProvenance(
+    args.carried,
+    args.deterministic,
+    args.provenance,
+  );
+  const fallback = {
+    fields: args.deterministic,
+    provenance: deterministicProvenance,
+    needsClarification: false,
+    clarificationQuestion: null,
+  };
+
+  try {
+    const { buildLaunchDraftSlotPatch, reconcileLaunchDraftWithAi } =
+      await import("./launch_slot_reconciler.ts");
+    const reconcilerInput = {
+      existingFields: args.carried as LaunchFields,
+      existingProvenance: args.provenance,
+      originalLaunchText: originalLaunchRequestText(state, input.text),
+      latestUserText: input.text,
+      latestTweetId: input.conversation?.user_message_id ?? null,
+      originalTweetId: input.surface_conversation_id ?? null,
+      previousAssistantReplyText: previousAssistantReply(state),
+      currentMissingFields: missingLaunchSlots(args.carried, args.provenance),
+      latestMediaUrl: terminalImageAttachments(input.attachments)[0] ?? null,
+      sourceRefs: input.source_refs ?? null,
+      botHandle: "linkrbot",
+    };
+    const reconciliation = await reconcileLaunchDraftWithAi(reconcilerInput);
+    const patch = buildLaunchDraftSlotPatch(reconcilerInput, reconciliation);
+
+    if (reconciliation.intent === "unrelated") return fallback;
+
+    // The reconciler owns the launch slots; everything else the deterministic
+    // pass captured (raw_user_text, chain_explicit flags) is preserved.
+    const fields: Record<string, unknown> = { ...args.deterministic };
+    for (const [key, value] of Object.entries(patch.filledFields)) {
+      fields[key] = value;
+    }
+    if (patch.filledFields.chain !== undefined) {
+      fields.chain_explicit = patch.filledFields.chain !== null;
+    }
+    const provenance = {
+      ...deterministicProvenance,
+      ...patch.fieldProvenance,
+    };
+    if (String(fields.chain ?? "").trim() && fields.chain_explicit !== true) {
+      provenance.chain = "inferred";
+    }
+    return {
+      fields,
+      provenance,
+      needsClarification: patch.needsClarification,
+      clarificationQuestion: patch.clarificationQuestion,
+    };
+  } catch (error) {
+    console.error(JSON.stringify({
+      event: "linkr_launch_reconciler_failed",
+      surface: input.surface,
+      message: String(error instanceof Error ? error.message : error).slice(
+        0,
+        200,
+      ),
+    }));
+    return fallback;
+  }
+}
+
+/**
+ * Provenance for values the deterministic pass read straight out of user text.
+ * `chain` is the load-bearing one: only a chain the user actually named may be
+ * recorded as `user_text`.
+ */
+function seedProvenance(
+  carried: Record<string, unknown>,
+  deterministic: Record<string, unknown>,
+  existing: Record<string, unknown>,
+): Record<string, unknown> {
+  const provenance: Record<string, unknown> = { ...existing };
+  for (const key of ["name", "symbol", "description", "image_prompt"]) {
+    if (deterministic[key] && !carried[key]) provenance[key] = "user_text";
+  }
+  if (deterministic.image_url && !carried.image_url) {
+    provenance.image_url = "user_media";
+  }
+  if (deterministic.chain) {
+    provenance.chain = deterministic.chain_explicit === true
+      ? "user_text"
+      : "inferred";
+  }
+  return provenance;
+}
+
+/** The message that started this launch, for whole-conversation reasoning. */
+function originalLaunchRequestText(
+  state: RuntimeState,
+  fallback: string,
+): string {
+  const messages = Array.isArray(state.recent_messages)
+    ? state.recent_messages
+    : [];
+  for (const message of messages) {
+    if (message?.role !== "user") continue;
+    const content = String(message.content ?? "");
+    if (/\b(launch|create coin|make a coin|deploy)\b/i.test(content)) {
+      return content;
+    }
+  }
+  return fallback;
+}
+
+function previousAssistantReply(state: RuntimeState): string | null {
+  const messages = Array.isArray(state.recent_messages)
+    ? [...state.recent_messages].reverse()
+    : [];
+  for (const message of messages) {
+    if (message?.role !== "assistant") continue;
+    const content = String(message.content ?? "").trim();
+    if (content) return content;
+  }
+  return null;
+}
+
+/**
+ * Fill everything the user did not say.
+ *
+ * Ticker, description and image brief come from the model (with deterministic
+ * fallbacks that cannot fail), the dev buy comes from the user's own wallet
+ * settings, and the artwork is generated when no image was supplied. The same
+ * `enrichLaunchFields` the X pipeline uses does the creative work, so a launch
+ * started in the terminal and a launch started in a tweet produce the same
+ * token.
+ *
+ * Both modules are imported lazily. This runtime's boot graph is budgeted —
+ * bundling execution code into it previously produced HTTP 546 — and an
+ * ordinary conversation must not pay for launch machinery it never touches.
+ */
+async function autofillLaunchPayload(
+  ctx: LinkrRuntimeContext,
+  state: RuntimeState,
+  payload: Record<string, unknown>,
+  options: { chain: "solana" | "robinhood"; subsidyEligible: boolean },
+): Promise<Record<string, unknown>> {
+  const { sink } = ctx;
+  const generated: string[] = [];
+  let enriched = { ...payload };
+
+  try {
+    const { enrichLaunchFields } = await import("./launch_enrichment.ts");
+    const result = await enrichLaunchFields(enriched as LaunchFields, {
+      // The user's configured dev buy is the default whenever they did not name
+      // an amount for this launch.
+      devBuySol: numberOrNull(state.profile?.default_dev_buy_sol),
+      devBuyEth: numberOrNull(state.profile?.default_dev_buy_eth),
+      firstLaunchSubsidyEligible: options.subsidyEligible,
+    });
+    for (const key of [
+      "symbol",
+      "description",
+      "image_prompt",
+      "image_negative_prompt",
+      "dev_buy_amount",
+    ]) {
+      const value = (result.fields as Record<string, unknown>)[key];
+      if (value === undefined || value === null || value === "") continue;
+      if (!enriched[key]) generated.push(key);
+      enriched[key] = value;
+    }
+    enriched.launch_field_provenance = result.provenance;
+    enriched.dev_buy_provenance = result.provenance.dev_buy_amount ?? null;
+  } catch (error) {
+    // Enrichment is best-effort. A model outage must not block a launch that
+    // has a name and a chain, so fall back to deterministic metadata.
+    console.error(JSON.stringify({
+      event: "linkr_launch_enrichment_failed",
+      surface: ctx.input.surface,
+      message: String(error instanceof Error ? error.message : error).slice(
+        0,
+        200,
+      ),
+    }));
+    enriched = applyDeterministicLaunchMetadata(enriched, options.chain);
+  }
+
+  // Execution reads initial_buy_sol / initial_buy_eth, not dev_buy_amount, so
+  // the resolved amount has to be projected onto those or the user's configured
+  // wallet default would be computed and then silently dropped at launch time.
+  enriched = applyResolvedDevBuy(enriched, options.chain);
+
+  if (!String(enriched.image_url ?? "").trim()) {
+    await sink.setStatus("typing", { label: "Designing your token image" })
+      .catch(() => {});
+    try {
+      const [{ generateLaunchImage }, { storeCapturedImage }] = await Promise
+        .all([
+          import("./launch_image_generation.ts"),
+          import("./bounded_media.ts"),
+        ]);
+      const image = await generateLaunchImage({
+        prompt: String(enriched.image_prompt ?? `${enriched.name} token logo`),
+        negativePrompt: (enriched.image_negative_prompt as string) ?? null,
+        seed: `${ctx.input.surface_conversation_id}:${enriched.name}`,
+        // The deterministic PNG is always acceptable here: a launch that has a
+        // name and a chain must never be blocked on the image provider.
+        allowFallback: true,
+      });
+      const stored = await storeCapturedImage(ctx.admin, image.image);
+      enriched.image_url = stored.publicUrl;
+      enriched.original_image_url = image.image.sourceUrl;
+      enriched.image_provider = image.provider;
+      generated.push("image_url");
+    } catch (error) {
+      console.error(JSON.stringify({
+        event: "linkr_launch_image_generation_failed",
+        surface: ctx.input.surface,
+        message: String(error instanceof Error ? error.message : error).slice(
+          0,
+          200,
+        ),
+      }));
+    }
+  }
+
+  console.log(JSON.stringify({
+    event: "launch_autofill_applied",
+    surface: ctx.input.surface,
+    slots: generated,
+    image_provider: enriched.image_provider ?? null,
+  }));
+  return enriched;
+}
+
+/**
+ * Project the resolved `dev_buy_amount` onto the fields the executor reads.
+ *
+ * An amount the user stated for this launch always wins. Otherwise this carries
+ * their configured wallet default through, which is the whole point of having
+ * the setting. Subsidised first launches have already been forced to zero
+ * upstream and `resolveDevBuy` agrees, so both paths land on 0 here.
+ */
+export function applyResolvedDevBuy(
+  payload: Record<string, unknown>,
+  chain: "solana" | "robinhood",
+): Record<string, unknown> {
+  const output = { ...payload };
+  const explicit = chain === "solana"
+    ? numberOrNull(output.initial_buy_sol)
+    : numberOrNull(output.initial_buy_eth);
+  if (explicit !== null && explicit > 0) return output;
+
+  const match = /^(\d+(?:\.\d{1,18})?)\s+(SOL|ETH)$/.exec(
+    String(output.dev_buy_amount ?? "").trim().toUpperCase(),
+  );
+  if (!match) return output;
+  const amount = Number(match[1]);
+  const unit = match[2];
+  if (!Number.isFinite(amount) || amount < 0) return output;
+  // A SOL amount must never be relabelled as ETH.
+  if (
+    (chain === "solana" && unit !== "SOL") ||
+    (chain === "robinhood" && unit !== "ETH")
+  ) {
+    return output;
+  }
+  const maximum = chain === "solana" ? 5 : 0.1;
+  if (amount > maximum) return output;
+
+  if (chain === "solana") output.initial_buy_sol = amount;
+  else output.initial_buy_eth = amount;
+  return output;
+}
+
+/**
+ * Metadata that never needs a model. Used only when enrichment fails outright.
+ */
+export function applyDeterministicLaunchMetadata(
+  payload: Record<string, unknown>,
+  chain: "solana" | "robinhood",
+): Record<string, unknown> {
+  const name = String(payload.name ?? "").trim();
+  const output = { ...payload };
+  if (!String(output.symbol ?? "").trim()) {
+    const base = name.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    output.symbol = (base.length >= 2 ? base : `${base || "T"}KN`).slice(0, 10);
+  }
+  if (!String(output.description ?? "").trim()) {
+    output.description = `${name} is a community token inspired by ${name}.`;
+  }
+  if (!String(output.image_prompt ?? "").trim()) {
+    output.image_prompt =
+      `A distinctive square token logo inspired by ${name}, centered emblem, bold simple shapes, high contrast, clean background, no text, no watermark`;
+  }
+  if (!String(output.dev_buy_amount ?? "").trim()) {
+    output.dev_buy_amount = chain === "solana" ? "0 SOL" : "0 ETH";
+  }
+  return output;
+}
+
+function numberOrNull(value: unknown): number | null {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+/**
+ * Show the user everything the agent decided for them.
+ *
+ * The user only had to give a name and a chain, so the confirmation card is the
+ * first time they see the ticker, description and artwork. It has to read as an
+ * offer they can amend, not a fait accompli — this is where corrections happen
+ * instead of in a pre-launch questionnaire.
+ */
+export function launchConfirmationText(payload: Record<string, unknown>): string {
+  const chain = payload.chain === "solana" ? "Solana" : "Robinhood Chain";
+  const devBuy = payload.chain === "solana"
+    ? Number(payload.initial_buy_sol ?? 0)
+    : Number(payload.initial_buy_eth ?? 0);
+  const unit = payload.chain === "solana" ? "SOL" : "ETH";
+  const provenance =
+    (payload.launch_field_provenance ?? {}) as Record<string, unknown>;
+  const chosenByLinkr = ["symbol", "description", "image_prompt"]
+    .filter((key) => {
+      const source = String(provenance[key] ?? "");
+      return source === "ai_generated" || source === "deterministic_fallback";
+    })
+    .map((key) =>
+      key === "symbol"
+        ? "ticker"
+        : key === "image_prompt"
+        ? "image"
+        : "description"
+    );
+  if (
+    !String(provenance.image_url ?? "") && payload.image_provider &&
+    !chosenByLinkr.includes("image")
+  ) {
+    chosenByLinkr.push("image");
+  }
+
+  const lines = [
+    `Ready to launch ${payload.name} ($${payload.symbol}) on ${chain}.`,
+    String(payload.description ?? "").trim(),
+    `Dev buy: ${devBuy > 0 ? `${devBuy} ${unit}` : "none"}.${
+      payload.mayhem_mode === true ? " Mayhem mode on." : ""
+    }${payload.cashback_mode === true ? " Cashback mode on." : ""}`,
+    chosenByLinkr.length > 0
+      ? `I chose the ${
+        chosenByLinkr.join(", ")
+      } for you — tell me what to change, or confirm to launch.`
+      : "Confirm to launch, or tell me what to change.",
+  ];
+  return lines.filter(Boolean).join("\n\n");
+}
+
 async function prepareAction(
   ctx: LinkrRuntimeContext,
   decision: RouteDecision,
@@ -1485,12 +1914,24 @@ async function prepareAction(
   const payloadActionType = actionType === "schedule_action"
     ? scheduledBaseActionTypeFor(input.text) ?? "schedule_action"
     : actionType;
-  let extracted = extractActionPayload(
-    input.text,
+  // Continue the draft this conversation already has rather than re-deriving
+  // everything from the latest message. Value-moving amounts are deliberately
+  // excluded from carry-over: a stale "0.5 SOL" silently reappearing on a later
+  // turn would be far worse than asking again.
+  const carriedDraft = openDraftFor(state, input, payloadActionType);
+  const carriedFields = carryableDraftFields(
     payloadActionType,
-    refs,
-    state,
-    input.attachments,
+    carriedDraft?.filled_fields as Record<string, unknown> | undefined,
+  );
+  let extracted = mergeDraftPayload(
+    carriedFields,
+    extractActionPayload(
+      input.text,
+      payloadActionType,
+      refs,
+      state,
+      input.attachments,
+    ),
   );
   if (payloadActionType === "burn_token") {
     const { parseTokenBurnCommand } = await import("./token_burn.ts");
@@ -1502,6 +1943,21 @@ async function prepareAction(
       amount: parsed.amount,
       burn_parse_errors: parsed.errors,
     };
+  }
+  // Launch understanding is semantic, not positional. The AI slot reconciler
+  // reads the whole conversation and decides which slots this message changes;
+  // the regex pass above is only its seed and its fallback.
+  let launchProvenance: Record<string, unknown> = readDraftProvenance(
+    carriedDraft,
+  );
+  if (payloadActionType === "launch_coin") {
+    const reconciled = await reconcileLaunchTurn(ctx, state, {
+      carried: carriedFields,
+      provenance: launchProvenance,
+      deterministic: extracted,
+    });
+    extracted = reconciled.fields;
+    launchProvenance = reconciled.provenance;
   }
   const scheduleDraft = buildScheduleDraftPayload(
     input.text,
@@ -1547,8 +2003,18 @@ async function prepareAction(
       actionType,
       extracted,
       missing,
+      actionType === "launch_coin" ? launchProvenance : null,
     );
     const question = clarificationFor(actionType, missing, extracted);
+    if (actionType === "launch_coin") {
+      console.log(JSON.stringify({
+        event: "launch_clarification_emitted",
+        surface: input.surface,
+        draft_id: draft?.id ?? null,
+        missing,
+        question_source: "contract",
+      }));
+    }
     await sink.emit("action_draft", { draft, missing_fields: missing });
     await reply(ctx, question, [
       {
@@ -1560,14 +2026,6 @@ async function prepareAction(
     return { draft, pending: null };
   }
 
-  const validation = validateToolInput(
-    "action.prepare_" + prepareToolSuffix(actionType),
-    normalizeToolInput(actionType, extracted),
-    input.surface,
-  );
-  if (!validation.ok) {
-    throw new Error("invalid_action_payload:" + validation.errors.join(","));
-  }
   let launchExecution: ReturnType<typeof decideLaunchExecution> | null = null;
   if (actionType === "launch_coin") {
     const chain = extracted.chain === "solana" ? "solana" : "robinhood";
@@ -1590,6 +2048,33 @@ async function prepareAction(
     }
     extracted.first_launch_subsidy_eligible = eligibility;
     extracted.launch_execution_policy = launchExecution;
+    // Everything the user did not say, decided here — before the confirmation
+    // card exists, so the card shows the real ticker, description and artwork
+    // rather than a promise of them.
+    extracted = await autofillLaunchPayload(ctx, state, extracted, {
+      chain,
+      subsidyEligible: eligibility,
+    });
+    // Image generation has a deterministic fallback that cannot fail, so this
+    // only fires if storage itself is unavailable. Say so plainly rather than
+    // letting the payload validator below throw an opaque error.
+    if (!String(extracted.image_url ?? "").trim()) {
+      const text =
+        "I have everything else ready, but I could not produce the token image just now. Try again in a moment, or attach an image and I will use it.";
+      await reply(ctx, text, [{ type: "system_notice", text }]);
+      return { draft: null, pending: null, completed: true };
+    }
+  }
+
+  // Runs after autofill, so for launches this asserts the finished payload
+  // instead of gating on fields the platform had not filled in yet.
+  const validation = validateToolInput(
+    "action.prepare_" + prepareToolSuffix(actionType),
+    normalizeToolInput(actionType, extracted),
+    input.surface,
+  );
+  if (!validation.ok) {
+    throw new Error("invalid_action_payload:" + validation.errors.join(","));
   }
   if (actionType === "claim_creator_rewards") {
     const rewards = await import("./creator_rewards_claim.ts");
@@ -1657,7 +2142,9 @@ async function prepareAction(
     expires_at: pending.expires_at,
     payload: pending.action_payload,
   });
-  const confirmationText = actionType === "claim_creator_rewards"
+  const confirmationText = actionType === "launch_coin"
+    ? launchConfirmationText(extracted)
+    : actionType === "claim_creator_rewards"
     ? extracted.claim_confirmation_text
     : actionType === "burn_token"
     ? extracted.burn_confirmation_text
@@ -1721,7 +2208,7 @@ function actionTypeFor(text: string): string {
   return "buy";
 }
 
-function extractActionPayload(
+export function extractActionPayload(
   text: string,
   actionType: string,
   refs: ResolvedReference[],
@@ -1783,16 +2270,38 @@ function extractActionPayload(
   // prepareAction so ordinary conversations do not pay the chain-SDK boot cost.
   if (actionType === "launch_coin") {
     const attachedImage = terminalImageAttachments(attachments)[0] ?? null;
-    payload.name = quoted(text, "name") ?? fieldAfter(text, /\bname(?:d)?\s+/i);
+    payload.name = launchName(text);
     payload.symbol = quoted(text, "symbol") ??
-      cashtag(text)?.replace(/^\$/, "");
+      launchTicker(text) ??
+      cashtag(text)?.replace(/^\$/, "").toUpperCase();
     payload.description = quoted(text, "description") ?? null;
     payload.image_url = attachedImage ?? firstUrl(text);
+    payload.image_prompt = describedImagePrompt(text);
     payload.initial_buy_eth = amountEth ?? null;
     payload.initial_buy_sol = amountSol ?? null;
-    payload.raw_user_text = text;
+    // A launch chain is never inferred. `inferChain` defaults to robinhood,
+    // which is right for a trade against a known token and completely wrong
+    // here — it would prepare a launch on a chain the user never named. The DB
+    // enforces the same rule via explicit_launch_chain_provenance_required.
+    //
+    // The chain flags are only emitted when this message actually talks about a
+    // chain. Writing `chain_explicit: false` on every silent turn would let
+    // message three erase the chain the user chose in message one — the exact
+    // failure this whole change exists to remove.
+    const explicit = explicitLaunchChain(text);
+    payload.chain = explicit.chain ?? null;
+    if (explicit.chain !== null) {
+      payload.chain_explicit = true;
+      payload.launch_chain_explicit = true;
+      payload.chain_ambiguous = false;
+    } else if (explicit.ambiguous) {
+      payload.chain_ambiguous = true;
+    }
+    const mayhem = explicitLaunchToggle(text, "mayhem");
+    if (mayhem !== null) payload.mayhem_mode = mayhem;
+    const cashback = explicitLaunchToggle(text, "cashback");
+    if (cashback !== null) payload.cashback_mode = cashback;
     const signals = launchRequestSignals({ text });
-    payload.launch_chain_explicit = signals.explicitChain;
     payload.dev_buy_explicit = signals.explicitDevBuy;
     // Creator-rewards-share parsing (parsePumpCreatorRewardsShareRequest) pulls
     // @solana/web3.js and is excluded from this runtime's boot graph. The
@@ -2080,7 +2589,185 @@ function hasTerminalImageAttachment(
   return terminalImageAttachments(attachments).length > 0;
 }
 
-function missingFields(
+/**
+ * Deterministic launch-field reads.
+ *
+ * These are a seed for the AI slot reconciler and its fallback when the model
+ * is unavailable — not the primary path. Semantic understanding belongs to the
+ * reconciler; this exists so a model outage degrades to something usable rather
+ * than to nothing.
+ */
+export function launchName(text: string): string | null {
+  const patterns = [
+    /\b(?:coin|token)\s+(?:called|named)\s+["']?([^,"'\n]+?)(?=\s+(?:with|on|ticker|symbol|description|using|and)\b|[,.!?]|$)/i,
+    /\b(?:called|named)\s+["']?([^,"'\n]+?)(?=\s+(?:with|on|ticker|symbol|description|using|and)\b|[,.!?]|$)/i,
+    /\bname\s*(?:is|=|:)\s*["']?([^,"'\n]+?)(?=\s+(?:with|on|ticker|symbol|description|using|and)\b|[,.!?]|$)/i,
+    /\b(?:launch|deploy|create|make)\s+(?:a\s+)?(?:coin|token\s+)?["']?([a-z0-9][a-z0-9 _.-]{0,79}?)(?=\s+on\s+(?:solana|robinhood(?:\s+chain)?)\b|[,.!?]|$)/i,
+  ];
+  for (const pattern of patterns) {
+    const match = pattern.exec(text)?.[1]?.trim();
+    if (match) {
+      const cleaned = match.replace(/^["']|["']$/g, "").replace(/\s+/g, " ")
+        .slice(0, 80);
+      if (cleaned && !/^(a|an|the|coin|token)$/i.test(cleaned)) return cleaned;
+    }
+  }
+  return null;
+}
+
+export function launchTicker(text: string): string | null {
+  const match =
+    /\b(?:ticker|symbol)\s*(?:is|=|:)?\s*\$?([a-z][a-z0-9]{1,9})\b/i.exec(text)
+      ?.[1];
+  return match ? match.toUpperCase() : null;
+}
+
+/**
+ * A described image is a brief, not a missing URL.
+ *
+ * "the image should be a test tube on a purple background" is a complete
+ * instruction — the platform generates the artwork. Asking such a user for an
+ * image URL is the bug this captures.
+ */
+export function describedImagePrompt(text: string): string | null {
+  const match =
+    /\b(?:image|logo|picture|artwork|pfp)\b[^.!?\n]{0,20}?\b(?:should\s+be|is|of|showing|with|:)\s+([^.!?\n]{3,200})/i
+      .exec(text)?.[1] ??
+      /\b(?:generate|create|make|draw)\s+(?:me\s+)?(?:an?\s+)?(?:image|logo|picture|artwork)\s+(?:of|showing|with)\s+([^.!?\n]{3,200})/i
+        .exec(text)?.[1];
+  const cleaned = String(match ?? "").trim().replace(/\s+/g, " ").slice(0, 1000);
+  if (!cleaned) return null;
+  if (/^https?:\/\//i.test(cleaned)) return null;
+  return cleaned;
+}
+
+/**
+ * The launch chain, only when the user actually named one.
+ *
+ * Returns `ambiguous` when both chains are named so the caller asks instead of
+ * picking. There is deliberately no default.
+ */
+export function explicitLaunchChain(
+  text: string,
+): { chain: "solana" | "robinhood" | null; ambiguous: boolean } {
+  const solana =
+    /\b(?:solana|sol|pump\s*\.?\s*fun|pumpfun|pumpswap)\b/i.test(text);
+  const robinhood = /\b(?:robinhood(?:\s+chain)?|rhood|evm|weth|eth)\b/i.test(
+    text,
+  );
+  if (solana && robinhood) return { chain: null, ambiguous: true };
+  if (solana) return { chain: "solana", ambiguous: false };
+  if (robinhood) return { chain: "robinhood", ambiguous: false };
+  return { chain: null, ambiguous: false };
+}
+
+/**
+ * Explicit on/off for an opt-in launch mode. `null` means the user never
+ * mentioned it, so the platform default (off) stands.
+ */
+function explicitLaunchToggle(text: string, mode: string): boolean | null {
+  if (!new RegExp(`\\b${mode}(?:\\s*mode)?\\b`, "i").test(text)) return null;
+  const negated = new RegExp(
+    `\\b(?:no|not|non|without|disable|disabled|off|skip|dont|don't|do\\s+not|turn\\s+off)\\b[^.!?;]{0,24}?\\b${mode}\\b`,
+    "i",
+  ).test(text);
+  return !negated;
+}
+
+/** How long an unfinished draft stays eligible to absorb the next message. */
+const OPEN_DRAFT_TTL_MS = 30 * 60_000;
+
+/**
+ * The unfinished draft this conversation is still working on, if any.
+ *
+ * Without this the runtime re-derived every field from the current message
+ * alone: an image attached on turn one was gone by turn two, because the
+ * clients clear attachments after send. Answering the agent's own question
+ * therefore erased the answer before it.
+ */
+export function openDraftFor(
+  state: RuntimeState,
+  input: LinkrTurnInput,
+  actionType?: string | null,
+): any | null {
+  const now = Date.now();
+  const candidates = (state.drafts ?? []).filter((draft: any) => {
+    if (!draft || typeof draft !== "object") return false;
+    if (
+      draft.surface_conversation_id &&
+      draft.surface_conversation_id !== input.surface_conversation_id
+    ) {
+      return false;
+    }
+    if (actionType && draft.action_type !== actionType) return false;
+    const updatedAt = Date.parse(String(draft.updated_at ?? ""));
+    if (!Number.isFinite(updatedAt)) return false;
+    return now - updatedAt < OPEN_DRAFT_TTL_MS;
+  });
+  return candidates[0] ?? null;
+}
+
+/**
+ * Draft state that may be carried into a later turn.
+ *
+ * Deliberately limited to launches. A launch is assembled over several
+ * messages, so losing an earlier answer is the bug being fixed here. Trades,
+ * transfers and burns are single-shot by design: silently reviving a stale
+ * amount or recipient from an abandoned draft is a far worse failure than
+ * asking the user to restate it, so those keep the existing behaviour of
+ * reading only the current message.
+ */
+const CARRYABLE_DRAFT_ACTION_TYPES = new Set(["launch_coin"]);
+
+const LAUNCH_CARRYABLE_KEYS = [
+  "name",
+  "symbol",
+  "description",
+  "image_prompt",
+  "image_negative_prompt",
+  "image_url",
+  "original_image_url",
+  "chain",
+  "chain_explicit",
+  "dev_buy_amount",
+  "initial_buy_sol",
+  "initial_buy_eth",
+  "mayhem_mode",
+  "cashback_mode",
+];
+
+export function carryableDraftFields(
+  actionType: string,
+  filledFields: Record<string, unknown> | null | undefined,
+): Record<string, unknown> {
+  if (!filledFields || !CARRYABLE_DRAFT_ACTION_TYPES.has(actionType)) return {};
+  const output: Record<string, unknown> = {};
+  for (const key of LAUNCH_CARRYABLE_KEYS) {
+    const value = filledFields[key];
+    if (value === undefined || value === null || value === "") continue;
+    output[key] = value;
+  }
+  return output;
+}
+
+/**
+ * Carry everything already captured into this turn, letting non-empty new
+ * values win. Mirrors `mergeLaunchFields` on the X path so both surfaces treat
+ * a follow-up the same way.
+ */
+export function mergeDraftPayload(
+  existing: Record<string, unknown> | null | undefined,
+  incoming: Record<string, unknown>,
+): Record<string, unknown> {
+  const merged: Record<string, unknown> = { ...(existing ?? {}) };
+  for (const [key, value] of Object.entries(incoming)) {
+    if (value === undefined || value === null || value === "") continue;
+    merged[key] = value;
+  }
+  return merged;
+}
+
+export function missingFields(
   actionType: string,
   payload: Record<string, unknown>,
 ): string[] {
@@ -2134,9 +2821,15 @@ function missingFields(
     }
   }
   if (actionType === "launch_coin") {
-    for (const key of ["name", "symbol", "description", "image_url"]) {
-      if (!payload[key]) missing.push(key);
-    }
+    // Only name and chain come from the user. Ticker, description, image, dev
+    // buy and the opt-in modes are filled by `enrichLaunchFields` and the image
+    // generator before the confirmation card is built, so demanding them here
+    // asked users for work the platform already does.
+    missing.push(
+      ...missingLaunchSlots(payload, {
+        chain: payload.chain_explicit === true ? "user_text" : "inferred",
+      }),
+    );
   }
   if (actionType === "remove_liquidity" && !payload.percent) {
     missing.push("percent");
@@ -2165,7 +2858,7 @@ function missingFields(
   return missing;
 }
 
-function clarificationFor(
+export function clarificationFor(
   actionType: string,
   missing: string[],
   payload: Record<string, unknown>,
@@ -2177,7 +2870,21 @@ function clarificationFor(
     return "Which launch should I claim creator rewards from? Send the contract address, Solana mint, cashtag, or say latest launch.";
   }
   if (actionType === "launch_coin") {
-    return `I can draft the launch, but I still need: ${missing.join(", ")}.`;
+    const needsName = missing.includes("name");
+    const needsChain = missing.includes("chain");
+    const question = payload.chain_ambiguous === true
+      ? "Which chain should I launch on — Solana or Robinhood Chain? I will not pick one for you."
+      : needsName && needsChain
+      ? "What should the token be called, and which chain — Solana or Robinhood Chain?"
+      : needsChain
+      ? "Which chain should I launch on — Solana or Robinhood Chain?"
+      : needsName
+      ? "What should the token be called?"
+      : `I still need: ${missing.join(", ")}.`;
+    // Lead with what is already captured. A user who has answered three
+    // questions and is being asked a fourth needs to see their answers were
+    // kept, otherwise every question reads as a reset.
+    return withLaunchStateEcho(payload, question);
   }
   if (actionType === "transfer") {
     return `I can prepare the transfer, but I need ${missing.join(" and ")}.`;
@@ -2225,6 +2932,7 @@ async function createDraft(
   actionType: string,
   payload: Record<string, unknown>,
   missing: string[],
+  provenance: Record<string, unknown> | null = null,
 ) {
   const draftKey =
     `${input.surface}:${input.surface_conversation_id}:${actionType}`;
@@ -2240,6 +2948,9 @@ async function createDraft(
     status: "awaiting_clarification",
     required_fields: missing,
     filled_fields: payload,
+    // Persisted so the next turn can tell a chain the user named from one that
+    // was merely inferred. Without it, chain provenance resets every message.
+    field_provenance: provenance ?? {},
     source_refs: input.source_refs ?? [],
     last_message_id: input.conversation?.user_message_id ?? null,
     idempotency_key: stableIdempotencyKey(
@@ -2915,7 +3626,20 @@ function pendingSummary(actionType: string, payload: Record<string, unknown>) {
     } for ${solToUsdc ? "USDC" : "SOL"}`;
   }
   if (actionType === "launch_coin") {
-    return `Launch $${payload.symbol} on ${payload.chain}`;
+    const chain = payload.chain === "solana" ? "Solana" : "Robinhood Chain";
+    const devBuy = payload.chain === "solana"
+      ? Number(payload.initial_buy_sol ?? 0)
+      : Number(payload.initial_buy_eth ?? 0);
+    const unit = payload.chain === "solana" ? "SOL" : "ETH";
+    const extras = [
+      payload.mayhem_mode === true ? "mayhem mode" : null,
+      payload.cashback_mode === true ? "cashback mode" : null,
+    ].filter(Boolean).join(", ");
+    return [
+      `Launch ${payload.name} ($${payload.symbol}) on ${chain}`,
+      `dev buy ${devBuy > 0 ? `${devBuy} ${unit}` : "none"}`,
+      extras || null,
+    ].filter(Boolean).join(" · ");
   }
   if (actionType === "burn_token") {
     const preview = payload.burn_preview as any;

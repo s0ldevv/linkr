@@ -25,6 +25,35 @@ Deno.test("deterministic launch enrichment preserves user fields and explicit ch
   assertEquals(result.provenance.symbol, "user_text");
 });
 
+// The product contract: a name and a chain are all a user has to give. Runs
+// with no COMET_API_KEY, so this exercises the deterministic fallback path —
+// the worst case still has to produce a launchable token.
+Deno.test("a name and a chain alone produce a complete, launchable token", async () => {
+  const result = await enrichLaunchFields({
+    name: "Moon Dog",
+    chain: "solana",
+  });
+  assertEquals(result.fields.name, "Moon Dog");
+  assertEquals(result.fields.chain, "solana");
+  assertEquals(typeof result.fields.symbol, "string");
+  assertEquals((result.fields.symbol ?? "").length >= 2, true);
+  assertEquals((result.fields.description ?? "").length > 0, true);
+  assertEquals((result.fields.image_prompt ?? "").length > 0, true);
+  assertEquals(result.fields.dev_buy_amount, "0 SOL");
+  // Nothing may be attributed to the user that the user did not supply.
+  assertEquals(result.provenance.symbol !== "user_text", true);
+  assertEquals(result.provenance.description !== "user_text", true);
+});
+
+Deno.test("the configured wallet dev buy is the default for a silent user", async () => {
+  const result = await enrichLaunchFields(
+    { name: "Moon Dog", chain: "solana" },
+    { devBuySol: 0.25, firstLaunchSubsidyEligible: false },
+  );
+  assertEquals(result.fields.dev_buy_amount, "0.25 SOL");
+  assertEquals(result.provenance.dev_buy_amount, "wallet_rules");
+});
+
 Deno.test("enrichment refuses to invent a chain", async () => {
   await assertRejects(
     () => enrichLaunchFields({ name: "Test Token" }),

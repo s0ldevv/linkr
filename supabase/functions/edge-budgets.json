@@ -42,6 +42,12 @@
       "maxGraphBytes": 4194304,
       "chain": "none"
     },
+    "cli-chat": {
+      "classification": "api_no_growth",
+      "maxModules": 1028,
+      "maxGraphBytes": 10422318,
+      "note": "Shares the linkr_agent_runtime graph with terminal-chat; budgeted against the same ceiling."
+    },
     "agent-liquidity-add": {
       "classification": "api_no_growth",
       "maxModules": 941,

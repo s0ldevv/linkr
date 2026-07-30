@@ -3,27 +3,17 @@ import {
   extractOutputText,
   parseStrictJson,
 } from "./comet.ts";
+import {
+  type LaunchChain,
+  type LaunchFields,
+  launchStateSummary,
+  missingLaunchSlots,
+} from "./launch_contract.ts";
 
-export type LaunchChain = "solana" | "robinhood";
-
-export interface LaunchFields {
-  name?: string;
-  symbol?: string;
-  description?: string;
-  image_url?: string;
-  original_image_url?: string;
-  image_prompt?: string;
-  image_negative_prompt?: string;
-  chain?: LaunchChain;
-  chain_ambiguous?: boolean;
-  dev_buy_amount?: string;
-  mayhem_mode?: boolean;
-}
-
-const REQUIRED_FIELDS: Array<keyof LaunchFields> = [
-  "name",
-  "chain",
-];
+// The launch field shape and the required-slot policy live in
+// `launch_contract.ts` so every surface reads one definition. These re-exports
+// keep the existing import sites unchanged.
+export type { LaunchChain, LaunchFields };
 
 export function isLaunchCommand(text: string): boolean {
   return /\b(?:launch|create|make|deploy)\b[\s\S]{0,40}\b(?:coin|token)\b/i
@@ -119,10 +109,12 @@ export function extractLaunchFields(
   ]);
   if (devBuy) fields.dev_buy_amount = devBuy.toUpperCase().replace(/\s+/g, " ");
 
-  // Detect mayhem mode request
-  if (/\bmayhem\s*(?:mode)?\b/i.test(value)) {
-    fields.mayhem_mode = true;
-  }
+  // Mayhem and cashback are opt-in. A negated mention ("no mayhem mode") is an
+  // explicit "off", not an explicit "on" — reading it as "on" was a live bug.
+  const mayhem = explicitToggle(value, /mayhem(?:\s*mode)?/i);
+  if (mayhem !== null) fields.mayhem_mode = mayhem;
+  const cashback = explicitToggle(value, /cashback(?:\s*mode)?/i);
+  if (cashback !== null) fields.cashback_mode = cashback;
 
   return fields;
 }
@@ -189,22 +181,57 @@ export function mergeLaunchFields(
 }
 
 export function missingLaunchFields(fields: LaunchFields): string[] {
-  return REQUIRED_FIELDS.filter((field) => {
-    if (field === "chain" && fields.chain_ambiguous) return true;
-    return !String(fields[field] ?? "").trim();
-  });
+  return missingLaunchSlots(fields);
 }
 
-export function clarificationReply(missing: string[]): string {
+/**
+ * Ask only for what is genuinely outstanding, and always lead with what is
+ * already saved.
+ *
+ * This function must never be called with a synthetic missing-field list. It
+ * previously received a hardcoded `["name"]` whenever a clarification was
+ * needed but nothing was actually missing, which is how the bot came to ask a
+ * user for a token name it had been holding for four turns.
+ */
+export function clarificationReply(
+  missing: string[],
+  fields: LaunchFields | null = null,
+): string {
   const needsName = missing.includes("name");
   const needsChain = missing.includes("chain");
+  const echo = fields ? launchStateSummary(fields) : "";
+  const prefix = echo ? `${echo} ` : "Your launch is saved. ";
+
   if (needsName && needsChain) {
-    return "Your launch is saved. Reply with the token name and choose one chain: Solana or Robinhood.";
+    return `${prefix}Reply with the token name and choose one chain: Solana or Robinhood.`;
   }
   if (needsChain) {
-    return "Your launch is saved. Which chain should I use: Solana or Robinhood?";
+    return `${prefix}Which chain should I use: Solana or Robinhood?`;
   }
-  return "Your launch is saved. What should the token be called?";
+  if (needsName) {
+    return `${prefix}What should the token be called?`;
+  }
+  return `${prefix}Reply with the launch change you want, or "cancel launch".`;
+}
+
+/**
+ * Read an explicit on/off for an opt-in launch mode.
+ *
+ * Returns `true` for a plain mention, `false` when the mention is negated, and
+ * `null` when the mode is not mentioned at all — so silence stays silence and
+ * the caller's default (off) applies.
+ */
+function explicitToggle(value: string, mode: RegExp): boolean | null {
+  const source = mode.source;
+  if (!new RegExp(`\\b${source}\\b`, "i").test(value)) return null;
+  const negated = new RegExp(
+    `\\b(?:no|not|non|without|disable|disabled|off|skip|dont|don't|do\\s+not|turn\\s+off)\\b[^.!?;]{0,24}?\\b${source}\\b`,
+    "i",
+  ).test(value) ||
+    new RegExp(`\\b${source}\\b[^.!?;]{0,16}?\\b(?:off|disabled)\\b`, "i").test(
+      value,
+    );
+  return !negated;
 }
 
 function firstMatch(value: string, patterns: RegExp[]): string | null {
