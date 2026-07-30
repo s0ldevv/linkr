@@ -5,6 +5,14 @@ import {
   getMarketDataBundle,
 } from "../_shared/market_data/index.ts";
 import { routeLinkrTurnDeterministic } from "../_shared/conversation_router.ts";
+// Pure HTTP relay to the chain-isolated `linkr-agent-wallet-read` function.
+// linkr_action_dispatch.ts imports nothing, so this keeps the worker's strict
+// boot budget (chain: "none") intact — no chain SDK enters this graph.
+import { readWalletContext } from "../_shared/linkr_action_dispatch.ts";
+import {
+  composeWalletBalanceReply,
+  WALLET_UNLINKED_REPLY,
+} from "../_shared/x_wallet_reply.ts";
 import { chainCapabilityReply } from "../_shared/linkr_capabilities.ts";
 import {
   insertAgentRunOnce,
@@ -79,7 +87,10 @@ Deno.serve((req) =>
         };
       }
 
-      const deterministic = deterministicPublicReply(tweet, context);
+      // Runs after the deterministic block so identity and safe_refusal keep
+      // precedence — a turn that also asks for a private key must still refuse.
+      const deterministic = deterministicPublicReply(tweet, context) ??
+        await walletBalanceReply(tweet, context, userId);
       if (deterministic) {
         const queued = await admin.rpc("enqueue_linkr_x_reply_v1", {
           p_parent_work_item_id: claim.work_item.id,
@@ -244,7 +255,7 @@ function deterministicPublicReply(
   tweet: Record<string, unknown>,
   context: LinkrPublicTurnContext,
 ): {
-  kind: "identity" | "capability_help" | "safe_refusal";
+  kind: "identity" | "capability_help" | "safe_refusal" | "wallet_query";
   text: string;
   lint: ReturnType<typeof lintPublicReply>;
   routeDecision: unknown;
@@ -289,8 +300,46 @@ function deterministicPublicReply(
   return null;
 }
 
+/**
+ * The asker's own balances, composed from the real numbers.
+ *
+ * Deliberately deterministic rather than model-composed: a balance is the
+ * user's money, and a paraphrased or invented figure in a permanent public
+ * reply is far worse than no reply at all. Returns null when this turn is not a
+ * self-scoped wallet question, so every other route is untouched.
+ */
+async function walletBalanceReply(
+  tweet: Record<string, unknown>,
+  context: LinkrPublicTurnContext,
+  userId: string | null,
+): Promise<ReturnType<typeof deterministicReply> | null> {
+  const decision = routeLinkrTurnDeterministic({
+    text: String(tweet.text ?? ""),
+    is_follow_up: Boolean(tweet.is_follow_up),
+    ingest_source: String(tweet.ingest_source ?? "") || null,
+    ingest_reason: String(tweet.ingest_reason ?? "") || null,
+    parent_reply_tweet_id: String(tweet.parent_reply_tweet_id ?? "") || null,
+    has_media: Boolean(tweet.has_media),
+    has_history: context.conversation.total_count > 0,
+    engagement_gate_enabled: false,
+  });
+  if (decision.route !== "wallet_query") return null;
+
+  // Never ask a stranger to post a public key in a public thread.
+  if (!userId) {
+    return deterministicReply("wallet_query", WALLET_UNLINKED_REPLY, decision);
+  }
+
+  const wallet = await readWalletContext(userId, "wallet");
+  return deterministicReply(
+    "wallet_query",
+    composeWalletBalanceReply(wallet),
+    decision,
+  );
+}
+
 function deterministicReply(
-  kind: "identity" | "capability_help" | "safe_refusal",
+  kind: "identity" | "capability_help" | "safe_refusal" | "wallet_query",
   text: string,
   routeDecision: unknown,
 ) {

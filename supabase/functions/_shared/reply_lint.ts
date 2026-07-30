@@ -34,6 +34,21 @@ const TOKEN_MISSING_PATTERNS = [
   /\bcannot identify (a |any |the )?token\b/i,
 ];
 
+/**
+ * Linkr already knows a signed-in user's wallets, so asking for one in a public
+ * reply is always wrong: it is bad UX, it trains users to post wallet details in
+ * public, and it is what the bot said when it had no wallet capability at all.
+ */
+const WALLET_SOLICITATION_PATTERNS = [
+  // Wallet-scoped nouns only. Asking for a *contract* address is legitimate and
+  // core to the product ("send the contract address for a cleaner read"), so a
+  // bare "address" must never trip this.
+  /\b(provide|send|share|give|reply with|paste)\b[^.!?]{0,40}\b(wallet address|public key|deposit address)\b/i,
+  // A possessive makes it the user's own address rather than a token's.
+  /\b(provide|send|share|give|reply with|paste)\b[^.!?]{0,24}\byour (address|wallet)\b/i,
+  /\bwhat(?:'|’)?s? your (wallet|address|public key)\b/i,
+];
+
 const DEFERRED_ACTION_PATTERNS = [
   /\bi['\u2019]?ll check\b/i,
   /\bi will check\b/i,
@@ -89,6 +104,14 @@ export function lintPublicReply(text: string, mode: string): ReplyLintResult {
     if (pattern.test(text)) {
       if (!blocked.includes("deferred-action-language")) {
         blocked.push("deferred-action-language");
+      }
+    }
+  }
+
+  for (const pattern of WALLET_SOLICITATION_PATTERNS) {
+    if (pattern.test(text)) {
+      if (!blocked.includes("wallet-solicitation-language")) {
+        blocked.push("wallet-solicitation-language");
       }
     }
   }

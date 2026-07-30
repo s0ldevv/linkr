@@ -157,6 +157,16 @@ export function routeLinkrTurnDeterministic(args: {
     });
   }
 
+  if (isSelfWalletBalanceQuestion(normalized)) {
+    return normalizeRouteDecision({
+      route: "wallet_query",
+      intent: "wallet_balance",
+      confidence: 0.9,
+      reason: "self wallet balance query",
+      allowed_tools: ["wallet.balance_query"],
+    });
+  }
+
   if (
     /\b(my .*lp|lp positions|liquidity positions|my pools|show .*liquidity)\b/
       .test(normalized)
@@ -242,6 +252,36 @@ function normalizeForRoute(text: string): string {
     .replace(/[^a-z0-9_$' ]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+/**
+ * Is the user asking about their *own* Linkr wallet balance?
+ *
+ * Strictly self-scoped. A public reply may disclose the asker's own balance but
+ * never anyone else's, so a first-person marker is required and any third-party
+ * or address-scoped phrasing disqualifies the turn. When in doubt this returns
+ * false and the turn falls through to the ordinary conversation path.
+ */
+export function isSelfWalletBalanceQuestion(normalized: string): boolean {
+  // "how much sol does @someone have", "balance of <address>" — not the asker.
+  if (/\b(his|her|their|its|someone|somebody|else'?s?|this wallet)\b/.test(normalized)) {
+    return false;
+  }
+  if (/\bbalance of\b/.test(normalized)) return false;
+  // A capability question ("can you check balances?") stays capability_help.
+  if (/\b(can|could|do|does|are) you\b/.test(normalized)) return false;
+  // First person is mandatory.
+  if (!/\b(my|mine|i)\b/.test(normalized)) return false;
+
+  return (
+    /\bhow much (sol|eth|money|crypto|funds?|balance)\b/.test(normalized) ||
+    /\bmy (sol|eth|wallet|balance|funds?)\b/.test(normalized) ||
+    /\bin my wallet\b/.test(normalized) ||
+    /\b(check|show|see|get) my (wallet|balance|funds?)\b/.test(normalized) ||
+    /\bdo i have (any|enough)?\s*(sol|eth|money|funds?)\b/.test(normalized) ||
+    /\bwhat'?s? (my|in my)\b/.test(normalized) ||
+    /\b(wallet|deposit) address\b/.test(normalized)
+  );
 }
 
 function isXSearchRequest(normalized: string): boolean {

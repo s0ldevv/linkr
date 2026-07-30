@@ -41,6 +41,18 @@ export const LINKR_ROUTE_RESOURCE_BUNDLES: Record<LinkrRouteName, LinkrRouteReso
     ["reply"],
     SELF_PRIVATE,
   ),
+  // The asker's own balances. SELF_PRIVATE matches data_query: a user's own
+  // private data may be read for them, never another user's. The reply is
+  // composed deterministically from the real numbers rather than by a model —
+  // a balance is the user's money and must never be paraphrased or invented.
+  wallet_query: bundle(
+    "wallet_query",
+    ["kernel", "account"],
+    ["conversation"],
+    ["wallet.balance_query"],
+    [],
+    SELF_PRIVATE,
+  ),
   draft_continue: bundle(
     "draft_continue",
     ["kernel", "draft", "thread"],

@@ -11,6 +11,7 @@ export const LINKR_ROUTE_NAMES = [
   "coin_inquiry",
   "x_search",
   "data_query",
+  "wallet_query",
   "draft_continue",
   "transfer_draft",
   "launch_from_post",
