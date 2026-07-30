@@ -19,13 +19,11 @@ export const SOL_FIRST_LAUNCH_FUNDING_SOL = 0.02;
 /**
  * Most Linkr will auto-send to a launch wallet, per launch.
  *
- * Raised from 20_000_000 alongside PUMP_FUN_LAUNCH_RENT_HEADROOM_LAMPORTS. The
- * fallback reserve estimate is 0.02 SOL, which already sat exactly at the old
- * cap — adding 0.009 SOL of rent headroom on top would have pushed the deficit
- * past it, and funding is skipped entirely when the deficit exceeds the cap. A
- * launch on the fallback path would have silently stopped being funded.
+ * A safety ceiling, not an amount. The amount is the flat
+ * SOLANA_LAUNCH_FUNDING_LAMPORTS (0.01 SOL) in pump_adapter.ts, so the largest
+ * possible deficit is well under this.
  */
-export const SOL_LAUNCH_FUNDING_CAP_LAMPORTS = 30_000_000n;
+export const SOL_LAUNCH_FUNDING_CAP_LAMPORTS = 20_000_000n;
 export const SOL_FIRST_LAUNCH_FUNDING_LAMPORTS =
   SOL_LAUNCH_FUNDING_CAP_LAMPORTS;
 export type SolanaFundingKind =

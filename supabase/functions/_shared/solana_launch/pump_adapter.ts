@@ -229,7 +229,6 @@ export async function estimatePumpFunLaunchFundingLamports(
       payerIndex: compiled.payerIndex,
       feeLamports,
       fallbackMinimumLamports: fallback.minimumLaunchLamports,
-      bufferLamports: pumpFunLaunchFundingBufferLamports(env),
       raw: {
         dynamic_enabled: true,
         quote_wallet_secret_source: selectedSecret.source,
@@ -269,10 +268,10 @@ export function fallbackPumpFunLaunchFundingEstimate(
     estimatorVersion: ESTIMATOR_VERSION,
     minimumLaunchLamports,
     bufferLamports: 0n,
-    // Same rent headroom as the simulated path, so a launch funded through the
-    // fallback reserve cannot be left below the rent-exempt floor either.
-    fundingTargetLamports: minimumLaunchLamports +
-      PUMP_FUN_LAUNCH_RENT_HEADROOM_LAMPORTS,
+    // The same flat amount as the simulated path. Funding no longer depends on
+    // which estimator ran, so a simulation failure cannot change what a launch
+    // wallet receives.
+    fundingTargetLamports: SOLANA_LAUNCH_FUNDING_LAMPORTS,
     feeLamports: 0n,
     payerDebitLamports: minimumLaunchLamports,
     simulationUnitsConsumed: null,
@@ -282,50 +281,38 @@ export function fallbackPumpFunLaunchFundingEstimate(
       source: "fallback_reserve",
       reserve_sol: reserveSol,
       fee_sharing_reserve_sol: feeSharingReserveSol,
-      rent_headroom_lamports: PUMP_FUN_LAUNCH_RENT_HEADROOM_LAMPORTS.toString(),
+      funding_target_lamports: SOLANA_LAUNCH_FUNDING_LAMPORTS.toString(),
+      funding_source: "flat_hardcoded_amount",
     },
   };
 }
 
 /**
- * Extra SOL funded on top of the estimated launch cost. Hardcoded on purpose.
+ * How much SOL a launch wallet is funded to. A flat, hardcoded amount.
  *
- * Solana rejects any transaction that would leave a surviving account below the
- * rent-exempt minimum — 890,880 lamports for a basic account. The cost estimate
- * is measured by simulating against a well-funded quote wallet that never
- * approaches that floor, so a launch wallet funded to exactly the estimate is
- * left underneath it and the launch fails with:
+ * This deliberately replaces the previous estimate-derived target
+ * (payer debit + tunable buffer + rent headroom). That arithmetic was measured
+ * by simulating against the funding wallet, which holds ~1 SOL and therefore
+ * never approached the boundary the real payer hits — it produced targets that
+ * left the launch wallet below Solana's rent-exempt minimum, and the launch was
+ * rejected with InsufficientFundsForRent on the payer.
  *
- *   InsufficientFundsForRent { account_index: 0 }   // account 0 is the payer
+ * A constant removes the class of bug entirely: there is no estimate to be
+ * wrong, and no environment variable that can silently clamp it. The only
+ * property that must hold is
  *
- * Observed in production on 2026-07-30: the wallet was funded to 7,572,480
- * lamports and the launch needed to debit 7,422,480, leaving 150,000 — some
- * 740,880 short of the floor. The transaction never landed and the work item
- * retried on a permanently failing condition.
+ *   SOLANA_LAUNCH_FUNDING_LAMPORTS - payer debit >= rent-exempt minimum
  *
- * This headroom is not consumed. It stays in the user's wallet keeping the
- * account rent-exempt, so it is capital parked per launch rather than spend.
- *
- * Note this cannot be expressed through PUMP_FUN_LAUNCH_FUNDING_BUFFER_LAMPORTS
- * below: that value is capped at 300_000, still well under the rent floor.
+ * which is asserted in pump_adapter_test.ts against the real observed launch
+ * cost. Raise this constant if pump.fun launch costs ever grow into it.
  */
-export const PUMP_FUN_LAUNCH_RENT_HEADROOM_LAMPORTS = 9_000_000n; // 0.009 SOL
-
-export function pumpFunLaunchFundingBufferLamports(
-  env: (name: string) => string | undefined = (name) =>
-    Deno.env.get(name) ?? undefined,
-): bigint {
-  const raw = Number(env("PUMP_FUN_LAUNCH_FUNDING_BUFFER_LAMPORTS"));
-  if (!Number.isFinite(raw) || raw < 0) return 150_000n;
-  return BigInt(Math.min(300_000, Math.floor(raw)));
-}
+export const SOLANA_LAUNCH_FUNDING_LAMPORTS = 10_000_000n; // 0.01 SOL
 
 export function estimatePumpFunLaunchFundingFromSimulation(args: {
   simulationValue: any;
   payerIndex: number;
   feeLamports: bigint;
   fallbackMinimumLamports: bigint;
-  bufferLamports: bigint;
   raw?: Record<string, unknown>;
 }): PumpFunLaunchCostEstimate {
   const pre = Array.isArray(args.simulationValue?.preBalances)
@@ -349,14 +336,13 @@ export function estimatePumpFunLaunchFundingFromSimulation(args: {
   const guardedMinimumLamports = debit > 0n
     ? minimumLaunchLamports
     : maxBigint(minimumLaunchLamports, args.fallbackMinimumLamports);
-  const effectiveBufferLamports = debit > 0n ? args.bufferLamports : 0n;
   return {
     estimatorVersion: ESTIMATOR_VERSION,
+    // Retained for the audit trail: what the launch is measured to cost, which
+    // is no longer what it is funded to.
     minimumLaunchLamports: guardedMinimumLamports,
-    bufferLamports: effectiveBufferLamports,
-    // The payer must still be rent-exempt once the launch debits it.
-    fundingTargetLamports: guardedMinimumLamports + effectiveBufferLamports +
-      PUMP_FUN_LAUNCH_RENT_HEADROOM_LAMPORTS,
+    bufferLamports: 0n,
+    fundingTargetLamports: SOLANA_LAUNCH_FUNDING_LAMPORTS,
     feeLamports: simulatedFee ?? args.feeLamports,
     payerDebitLamports,
     simulationUnitsConsumed: Number.isFinite(
@@ -370,11 +356,9 @@ export function estimatePumpFunLaunchFundingFromSimulation(args: {
       estimator_version: ESTIMATOR_VERSION,
       source: "quote_wallet_simulation",
       minimum_launch_lamports: guardedMinimumLamports.toString(),
-      buffer_lamports: effectiveBufferLamports.toString(),
-      rent_headroom_lamports: PUMP_FUN_LAUNCH_RENT_HEADROOM_LAMPORTS.toString(),
-      funding_target_lamports: (guardedMinimumLamports +
-        effectiveBufferLamports + PUMP_FUN_LAUNCH_RENT_HEADROOM_LAMPORTS)
-        .toString(),
+      buffer_lamports: "0",
+      funding_target_lamports: SOLANA_LAUNCH_FUNDING_LAMPORTS.toString(),
+      funding_source: "flat_hardcoded_amount",
       fee_lamports: (simulatedFee ?? args.feeLamports).toString(),
       payer_debit_lamports: payerDebitLamports.toString(),
       simulation_units_consumed: Number.isFinite(

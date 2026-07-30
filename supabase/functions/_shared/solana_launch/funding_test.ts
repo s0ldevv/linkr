@@ -29,18 +29,12 @@ Deno.test("first-launch funding covers only the exact confirmed deficit", () => 
   if (firstLaunchFundingDeficit(2_000_000, 7_690_000) !== 5_690_000n) {
     throw new Error("partial balance was not deducted from dynamic target");
   }
-  // Deliberately raised from 20_000_000 on 2026-07-30 to make room for
-  // PUMP_FUN_LAUNCH_RENT_HEADROOM_LAMPORTS (0.009 SOL). The fallback reserve
-  // estimate of 0.02 SOL already sat exactly at the old cap, and funding is
-  // skipped when the deficit exceeds the cap, so leaving it would have silently
-  // stopped funding launches on that path.
-  //
-  // This assertion is a tripwire on how much platform SOL may be auto-sent per
-  // launch. Changing it should always be a conscious decision.
-  if (SOL_LAUNCH_FUNDING_CAP_LAMPORTS !== 30_000_000n) {
+  // A tripwire on how much platform SOL may be auto-sent per launch. Changing
+  // it should always be a conscious decision.
+  if (SOL_LAUNCH_FUNDING_CAP_LAMPORTS !== 20_000_000n) {
     throw new Error("launch funding cap changed unexpectedly");
   }
-  if (SOL_FIRST_LAUNCH_FUNDING_LAMPORTS !== 30_000_000n) {
+  if (SOL_FIRST_LAUNCH_FUNDING_LAMPORTS !== 20_000_000n) {
     throw new Error("first-launch subsidy cap changed unexpectedly");
   }
 });

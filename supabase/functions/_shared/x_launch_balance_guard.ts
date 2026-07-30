@@ -14,7 +14,7 @@ export type XLaunchBalanceChain = "robinhood" | "solana";
 // Kept in step with SOL_LAUNCH_FUNDING_CAP_LAMPORTS in solana_launch/funding.ts.
 // If the intake guard's ceiling is lower than what Linkr will actually fund, it
 // turns away launches the platform is willing and able to cover.
-const SOL_LAUNCH_FUNDING_CAP_LAMPORTS = 30_000_000n;
+const SOL_LAUNCH_FUNDING_CAP_LAMPORTS = 20_000_000n;
 const DEFAULT_ROBINHOOD_LAUNCH_FUNDING_CAP_ETH = 0.005;
 const DEFAULT_SOLANA_LAUNCH_INTAKE_MINIMUM_SOL = 0.008;
 
