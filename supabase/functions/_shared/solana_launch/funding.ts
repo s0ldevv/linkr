@@ -20,7 +20,7 @@ export const SOL_FIRST_LAUNCH_FUNDING_SOL = 0.02;
  * Most Linkr will auto-send to a launch wallet, per launch.
  *
  * A safety ceiling, not an amount. The amount is the flat
- * SOLANA_LAUNCH_FUNDING_LAMPORTS (0.01 SOL) in pump_adapter.ts, so the largest
+ * SOLANA_LAUNCH_FUNDING_LAMPORTS (0.015 SOL) in pump_adapter.ts, so the largest
  * possible deficit is well under this.
  */
 export const SOL_LAUNCH_FUNDING_CAP_LAMPORTS = 20_000_000n;

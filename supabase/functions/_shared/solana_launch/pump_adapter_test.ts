@@ -12,8 +12,8 @@ const RENT_EXEMPT_MINIMUM_LAMPORTS = 890_880n;
 /** Real payer debits observed on mainnet launches, 2026-07-30. */
 const OBSERVED_LAUNCH_DEBITS = [7_422_480n, 7_443_360n, 7_464_240n];
 
-Deno.test("launch funding is a flat hardcoded 0.01 SOL", () => {
-  assertEquals(SOLANA_LAUNCH_FUNDING_LAMPORTS, 10_000_000n);
+Deno.test("launch funding is a flat hardcoded 0.015 SOL", () => {
+  assertEquals(SOLANA_LAUNCH_FUNDING_LAMPORTS, 15_000_000n);
 });
 
 // The whole point of the constant: funding no longer depends on an estimate, so
@@ -77,7 +77,7 @@ Deno.test("Pump launch fallback estimate excludes dev buy amounts", () => {
 // The one property the flat amount has to satisfy. If pump.fun launch costs
 // ever grow into this margin, raise SOLANA_LAUNCH_FUNDING_LAMPORTS — this test
 // is what will tell you.
-Deno.test("0.01 SOL covers a real launch and leaves the payer rent-exempt", () => {
+Deno.test("the funded amount covers a real launch and leaves the payer rent-exempt", () => {
   for (const debit of OBSERVED_LAUNCH_DEBITS) {
     const remaining = SOLANA_LAUNCH_FUNDING_LAMPORTS - debit;
     assertEquals(remaining > 0n, true, `funding must cover a debit of ${debit}`);

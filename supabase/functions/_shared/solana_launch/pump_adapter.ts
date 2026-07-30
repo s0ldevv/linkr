@@ -306,7 +306,7 @@ export function fallbackPumpFunLaunchFundingEstimate(
  * which is asserted in pump_adapter_test.ts against the real observed launch
  * cost. Raise this constant if pump.fun launch costs ever grow into it.
  */
-export const SOLANA_LAUNCH_FUNDING_LAMPORTS = 10_000_000n; // 0.01 SOL
+export const SOLANA_LAUNCH_FUNDING_LAMPORTS = 15_000_000n; // 0.015 SOL
 
 export function estimatePumpFunLaunchFundingFromSimulation(args: {
   simulationValue: any;
