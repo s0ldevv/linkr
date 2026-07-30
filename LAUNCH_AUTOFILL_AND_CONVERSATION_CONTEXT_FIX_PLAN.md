@@ -846,3 +846,30 @@ it was the application layer asking for too much.
   for, which is the required behaviour. Fixing the plumbing means replacing a
   live launch-execution DB function and was judged too risky to bundle with
   this change.
+
+### Live production verification, 21:12 UTC (4 minutes after deploy)
+
+A real user launched through `@linkrbot` immediately after the deploy. The
+request was materially identical to the one that looped at 20:05.
+
+| | Before (20:05) | After (21:12) |
+|---|---|---|
+| Tweet | "launch a coin called test on Solana. Ticker is test." + image | "launch a coin on Solana called test, ticker test." + image |
+| Bot reply | "Please provide a short description, dev buy amount (if any), and whether to enable mayhem mode…" then the loop | **none** |
+| Outcome | 0 launches after 7 turns | pending action **executing** 26 seconds later |
+
+Draft `acd94f81-96b8-4711-8bd4-6b5cf2eb76f3` → `converted_to_pending`,
+`required_fields: []`, with everything the user never mentioned filled in
+automatically:
+
+- `symbol: "TEST"`
+- `description` — AI generated
+- `image_prompt` + `image_negative_prompt` — AI generated
+- `dev_buy_amount: "0 SOL"`
+- `image_url` — the user's attached media, retained
+
+`linkr_pending_actions` `78fa44cd` (`Launch $TEST on solana`, executing) and
+`coin_launches` `f1eb968f` were created. No `launch_clarification` reply has
+been posted since 20:09, i.e. none since the deploy.
+
+One tweet in, one launch out.
