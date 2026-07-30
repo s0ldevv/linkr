@@ -15,12 +15,12 @@ import {
 
 Deno.test("funding retry syntax is narrow and explicit", () => {
   assert(isLaunchRetry("retry launch"));
-  assert(isLaunchRetry("@linkrcash resume the launch"));
+  assert(isLaunchRetry("@linkrbot resume the launch"));
   assertEquals(isLaunchRetry("try launching another token"), false);
 });
 
 Deno.test("name-only request asks only for explicit chain", () => {
-  const fields = extractLaunchFields("@linkrcash launch a coin called test");
+  const fields = extractLaunchFields("@linkrbot launch a coin called test");
   assertEquals(fields, { name: "test" });
   assertEquals(missingLaunchFields(fields), ["chain"]);
   const reply = clarificationReply(missingLaunchFields(fields));
@@ -31,7 +31,7 @@ Deno.test("name-only request asks only for explicit chain", () => {
 
 Deno.test("incident Solana request does not ask for chain again", () => {
   const fields = extractLaunchFields(
-    "@linkrcash launch a coin called test on Solana",
+    "@linkrbot launch a coin called test on Solana",
   );
   assertEquals(fields, { name: "test", chain: "solana" });
   assertEquals(missingLaunchFields(fields), []);
@@ -51,7 +51,7 @@ Deno.test("follow-up fields merge without discarding prior values", () => {
 
 Deno.test("semantic AI ticker override wins over deterministic filler words", () => {
   const deterministic = extractLaunchFields(
-    "@linkrcash launch a coin called testing ticker also test on Solana",
+    "@linkrbot launch a coin called testing ticker also test on Solana",
   );
   assertEquals(deterministic.symbol, "ALSO");
 
@@ -87,7 +87,7 @@ Deno.test("chain is explicit, deterministic, and never guessed when ambiguous", 
 
 Deno.test("confirmation and cancellation require explicit phrases", () => {
   assert(isLaunchCommand("please create a token called Test"));
-  assert(isLaunchConfirmation("@linkrcash confirm launch"));
+  assert(isLaunchConfirmation("@linkrbot confirm launch"));
   assert(isLaunchCancellation("cancel the launch"));
   assertEquals(isLaunchConfirmation("is the launch confirmed?"), false);
 });

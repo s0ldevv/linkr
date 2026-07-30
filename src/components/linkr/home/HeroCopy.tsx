@@ -100,11 +100,11 @@ export function HeroCopy() {
                 <a
                   className="sm-linkr-hero-cta sm-linkr-hero-cta-ghost"
                   data-magnetic
-                  href={xIntent("@linkrcash buy $100 of this")}
+                  href={xIntent("@linkrbot buy $100 of this")}
                   rel="noreferrer"
                   target="_blank"
                 >
-                  Try @linkrcash
+                  Try @linkrbot
                   <ArrowUpRight aria-hidden="true" size={18} />
                 </a>
               </div>
@@ -121,7 +121,7 @@ export function HeroCopy() {
                     rules checked
                   </b>
                 </div>
-                <p>@linkrcash buy $100 of this and use my saved limits</p>
+                <p>@linkrbot buy $100 of this and use my saved limits</p>
                 <div className="sm-linkr-command-card-foot">
                   <span>Read reply</span>
                   <span>Match wallet</span>

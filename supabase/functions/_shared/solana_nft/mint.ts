@@ -148,7 +148,7 @@ export async function mintCollection(
     name: input.name,
     symbol: input.symbol,
     description: input.description ??
-      `${input.name} — NFT collection minted via @linkrcash on Solana`,
+      `${input.name} — NFT collection minted via @linkrbot on Solana`,
     image: input.imageUrl,
     external_url: input.externalUrl ?? input.websiteUrl ?? null,
     seller_fee_basis_points: 500,
@@ -213,7 +213,7 @@ export async function mintNftIntoCollection(
     name: input.name,
     symbol: input.collection.symbol,
     description: input.description ??
-      `Minted into ${input.collection.name} via @linkrcash on Solana`,
+      `Minted into ${input.collection.name} via @linkrbot on Solana`,
     image: input.imageUrl,
     external_url: input.externalUrl ?? null,
     collection: { name: input.collection.name, family: input.collection.name },

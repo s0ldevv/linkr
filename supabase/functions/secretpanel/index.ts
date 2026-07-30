@@ -23,7 +23,7 @@ import {
 } from "../_shared/x_posting_verifier.ts";
 import { recordHealthEvent } from "../_shared/health.ts";
 
-const ACCOUNT_KEY = "linkrcash";
+const ACCOUNT_KEY = "linkrbot";
 const X_USER_LOOKUP_URL = "https://api.twitter.com/2/users/by/username";
 
 function requiredEnv(name: string): string {
@@ -199,7 +199,7 @@ async function loadStatus(admin: any, adminUserId: string) {
       mode: authMode,
       configured: postingConfigured,
       expected_user_id: expectedIdentity?.userId ?? null,
-      expected_handle: expectedIdentity?.handle ?? "linkrcash",
+      expected_handle: expectedIdentity?.handle ?? "linkrbot",
       last_verified_at: latestAuthHealth?.checked_at ?? null,
       last_verification_status: latestAuthHealth?.status ?? null,
       last_error: postingLastError,

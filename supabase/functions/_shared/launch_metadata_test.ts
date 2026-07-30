@@ -5,7 +5,7 @@ Deno.test("production pump metadata never falls back to testing website", () => 
   const resolved = resolvePumpFunLaunchMetadata(
     {
       mint_address: "Mint111111111111111111111111111111111111111",
-      source_tweet_url: "https://x.com/linkrcash/status/123",
+      source_tweet_url: "https://x.com/linkrbot/status/123",
     },
     { testingMode: false },
   );
@@ -14,7 +14,7 @@ Deno.test("production pump metadata never falls back to testing website", () => 
     resolved.websiteUrl,
     "https://linkr.cash/coin/Mint111111111111111111111111111111111111111",
   );
-  assertEquals(resolved.twitterUrl, "https://x.com/linkrcash/status/123");
+  assertEquals(resolved.twitterUrl, "https://x.com/linkrbot/status/123");
   assertEquals(resolved.telegramUrl, null);
   assertEquals(resolved.testingMode, false);
 });
@@ -26,18 +26,18 @@ Deno.test("pump metadata testing mode requires explicit policy enablement", () =
       metadata_twitter_url: "https://x.com/user/status/999",
       metadata_telegram_url: "https://t.me/usergroup",
       mint_address: "Mint111",
-      source_tweet_url: "https://x.com/linkrcash/status/123",
+      source_tweet_url: "https://x.com/linkrbot/status/123",
     },
     {
       testingMode: true,
       testingWebsiteUrl: "https://example.com/test",
-      testingTwitterUrl: "https://twitter.com/linkrcash/status/123",
+      testingTwitterUrl: "https://twitter.com/linkrbot/status/123",
       testingTelegramUrl: "@linkr",
     },
   );
 
   assertEquals(resolved.websiteUrl, "https://example.com/test");
-  assertEquals(resolved.twitterUrl, "https://twitter.com/linkrcash/status/123");
+  assertEquals(resolved.twitterUrl, "https://twitter.com/linkrbot/status/123");
   assertEquals(resolved.telegramUrl, "https://t.me/linkr");
   assertEquals(resolved.testingMode, true);
 });
@@ -49,18 +49,18 @@ Deno.test("pump metadata testing mode preserves base Telegram override", () => {
       metadata_twitter_url: "https://x.com/user/status/999",
       metadata_telegram_url: "https://t.me/usergroup",
       mint_address: "Mint111",
-      source_tweet_url: "https://x.com/linkrcash/status/123",
+      source_tweet_url: "https://x.com/linkrbot/status/123",
     },
     {
       testingMode: true,
       testingWebsiteUrl: "https://example.com/test",
-      testingTwitterUrl: "https://x.com/linkrcash/status/123",
+      testingTwitterUrl: "https://x.com/linkrbot/status/123",
       testingTelegramUrl: "https://t.me/",
     },
   );
 
   assertEquals(resolved.websiteUrl, "https://example.com/test");
-  assertEquals(resolved.twitterUrl, "https://x.com/linkrcash/status/123");
+  assertEquals(resolved.twitterUrl, "https://x.com/linkrbot/status/123");
   assertEquals(resolved.telegramUrl, "https://t.me/");
   assertEquals(resolved.testingMode, true);
 });
@@ -72,7 +72,7 @@ Deno.test("metadata testing blank fields use launch defaults and ignore user met
       metadata_twitter_url: "https://x.com/user/status/999",
       metadata_telegram_url: "https://t.me/usergroup",
       mint_address: "Mint111",
-      source_tweet_url: "https://x.com/linkrcash/status/123",
+      source_tweet_url: "https://x.com/linkrbot/status/123",
     },
     {
       testingMode: true,
@@ -83,7 +83,7 @@ Deno.test("metadata testing blank fields use launch defaults and ignore user met
   );
 
   assertEquals(resolved.websiteUrl, "https://linkr.cash/coin/Mint111");
-  assertEquals(resolved.twitterUrl, "https://x.com/linkrcash/status/123");
+  assertEquals(resolved.twitterUrl, "https://x.com/linkrbot/status/123");
   assertEquals(resolved.telegramUrl, null);
   assertEquals(resolved.testingMode, true);
 });

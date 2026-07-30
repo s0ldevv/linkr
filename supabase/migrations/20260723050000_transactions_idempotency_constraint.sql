@@ -21,7 +21,7 @@
 --
 -- SOLUTION:
 -- Replace the partial unique index with a full unique constraint.
--- This enables both X bot (@linkrcash) and Agent API (/api/trade) swap execution to work.
+-- This enables both X bot (@linkrbot) and Agent API (/api/trade) swap execution to work.
 
 -- Step 1: Backfill NULL idempotency_key values with generated unique keys
 -- This ensures no rows will violate the upcoming NOT NULL constraint
@@ -78,7 +78,7 @@ ALTER COLUMN idempotency_key SET NOT NULL;
 
 -- Step 5: Add documentation
 COMMENT ON CONSTRAINT transactions_idempotency_key_unique ON public.transactions IS 
-  'Ensures idempotent swap/transfer/burn execution - prevents duplicate transactions from the same request. Used by both X bot (@linkrcash) and Agent API (/api/trade).';
+  'Ensures idempotent swap/transfer/burn execution - prevents duplicate transactions from the same request. Used by both X bot (@linkrbot) and Agent API (/api/trade).';
 
 COMMENT ON COLUMN public.transactions.idempotency_key IS 
   'Unique identifier for idempotent request processing. Format: <source>-<identifier> (e.g., "x-trade:<tweet_id>", "agent-sol-trade:<api_key_id>:<idempotency_key>", "token-burn-transaction:<user_id>:<mint>"). Required for all transactions.';

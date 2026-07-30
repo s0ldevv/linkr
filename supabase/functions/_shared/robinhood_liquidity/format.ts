@@ -89,7 +89,7 @@ export function formatPositionList(positions: any[]): string {
       `${index + 1}. ${symbol} ${venue} #${shortId(position.position_token_id)} - ${range} - liquidity ${position.liquidity ?? "0"}`,
     );
   });
-  lines.push("", "Use: @linkrcash show my CASH LP");
+  lines.push("", "Use: @linkrbot show my CASH LP");
   return lines.join("\n");
 }
 

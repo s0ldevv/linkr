@@ -24,8 +24,8 @@ import {
 } from "../_shared/telegram.ts";
 
 const COOKIE_NAME = "linkr_x_pkce";
-const ACCOUNT_KEY = "linkrcash";
-const EXPECTED_HANDLE = "linkrcash";
+const ACCOUNT_KEY = "linkrbot";
+const EXPECTED_HANDLE = "linkrbot";
 const BOT_SCOPES = "tweet.read tweet.write users.read offline.access";
 const USER_SCOPES = "tweet.read users.read";
 const X_AUTHORIZE_URL = "https://twitter.com/i/oauth2/authorize";

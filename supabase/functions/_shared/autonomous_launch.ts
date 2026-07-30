@@ -89,7 +89,7 @@ export async function authorizePreparedLaunch(
     latestFollowUp: threadContext.latestFollowUp,
     previousAssistantReply: threadContext.previousAssistantReply,
     finalPayload: payload as LaunchFields,
-    botHandle: Deno.env.get("X_BOT_HANDLE") ?? "linkrcash",
+    botHandle: Deno.env.get("X_BOT_HANDLE") ?? "linkrbot",
   });
   await recordLaunchSemanticVerification(admin, draft, verification);
   assertLaunchPayloadMatchesThread(verification);

@@ -167,7 +167,7 @@ function supabaseFunctionsUrl(functionName: string) {
 async function getSessionToken() {
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
-  if (!token) throw new Error("You need to sign in as @linkrcash.");
+  if (!token) throw new Error("You need to sign in as @linkrbot.");
   return token;
 }
 
@@ -389,7 +389,7 @@ function SecretPanelPage() {
             <p className="mt-3 text-sm text-[#66706b]">
               {statusQuery.error instanceof Error
                 ? statusQuery.error.message
-                : "This page is only available to @linkrcash."}
+                : "This page is only available to @linkrbot."}
             </p>
           </div>
         ) : status ? (
@@ -406,7 +406,7 @@ function SecretPanelPage() {
                     ) : (
                       <CircleAlert aria-hidden="true" className="h-6 w-6 text-[#b42318]" />
                     )}
-                    @{status.posting_auth.expected_handle ?? "linkrcash"}
+                    @{status.posting_auth.expected_handle ?? "linkrbot"}
                   </h2>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -414,7 +414,7 @@ function SecretPanelPage() {
                     <Button asChild>
                       <a href={status.oauth_login_url} target="_blank" rel="noreferrer">
                         <Twitter aria-hidden="true" className="h-4 w-4" />
-                        Connect @{status.posting_auth.expected_handle ?? "linkrcash"}
+                        Connect @{status.posting_auth.expected_handle ?? "linkrbot"}
                       </a>
                     </Button>
                   ) : null}

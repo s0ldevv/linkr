@@ -63,7 +63,7 @@ Deno.test("X AI route parser rejects malformed or unsafe reply routes", () => {
 
 Deno.test("exact reported X prompt is represented in AI routing and reply instructions", () => {
   const text =
-    "@linkrcash what can you tell me about this token: Ge87EtsjwRQbHaqQmKRno69RFTwh9bfSsm99XNxTpump and do you recommend that I buy it?";
+    "@linkrbot what can you tell me about this token: Ge87EtsjwRQbHaqQmKRno69RFTwh9bfSsm99XNxTpump and do you recommend that I buy it?";
   const routePrompt = buildRoutePrompt(text);
   assert(
     routePrompt.includes(text),
@@ -95,7 +95,7 @@ Deno.test("exact reported X prompt is represented in AI routing and reply instru
 });
 
 Deno.test("X router treats social or impossible value asks as conversation", () => {
-  const routePrompt = buildRoutePrompt("@linkrcash can you spare some SOL?");
+  const routePrompt = buildRoutePrompt("@linkrbot can you spare some SOL?");
   assert(
     routePrompt.includes("rhetorical asks"),
     "router should mention rhetorical asks",
@@ -107,7 +107,7 @@ Deno.test("X router treats social or impossible value asks as conversation", () 
 });
 
 Deno.test("X router keeps NFT how-to conversational but executable NFT requests legacy", () => {
-  const routePrompt = buildRoutePrompt("@linkrcash how can I launch an NFT?");
+  const routePrompt = buildRoutePrompt("@linkrbot how can I launch an NFT?");
   assert(
     routePrompt.includes("NFT how-to or capability questions"),
     "router should keep NFT how-to questions conversational",
@@ -118,7 +118,7 @@ Deno.test("X router keeps NFT how-to conversational but executable NFT requests 
   );
 
   const replyPrompt = buildReplyPrompt({
-    text: "@linkrcash how can I launch an NFT?",
+    text: "@linkrbot how can I launch an NFT?",
     route: parseXAiRoute({ lane: "reply", reply_kind: "conversation" }),
   });
   assert(
@@ -133,7 +133,7 @@ Deno.test("X router keeps NFT how-to conversational but executable NFT requests 
 
 Deno.test("X reply prompt grounds persona and permits normal conversation", () => {
   const prompt = buildReplyPrompt({
-    text: "@linkrcash who made you?",
+    text: "@linkrbot who made you?",
     route: parseXAiRoute({ lane: "reply", reply_kind: "conversation" }),
   });
   assert(prompt.includes("@S0Ldev"), "reply prompt should include builder");

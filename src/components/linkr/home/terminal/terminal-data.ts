@@ -274,7 +274,7 @@ export const PLACEHOLDER_RECEIPTS: ReceiptRow[] = [
 ].map((receipt, index) => ({
   chainLabel: chainPresentationForRecord(receipt).shortLabel,
   chainTone: chainPresentationForRecord(receipt).chain,
-  handle: "@linkrcash",
+  handle: "@linkrbot",
   id: `demo-receipt-${index}`,
   isDemo: true,
   status: receipt.status,
@@ -368,7 +368,7 @@ export function allSystemsOperational(entries: SystemStatusEntry[] | undefined):
 
 function cleanUserPostText(text: string): string {
   const cleaned = text
-    .replace(/(^|\s)@linkrcash\b[,:;.!?-]?\s*/gi, "$1")
+    .replace(/(^|\s)@linkrbot\b[,:;.!?-]?\s*/gi, "$1")
     .replace(/\s+/g, " ")
     .trim();
 
@@ -414,7 +414,7 @@ export function receiptsFromFeed(data: HomeDashboardData | undefined): ReceiptRo
       return {
         chainLabel: chain.shortLabel,
         chainTone: chain.chain,
-        handle: item.user_post_author ? `@${item.user_post_author}` : "@linkrcash",
+        handle: item.user_post_author ? `@${item.user_post_author}` : "@linkrbot",
         id: item.id ?? `receipt-${item.created_at}`,
         isDemo: false,
         status: receiptStatus(item.status),

@@ -9,12 +9,12 @@ import {
 } from "./x_bot_identity.ts";
 
 Deno.test("X bot identity normalizes the expected handle", () => {
-  assertEquals(normalizeXBotHandle(" @LinkrCash "), "linkrcash");
+  assertEquals(normalizeXBotHandle(" @LinkrBot "), "linkrbot");
   assertEquals(
     loadExpectedXBotIdentity((name) =>
-      name === "X_BOT_USER_ID" ? "2070400325207334912" : "@LinkrCash"
+      name === "X_BOT_USER_ID" ? "2070400325207334912" : "@LinkrBot"
     ),
-    { userId: "2070400325207334912", handle: "linkrcash" },
+    { userId: "2070400325207334912", handle: "linkrbot" },
   );
 });
 
@@ -23,7 +23,7 @@ Deno.test("X bot identity rejects missing or wrong configuration", () => {
   assertThrows(() =>
     loadExpectedXBotIdentity((
       name,
-    ) => (name === "X_BOT_USER_ID" ? "not-numeric" : "linkrcash"))
+    ) => (name === "X_BOT_USER_ID" ? "not-numeric" : "linkrbot"))
   );
   assertThrows(() =>
     loadExpectedXBotIdentity((name) =>

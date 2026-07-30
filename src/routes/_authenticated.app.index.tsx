@@ -381,7 +381,7 @@ function Dashboard() {
             {recentItems.length === 0 && (
               <div className="app-dashboard-empty">
                 <HistoryIcon className="h-8 w-8 opacity-40" />
-                Nothing yet. Reply to a post with @linkrcash to start.
+                Nothing yet. Reply to a post with @linkrbot to start.
               </div>
             )}
             {recentItems.map((item) => (
@@ -417,11 +417,11 @@ function Dashboard() {
           </div>
           <ul className="app-dashboard-command-list">
             {[
-              "@linkrcash balance",
-              "@linkrcash buy $50 of BONK",
-              "@linkrcash add 0.2 ETH liquidity to <contract>",
-              "@linkrcash sell 25% of $WIF",
-              "@linkrcash launch $PULSE dev buy 0.1 ETH",
+              "@linkrbot balance",
+              "@linkrbot buy $50 of BONK",
+              "@linkrbot add 0.2 ETH liquidity to <contract>",
+              "@linkrbot sell 25% of $WIF",
+              "@linkrbot launch $PULSE dev buy 0.1 ETH",
             ].map((c) => (
               <li key={c} className="app-dashboard-command-row">
                 <Twitter className="h-3.5 w-3.5 text-primary" />
@@ -435,7 +435,7 @@ function Dashboard() {
             size="sm"
             className="mt-5 w-full gap-1 border-border bg-transparent"
           >
-            <a href="https://x.com/linkrcash" target="_blank" rel="noreferrer">
+            <a href="https://x.com/linkrbot" target="_blank" rel="noreferrer">
               <Rocket className="h-3.5 w-3.5" /> Go to X
             </a>
           </Button>

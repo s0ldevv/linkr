@@ -125,7 +125,7 @@ function NftCollectionDetailPage() {
   const mintedLabel = mints.length === 1 ? "NFT" : "NFTs";
   const composeUrl = collection
     ? `https://x.com/intent/tweet?text=${encodeURIComponent(
-        `@linkrcash mint this nft to my collection ${collection.name}`,
+        `@linkrbot mint this nft to my collection ${collection.name}`,
       )}`
     : "";
 
@@ -213,7 +213,7 @@ function NftCollectionDetailPage() {
                   </div>
                   <p>
                     {collection.description ??
-                      `${collection.name} is a Solana NFT collection minted through @linkrcash on X.`}
+                      `${collection.name} is a Solana NFT collection minted through @linkrbot on X.`}
                   </p>
                 </div>
 
@@ -321,7 +321,7 @@ function MintCommandCard({
   collection: CollectionRow;
   composeUrl: string;
 }) {
-  const tradeCommand = `@linkrcash mint this nft to my collection ${collection.name}`;
+  const tradeCommand = `@linkrbot mint this nft to my collection ${collection.name}`;
 
   return (
     <section className="sm-coin-trade-card" aria-label="NFT mint command card">

@@ -641,7 +641,7 @@ export function telegramStartMenuKeyboard(loginUrl: string) {
         { text: "Website", url: "https://linkr.cash" },
         { text: "Terminal", url: "https://linkr.cash/app/terminal" },
       ],
-      [{ text: "X", url: "https://x.com/linkrcash" }],
+      [{ text: "X", url: "https://x.com/linkrbot" }],
       [{ text: "Log in with X", url: loginUrl }],
     ],
   };

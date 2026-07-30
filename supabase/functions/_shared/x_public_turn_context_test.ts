@@ -41,10 +41,10 @@ function contextFrom(
 Deno.test("public turn context resolves a single contextual token reference", () => {
   const address = "0x1111111111111111111111111111111111111111";
   const context = contextFrom({
-    tweet: { tweet_id: "t2", text: "@linkrcash is that one worth watching?" },
+    tweet: { tweet_id: "t2", text: "@linkrbot is that one worth watching?" },
     parent_inbox_tweet: {
       tweet_id: "t1",
-      text: `@linkrcash read this token ${address}`,
+      text: `@linkrbot read this token ${address}`,
     },
     parent_linkr_reply: {
       reply_tweet_id: "r1",
@@ -66,7 +66,7 @@ Deno.test("public turn context resolves a single contextual token reference", ()
 
 Deno.test("public turn context asks for clarification when multiple contextual tokens exist", () => {
   const context = contextFrom({
-    tweet: { tweet_id: "t3", text: "@linkrcash what about that one?" },
+    tweet: { tweet_id: "t3", text: "@linkrbot what about that one?" },
     thread_context: {
       flattened_context:
         "Thread mentions 0x2222222222222222222222222222222222222222 and 0x3333333333333333333333333333333333333333",
@@ -92,10 +92,10 @@ Deno.test("public turn context prefers direct parent context over older transcri
   const parentAddress = "0x7777777777777777777777777777777777777777";
   const olderAddress = "0x8888888888888888888888888888888888888888";
   const context = contextFrom({
-    tweet: { tweet_id: "t6", text: "@linkrcash should I hold it?" },
+    tweet: { tweet_id: "t6", text: "@linkrbot should I hold it?" },
     parent_inbox_tweet: {
       tweet_id: "t5",
-      text: `@linkrcash read ${parentAddress}`,
+      text: `@linkrbot read ${parentAddress}`,
     },
     transcript:
       `user: unrelated old token ${olderAddress}\nassistant: not enough signal`,
@@ -112,10 +112,10 @@ Deno.test("public turn context prefers direct parent context over older transcri
 
 Deno.test("public turn context does not force stale token context into plain conversation", () => {
   const context = contextFrom({
-    tweet: { tweet_id: "t4", text: "@linkrcash thanks" },
+    tweet: { tweet_id: "t4", text: "@linkrbot thanks" },
     parent_inbox_tweet: {
       tweet_id: "t1",
-      text: "@linkrcash check 0x4444444444444444444444444444444444444444",
+      text: "@linkrbot check 0x4444444444444444444444444444444444444444",
     },
   });
 
@@ -136,7 +136,7 @@ Deno.test("public turn context can carry active-state token identity", () => {
     label: "$STATE",
   });
   const context = contextFrom({
-    tweet: { tweet_id: "t5", text: "@linkrcash biggest risk on it?" },
+    tweet: { tweet_id: "t5", text: "@linkrbot biggest risk on it?" },
     active_state: { active_entities: [entity] },
   });
 
@@ -150,7 +150,7 @@ Deno.test("public turn context can carry active-state token identity", () => {
 
 Deno.test("public persona facts include authoritative builder identity", () => {
   const facts = linkrPublicPersonaFacts();
-  assert(facts.handle === "@linkrcash", "handle mismatch");
+  assert(facts.handle === "@linkrbot", "handle mismatch");
   assert(facts.builder === "@S0Ldev", "builder mismatch");
   assert(facts.engine === "LNKR-1", "engine mismatch");
 });

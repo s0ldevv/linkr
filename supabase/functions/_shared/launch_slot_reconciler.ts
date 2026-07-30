@@ -123,7 +123,7 @@ export function buildLaunchDraftSlotPatch(
   const protectedOverwriteAttempts: Array<Record<string, unknown>> = [];
   const blockedSlots: string[] = [];
   const appliedSlots: string[] = [];
-  const botHandle = normalizeHandle(input.botHandle ?? "linkrcash");
+  const botHandle = normalizeHandle(input.botHandle ?? "linkrbot");
 
   for (const slot of SLOT_NAMES) {
     const update = reconciliation.slot_updates[slot];
@@ -306,7 +306,7 @@ export function mergeSlotProvenanceContext(
 
 export function buildLaunchSlotTextContext(
   text: string,
-  botHandle: string | null | undefined = "linkrcash",
+  botHandle: string | null | undefined = "linkrbot",
 ): LaunchThreadTextContext {
   const raw = String(text ?? "").slice(0, 4000);
   const normalizedBot = normalizeHandle(botHandle ?? "");
@@ -387,8 +387,8 @@ export function mergeLaunchFieldPatch(
 function buildLaunchSlotReconcilerPrompt(
   input: LaunchSlotReconcilerInput,
 ): string {
-  const botHandle = normalizeHandle(input.botHandle ?? "linkrcash") ||
-    "linkrcash";
+  const botHandle = normalizeHandle(input.botHandle ?? "linkrbot") ||
+    "linkrbot";
   const original = buildLaunchSlotTextContext(
     input.originalLaunchText ?? "",
     botHandle,

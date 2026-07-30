@@ -74,7 +74,7 @@ const DEMO_ACTIVITY: PublicActivity[] = [
     tweet_id: "demo-tweet-token-read",
     user_post_author: "replypilot",
     user_post_text:
-      "@linkrcash how's this token looking 0x8A1d4b4C7f8e0a7d9C1b2E3F4a5B6c7D8e9F0123",
+      "@linkrbot how's this token looking 0x8A1d4b4C7f8e0a7d9C1b2E3F4a5B6c7D8e9F0123",
     linkr_response_text:
       "$DEMO on Robinhood Chain: price holding near support, liquidity is thin but active, 24h volume is picking up. Clean read: watch liquidity before sizing. DYOR.",
     linkr_response_status: "posted",
@@ -398,7 +398,7 @@ function ActivityRow({ item }: { item: PublicActivity }) {
             fallback="Original post unavailable"
           />
           <ConversationMessage
-            handle="linkrcash"
+            handle="linkrbot"
             label="Linkr reply"
             text={response}
             fallback="Response pending"

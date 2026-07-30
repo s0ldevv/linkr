@@ -4,7 +4,7 @@ const setupSteps = [
   {
     icon: Twitter,
     title: "Connect X",
-    body: "Sign in with the X account that will tag @linkrcash.",
+    body: "Sign in with the X account that will tag @linkrbot.",
   },
   {
     icon: Wallet,

@@ -377,7 +377,7 @@ Deno.serve((req) =>
           currentMissingFields: missingLaunchFields(existingFields),
           latestMediaUrl: tweet.media_url,
           sourceRefs: existingDraft?.source_refs ?? null,
-          botHandle: Deno.env.get("X_BOT_HANDLE") ?? "linkrcash",
+          botHandle: Deno.env.get("X_BOT_HANDLE") ?? "linkrbot",
         });
       } catch (error) {
         console.error(
@@ -431,7 +431,7 @@ Deno.serve((req) =>
         currentMissingFields: missingLaunchFields(existingFields),
         latestMediaUrl: tweet.media_url,
         sourceRefs: existingDraft?.source_refs ?? null,
-        botHandle: Deno.env.get("X_BOT_HANDLE") ?? "linkrcash",
+        botHandle: Deno.env.get("X_BOT_HANDLE") ?? "linkrbot",
       }, reconciliation);
       const fields = slotPatch.filledFields;
       const provenance = slotPatch.fieldProvenance;

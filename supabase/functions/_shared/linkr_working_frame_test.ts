@@ -7,7 +7,7 @@ function assert(condition: unknown, message: string): asserts condition {
 
 Deno.test("working frame extracts entities and route resource bundles", () => {
   const frame = buildLinkrWorkingFrame({
-    tweet: { tweet_id: "t1", text: "@linkrcash what about liquidity for $WIF?" },
+    tweet: { tweet_id: "t1", text: "@linkrbot what about liquidity for $WIF?" },
     profile: null,
     wallet: null,
     user_context: {},

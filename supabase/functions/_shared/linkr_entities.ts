@@ -44,7 +44,7 @@ export function resolveEntitiesFromText(args: {
 
   for (const match of text.matchAll(HANDLE_RE)) {
     const handle = "@" + match[1];
-    if (/^@linkrcash$/i.test(handle)) continue;
+    if (/^@linkrbot$/i.test(handle)) continue;
     const fact = createFact({
       source: args.source,
       privacy,

@@ -1,11 +1,11 @@
 import { Zap } from "lucide-react";
 
 const commands = [
-  "@linkrcash buy $100 of $PUMP",
-  "@linkrcash sell 50% of this",
-  "@linkrcash launch $TOKEN with this image",
-  "@linkrcash send 0.25 ETH to 7xKQ...",
-  "@linkrcash what is the CA above?",
+  "@linkrbot buy $100 of $PUMP",
+  "@linkrbot sell 50% of this",
+  "@linkrbot launch $TOKEN with this image",
+  "@linkrbot send 0.25 ETH to 7xKQ...",
+  "@linkrbot what is the CA above?",
 ];
 
 export function HomeCommandTape() {

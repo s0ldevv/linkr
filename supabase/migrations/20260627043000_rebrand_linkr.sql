@@ -8,9 +8,9 @@ as $$
     else regexp_replace(
       regexp_replace(
         regexp_replace(
-          regexp_replace($1, '@' || ('sol' || 'mate') || 'app', '@linkrcash', 'gi'),
+          regexp_replace($1, '@' || ('sol' || 'mate') || 'app', '@linkrbot', 'gi'),
           ('sol' || 'mate') || 'app',
-          'linkrcash',
+          'linkrbot',
           'gi'
         ),
         ('sol' || 'mate') || '\.live',

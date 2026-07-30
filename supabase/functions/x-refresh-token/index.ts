@@ -7,7 +7,7 @@ import { serviceClient } from "../_shared/supabase.ts";
 import { readJsonBody } from "../_shared/http.ts";
 import { refreshXToken } from "../_shared/x_tokens.ts";
 
-const ACCOUNT_KEY = "linkrcash";
+const ACCOUNT_KEY = "linkrbot";
 const HOURLY_REFRESH_WINDOW_MS = 75 * 60 * 1000;
 
 function needsReauthorization(message: string): boolean {

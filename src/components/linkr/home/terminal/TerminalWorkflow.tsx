@@ -7,7 +7,7 @@ const STEPS = [
     num: "01",
     icon: MessageCircle,
     title: "You post a reply",
-    text: "Tweet or reply @linkrcash with what you want to do.",
+    text: "Tweet or reply @linkrbot with what you want to do.",
   },
   {
     num: "02",

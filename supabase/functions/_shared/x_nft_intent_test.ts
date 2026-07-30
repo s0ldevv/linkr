@@ -11,14 +11,14 @@ function assert(condition: unknown, message: string): asserts condition {
 }
 
 Deno.test("NFT how-to questions are guidance, not executable intents", () => {
-  const intent = parseXNftIntent("@linkrcash how can I launch an NFT?");
+  const intent = parseXNftIntent("@linkrbot how can I launch an NFT?");
   assert(intent.intent === "nft_guidance", "how-to should be guidance");
   assert(!intent.executionIntent, "guidance must not execute");
   assert(intent.missingFields.length === 0, "guidance should not ask slots");
 });
 
 Deno.test("single NFT launch without chain asks for chain", () => {
-  const intent = parseXNftIntent("@linkrcash launch this NFT");
+  const intent = parseXNftIntent("@linkrbot launch this NFT");
   assert(intent.intent === "mint_nft", "should be a single NFT mint intent");
   assert(intent.executionIntent, "launch this NFT is executable intent");
   assert(intent.chain === null, "chain should be ambiguous");
@@ -29,7 +29,7 @@ Deno.test("single NFT launch without chain asks for chain", () => {
 });
 
 Deno.test("single NFT launch on Solana without collection asks for collection", () => {
-  const intent = parseXNftIntent("@linkrcash launch this NFT on Solana");
+  const intent = parseXNftIntent("@linkrbot launch this NFT on Solana");
   assert(intent.intent === "mint_nft", "should mint a single NFT");
   assert(intent.chain === "solana", "chain should be Solana");
   assert(
@@ -39,14 +39,14 @@ Deno.test("single NFT launch on Solana without collection asks for collection", 
 });
 
 Deno.test("Robinhood NFT launch is recognized but unsupported by flow", () => {
-  const intent = parseXNftIntent("@linkrcash launch this NFT on Robinhood");
+  const intent = parseXNftIntent("@linkrbot launch this NFT on Robinhood");
   assert(intent.intent === "mint_nft", "should be a single NFT request");
   assert(intent.chain === "robinhood", "chain should be Robinhood");
 });
 
 Deno.test("collection launch parses name and Solana chain", () => {
   const intent = parseXNftIntent(
-    '@linkrcash launch nft collection called "Neon Keys" on Solana',
+    '@linkrbot launch nft collection called "Neon Keys" on Solana',
   );
   assert(
     intent.intent === "create_collection",
@@ -59,7 +59,7 @@ Deno.test("collection launch parses name and Solana chain", () => {
 
 Deno.test("legacy NFT parser accepts launch language for compatibility", () => {
   const command = parseXNftCommand(
-    '@linkrcash launch this NFT into my collection "Neon Keys"',
+    '@linkrbot launch this NFT into my collection "Neon Keys"',
   );
   assert(command?.kind === "mint_nft", "launch should parse as mint_nft");
   assert(

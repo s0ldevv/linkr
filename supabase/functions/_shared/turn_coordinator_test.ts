@@ -11,22 +11,22 @@ function assert(
 
 Deno.test("deterministic router handles identity and safety before classifier", () => {
   assert(
-    routeLinkrTurnDeterministic({ text: "@linkrcash who built you?" }).route ===
+    routeLinkrTurnDeterministic({ text: "@linkrbot who built you?" }).route ===
       "identity",
   );
   assert(
-    routeLinkrTurnDeterministic({ text: "@linkrcash export my private key" })
+    routeLinkrTurnDeterministic({ text: "@linkrbot export my private key" })
       .route ===
       "safe_refusal",
   );
   assert(
-    routeLinkrTurnDeterministic({ text: "@linkrcash buy 0.1 SOL of xyz" })
+    routeLinkrTurnDeterministic({ text: "@linkrbot buy 0.1 SOL of xyz" })
       .route ===
       "normal_classifier",
   );
   assert(
     routeLinkrTurnDeterministic({
-      text: "@linkrcash What are people on X saying about it?",
+      text: "@linkrbot What are people on X saying about it?",
       is_follow_up: true,
       has_history: true,
     }).route === "x_search",
@@ -35,13 +35,13 @@ Deno.test("deterministic router handles identity and safety before classifier", 
   assert(
     routeLinkrTurnDeterministic({
       text:
-        "@linkrcash Try again check what people on X are saying about $cashcat",
+        "@linkrbot Try again check what people on X are saying about $cashcat",
     }).route === "x_search",
     "check what people on X are saying should route to x_search",
   );
   assert(
     routeLinkrTurnDeterministic({
-      text: "@linkrcash search twitter for recent posts about CASHCAT",
+      text: "@linkrbot search twitter for recent posts about CASHCAT",
     }).route === "x_search",
     "twitter post search requests should route to x_search",
   );
@@ -50,7 +50,7 @@ Deno.test("deterministic router handles identity and safety before classifier", 
 Deno.test("deterministic router ignores ambient remarks but keeps useful social replies", () => {
   assert(
     routeLinkrTurnDeterministic({
-      text: "@linkrcash nice",
+      text: "@linkrbot nice",
       ingest_source: "mention",
     }).route ===
       "ambient_ignore",
@@ -67,7 +67,7 @@ Deno.test("deterministic router ignores ambient remarks but keeps useful social 
     "thanks under known Linkr reply should still get a reply",
   );
   const chain = routeLinkrTurnDeterministic({
-    text: "@linkrcash what chains can you operate on?",
+    text: "@linkrbot what chains can you operate on?",
     ingest_source: "mention",
   });
   assert(
@@ -79,7 +79,7 @@ Deno.test("deterministic router ignores ambient remarks but keeps useful social 
     "chain question should use chain capability intent",
   );
   const schedule = routeLinkrTurnDeterministic({
-    text: "@linkrcash are you able to schedule buys/sells?",
+    text: "@linkrbot are you able to schedule buys/sells?",
     ingest_source: "mention",
   });
   assert(schedule.route === "capability_help", "schedule ability question should be capability help");
@@ -110,7 +110,7 @@ Deno.test("x search request resolves pronoun follow-up from thread token focus",
     tw: {
       tweet_id: "t0",
       text:
-        "@linkrcash Try again check what people on X are saying about $cashcat",
+        "@linkrbot Try again check what people on X are saying about $cashcat",
     },
     profile: {},
     wallet: {},
@@ -134,7 +134,7 @@ Deno.test("x search request resolves pronoun follow-up from thread token focus",
     admin: null,
     tw: {
       tweet_id: "t1",
-      text: "@linkrcash What are people on X saying about it?",
+      text: "@linkrbot What are people on X saying about it?",
     },
     profile: {},
     wallet: {},
@@ -142,8 +142,8 @@ Deno.test("x search request resolves pronoun follow-up from thread token focus",
     thread_context: {
       detected_mints: ["0x020bfC650A365f8BB26819deAAbF3E21291018b4"],
       parent_chain: [
-        { text: "@linkrcash Risk read: high risk." },
-        { text: "@linkrcash CASHCAT on Robinhood Chain. Price: $0.05. DYOR" },
+        { text: "@linkrbot Risk read: high risk." },
+        { text: "@linkrbot CASHCAT on Robinhood Chain. Price: $0.05. DYOR" },
       ],
       flattened_context: "CASHCAT on Robinhood Chain",
     },

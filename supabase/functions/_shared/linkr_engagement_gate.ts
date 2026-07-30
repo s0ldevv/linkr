@@ -40,7 +40,7 @@ export interface LinkrEngagementDecision {
   known_linkr_reply_context: boolean;
 }
 
-const BOT_HANDLE_PATTERN = /(^|\s)@?linkrcash\b/i;
+const BOT_HANDLE_PATTERN = /(^|\s)@?linkrbot\b/i;
 const QUESTION_PATTERN =
   /\?|(?:^|\s)(who|what|when|where|why|how|can|could|would|should|do|does|did|is|are|was|were|will|which)\b/i;
 const CHAIN_OR_TOKEN_WORD_PATTERN =
@@ -117,7 +117,7 @@ function isAddressedToLinkr(
 ): boolean {
   return Boolean(
     knownReply ||
-      /@linkrcash\b/i.test(text) ||
+      /@linkrbot\b/i.test(text) ||
       args.ingest_source === "mention" ||
       args.ingest_source === "reply_to_bot" ||
       BOT_HANDLE_PATTERN.test(text),

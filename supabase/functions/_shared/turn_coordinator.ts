@@ -460,7 +460,7 @@ function extractProfileHandle(text: string): string | null {
   ) return null;
   const handles = [...String(text ?? "").matchAll(/@([A-Za-z0-9_]{1,15})/g)]
     .map((match) => match[1])
-    .filter((handle) => !/^linkrcash$/i.test(handle));
+    .filter((handle) => !/^linkrbot$/i.test(handle));
   return handles[0] ?? null;
 }
 

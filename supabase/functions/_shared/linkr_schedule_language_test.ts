@@ -10,7 +10,7 @@ function assert(condition: unknown, message: string): asserts condition {
 
 Deno.test("schedule ability questions are recognized as capability questions", () => {
   const samples = [
-    "@linkrcash are you able to schedule buys/sells?",
+    "@linkrbot are you able to schedule buys/sells?",
     "Can schedule buys?",
     "can you schedule a buy?",
     "do you support scheduled sells",

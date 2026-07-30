@@ -105,8 +105,8 @@ export function sanitizeLaunchSemanticVerification(
 function buildLaunchSemanticVerifierPrompt(
   input: LaunchSemanticVerifierInput,
 ): string {
-  const botHandle = normalizeHandle(input.botHandle ?? "linkrcash") ||
-    "linkrcash";
+  const botHandle = normalizeHandle(input.botHandle ?? "linkrbot") ||
+    "linkrbot";
   return [
     "Verify that a final token launch payload matches the user's intent across an X launch thread.",
     "Return exactly one JSON object and no prose.",

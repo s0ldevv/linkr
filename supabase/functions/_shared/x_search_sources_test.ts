@@ -12,13 +12,13 @@ function assert(condition: unknown, message: string): asserts condition {
 }
 
 Deno.test("buildInboxSearchSource combines mentions and replies into one request", () => {
-  const source = buildInboxSearchSource("@LinkrCash");
+  const source = buildInboxSearchSource("@LinkrBot");
   assert(
     source.cursorKey === "x_inbox_since_id_v2",
     "combined cursor mismatch",
   );
   assert(
-    source.query === "(@linkrcash OR to:linkrcash) -from:linkrcash",
+    source.query === "(@linkrbot OR to:linkrbot) -from:linkrbot",
     "combined query mismatch",
   );
   assert(
@@ -32,11 +32,11 @@ Deno.test("buildInboxSearchSource combines mentions and replies into one request
 });
 
 Deno.test("buildInboxSearchSource preserves the reply scan feature flag", () => {
-  const source = buildInboxSearchSource("linkrcash", {
+  const source = buildInboxSearchSource("linkrbot", {
     replyToBotScanEnabled: false,
   });
   assert(
-    source.query === "@linkrcash -from:linkrcash",
+    source.query === "@linkrbot -from:linkrbot",
     "disabled reply scan must be mention-only",
   );
   assert(
@@ -47,8 +47,8 @@ Deno.test("buildInboxSearchSource preserves the reply scan feature flag", () => 
 });
 
 Deno.test("decideInboxIngest preserves explicit mention precedence", () => {
-  const source = buildInboxSearchSource("linkrcash");
-  const direct = decideInboxIngest(source, "@LinkrCash help", {
+  const source = buildInboxSearchSource("linkrbot");
+  const direct = decideInboxIngest(source, "@LinkrBot help", {
     isFollowUp: true,
   });
   assert(direct.shouldIngest, "explicit mention should ingest");
@@ -61,7 +61,7 @@ Deno.test("decideInboxIngest preserves explicit mention precedence", () => {
     "explicit mention reason mismatch",
   );
 
-  const substring = decideInboxIngest(source, "hello @linkrcash_fake", {
+  const substring = decideInboxIngest(source, "hello @linkrbot_fake", {
     isFollowUp: false,
   });
   assert(
@@ -71,7 +71,7 @@ Deno.test("decideInboxIngest preserves explicit mention precedence", () => {
 });
 
 Deno.test("decideInboxIngest enforces known parents for handle-less replies", () => {
-  const source = buildInboxSearchSource("linkrcash");
+  const source = buildInboxSearchSource("linkrbot");
   const known = decideInboxIngest(source, "what do you mean?", {
     isFollowUp: true,
   });
@@ -90,7 +90,7 @@ Deno.test("decideInboxIngest enforces known parents for handle-less replies", ()
 });
 
 Deno.test("decideInboxIngest can explicitly allow unknown reply parents", () => {
-  const source = buildInboxSearchSource("linkrcash", {
+  const source = buildInboxSearchSource("linkrbot", {
     replyToBotRequireKnownParent: false,
   });
   const decision = decideInboxIngest(source, "hello", { isFollowUp: false });

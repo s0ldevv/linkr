@@ -1,4 +1,4 @@
-const LINKR_HANDLE = "linkrcash";
+const LINKR_HANDLE = "linkrbot";
 
 export function normalizeProfileHandle(handle: string | null | undefined): string | null {
   const username = handle?.trim().replace(/^@/, "");

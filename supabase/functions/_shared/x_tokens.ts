@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { decryptXToken, encryptXToken } from "./x_token_crypto.ts";
 
-const DEFAULT_ACCOUNT_KEY = "linkrcash";
+const DEFAULT_ACCOUNT_KEY = "linkrbot";
 const DEFAULT_REFRESH_WINDOW_MS = 10 * 60 * 1000;
 const REAUTH_RETRY_WINDOW_MS = 15 * 60 * 1000;
 const LOCK_TTL_MS = 2 * 60 * 1000;

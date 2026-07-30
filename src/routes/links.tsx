@@ -39,10 +39,10 @@ const LINKS: LinkItem[] = [
   },
   {
     external: true,
-    href: "https://x.com/linkrcash",
+    href: "https://x.com/linkrbot",
     icon: XLogo,
     label: "X",
-    subtitle: "Follow @linkrcash",
+    subtitle: "Follow @linkrbot",
   },
   {
     external: true,

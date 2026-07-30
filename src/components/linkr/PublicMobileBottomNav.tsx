@@ -1,8 +1,8 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Activity, Compass, Home, Rocket, Wallet, type LucideIcon } from "lucide-react";
 
-export const X_POST_TEMPLATE_URL = `https://x.com/intent/post?text=${encodeURIComponent("@linkrcash ")}`;
-export const X_PROFILE_URL = "https://x.com/linkrcash";
+export const X_POST_TEMPLATE_URL = `https://x.com/intent/post?text=${encodeURIComponent("@linkrbot ")}`;
+export const X_PROFILE_URL = "https://x.com/linkrbot";
 
 const MOBILE_BOTTOM_NAV: ReadonlyArray<{
   exact?: boolean;

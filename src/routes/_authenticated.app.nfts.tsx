@@ -10,7 +10,7 @@ export const Route = createFileRoute("/_authenticated/app/nfts")({
       { title: "NFTs - Linkr" },
       {
         name: "description",
-        content: "Mint Solana NFT collections and NFTs directly from X by tagging @linkrcash.",
+        content: "Mint Solana NFT collections and NFTs directly from X by tagging @linkrbot.",
       },
     ],
   }),
@@ -82,7 +82,7 @@ function NftsPage() {
           <p className="app-live-kicker">Solana NFTs</p>
           <h1>Collections & mints</h1>
           <p>
-            Mint by replying to @linkrcash on X. Try{" "}
+            Mint by replying to @linkrbot on X. Try{" "}
             <code>"mint nft collection called My Punks symbol PUNK"</code> or{" "}
             <code>"mint this nft to my collection My Punks"</code>.
           </p>
@@ -105,7 +105,7 @@ function NftsPage() {
           <p className="app-nfts-empty">Loading…</p>
         ) : collections.length === 0 ? (
           <p className="app-nfts-empty">
-            No collections yet. Tag @linkrcash on X and ask it to mint one.
+            No collections yet. Tag @linkrbot on X and ask it to mint one.
           </p>
         ) : (
           <div className="app-nfts-grid">

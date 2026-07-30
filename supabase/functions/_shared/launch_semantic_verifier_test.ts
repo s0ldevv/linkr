@@ -29,12 +29,12 @@ Deno.test("semantic verifier blocks mismatched launch payloads with a useful que
   const verification = sanitizeLaunchSemanticVerification({
     matches_user_intent: false,
     blocking_mismatches: [
-      'name "linkrcash" conflicts with the original request for name "test"',
+      'name "linkrbot" conflicts with the original request for name "test"',
     ],
     confidence: 0.93,
-    user_visible_summary: "Launch TEST named linkrcash on Solana",
+    user_visible_summary: "Launch TEST named linkrbot on Solana",
     clarification_question:
-      'I have name "linkrcash" and ticker TEST, but your first request said name "test". Should I launch name "test" with ticker TEST on Solana?',
+      'I have name "linkrbot" and ticker TEST, but your first request said name "test". Should I launch name "test" with ticker TEST on Solana?',
   });
 
   assertThrows(
@@ -44,6 +44,6 @@ Deno.test("semantic verifier blocks mismatched launch payloads with a useful que
   );
   assertEquals(
     launchVerificationReply(verification),
-    'I have name "linkrcash" and ticker TEST, but your first request said name "test". Should I launch name "test" with ticker TEST on Solana?',
+    'I have name "linkrbot" and ticker TEST, but your first request said name "test". Should I launch name "test" with ticker TEST on Solana?',
   );
 });

@@ -125,7 +125,7 @@ const WELLNESS_REPLY_PATTERNS = [
 
 const THANKS_PATTERNS = [
   /^(thanks|thank you|thx|ty)$/,
-  /^(thanks|thank you|thx|ty) (bro|man|mate|linkr|linkrcash)?$/,
+  /^(thanks|thank you|thx|ty) (bro|man|mate|linkr|linkrbot)?$/,
   /^(appreciate it|appreciated)$/,
 ];
 
@@ -435,7 +435,7 @@ export function normalizeConversationText(text: string): string {
   return String(text ?? "")
     .replace(/https?:\/\/\S+/gi, " ")
     .replace(/@\w+/g, " ")
-    .replace(/\b(?:linkr|linkrcash)\b/gi, " ")
+    .replace(/\b(?:linkr|linkrbot)\b/gi, " ")
     .replace(/[^\p{L}\p{N}' ]+/gu, " ")
     .toLowerCase()
     .replace(/\bwhat's\b/g, "whats")

@@ -75,7 +75,7 @@ Deno.test("Telegram start menu keyboard links to Linkr surfaces and keeps login 
   if (rows[0][1].url !== "https://linkr.cash/app/terminal") {
     throw new Error("Terminal button URL changed");
   }
-  if (rows[1][0].url !== "https://x.com/linkrcash") {
+  if (rows[1][0].url !== "https://x.com/linkrbot") {
     throw new Error("X button URL changed");
   }
   const login = rows[rows.length - 1][0];

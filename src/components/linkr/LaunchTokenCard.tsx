@@ -74,7 +74,7 @@ export function LaunchTokenCard({ coin, index }: { coin: LaunchTokenCardData; in
             </span>
           </>
         )}
-        <a href={xIntent(`@linkrcash track $${coin.symbol}`)} rel="noreferrer" target="_blank">
+        <a href={xIntent(`@linkrbot track $${coin.symbol}`)} rel="noreferrer" target="_blank">
           Track
         </a>
         {coin.isLive && coin.mint ? (

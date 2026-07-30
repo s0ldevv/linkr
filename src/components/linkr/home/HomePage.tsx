@@ -8,27 +8,27 @@ const commandExamples = [
   {
     title: "Buy in context",
     note: "For fast entries while reading a live thread.",
-    command: "@linkrcash buy $100 of this",
+    command: "@linkrbot buy $100 of this",
   },
   {
     title: "Trim a position",
     note: "Percentage sells stay bounded by the rules you saved.",
-    command: "@linkrcash sell 50% of this",
+    command: "@linkrbot sell 50% of this",
   },
   {
     title: "Move ETH",
     note: "Send from the same command wallet without opening another tab.",
-    command: "@linkrcash send 0.25 ETH to 7xKQ...",
+    command: "@linkrbot send 0.25 ETH to 7xKQ...",
   },
   {
     title: "Launch from media",
     note: "A reply can carry the symbol, image, and dev-buy envelope.",
-    command: "@linkrcash launch $TOKEN with this image",
+    command: "@linkrbot launch $TOKEN with this image",
   },
   {
     title: "Ask for context",
     note: "When the thread is noisy, Linkr can pull out the contract trail.",
-    command: "@linkrcash what is the CA above?",
+    command: "@linkrbot what is the CA above?",
   },
 ];
 
@@ -65,7 +65,7 @@ export function HomePage() {
           <div className="sm-command-studio-layout">
             <div className="sm-command-note" data-fx="rise">
               <span>Grammar</span>
-              <strong>@linkrcash</strong>
+              <strong>@linkrbot</strong>
               <p>
                 One command prefix, then the smallest phrase that describes the wallet action. The
                 dashboard carries the details that do not belong in a tweet.

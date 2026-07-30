@@ -175,7 +175,7 @@ function CliMovie({ active }: { active: boolean }) {
               <span className="lkx-cli-ok">
                 <Check aria-hidden="true" size={11} strokeWidth={3} />
               </span>
-              Authorized · <b>@linkrcash</b>
+              Authorized · <b>@linkrbot</b>
               <i className="lkx-cli-scope">read + write</i>
             </div>
 
@@ -252,7 +252,7 @@ function CommandMovie() {
 
           <div className="lkx-cmd-entry">
             <span className="lkx-cmd-copy">
-              <span className="lkx-cmd-mention">@linkrcash</span>{" "}
+              <span className="lkx-cmd-mention">@linkrbot</span>{" "}
               {COMMAND_PARTS.map((part, partIndex) => (
                 <span key={`${part.text}-${partIndex}`}>
                   {"breakBefore" in part && part.breakBefore ? <br /> : null}
@@ -332,7 +332,7 @@ function CommandMovie() {
         </div>
       </div>
       <span className="lkx-sr-only">
-        Composing a post on X that tags @linkrcash: Launch a coin called MOON on Solana and
+        Composing a post on X that tags @linkrbot: Launch a coin called MOON on Solana and
         Robinhood Chain. Linkr reads the post, identifies the asset and networks, then prepares the
         launch plan.
       </span>
@@ -1066,7 +1066,7 @@ export function TerminalHero() {
         </h1>
         <p className="lkx-hero-lede">
           Launch tokens, send payments, swap, and manage wallets across Solana and Robinhood Chain /{" "}
-          <strong>@linkrcash</strong>.
+          <strong>@linkrbot</strong>.
         </p>
 
         <ul className="lkx-hero-chips">

@@ -49,7 +49,7 @@ Deno.test("detectConversationShortcut catches natural conversation acts", () => 
       reply: "GM! I'm good, thanks for asking. How can I help?",
     },
     {
-      text: "@linkrcash hello there",
+      text: "@linkrbot hello there",
       kind: "greeting",
       reply: "Hi! How can I help?",
     },
@@ -87,16 +87,16 @@ Deno.test("wellness replies only answer questions the user asked", () => {
 
 Deno.test("detectConversationShortcut catches thanks and capability help", () => {
   assert(detectConversationShortcut("thank you bro")?.kind === "thanks", "thanks should match");
-  assert(detectConversationShortcut("@linkrcash nice") === null, "ambient remark should not be shortcut");
+  assert(detectConversationShortcut("@linkrbot nice") === null, "ambient remark should not be shortcut");
   assert(
-    detectConversationShortcut("@linkrcash what can you do?")?.kind === "capability_help",
+    detectConversationShortcut("@linkrbot what can you do?")?.kind === "capability_help",
     "capability help should match",
   );
   assert(
     detectConversationShortcut("commands")?.kind === "capability_help",
     "commands should match",
   );
-  const schedule = detectConversationShortcut("@linkrcash are you able to schedule buys/sells?");
+  const schedule = detectConversationShortcut("@linkrbot are you able to schedule buys/sells?");
   assert(schedule?.kind === "capability_help", "schedule capability should match");
   assert(schedule?.reply.includes("market-cap triggers"), "schedule capability reply should state market-cap support");
 });
@@ -173,7 +173,7 @@ Deno.test("base58-looking strings are not treated as token addresses", () => {
 
 Deno.test("normalizeConversationText strips handles and punctuation", () => {
   assert(
-    normalizeConversationText("@linkrcash Hi! How are you?") === "hi how are you",
+    normalizeConversationText("@linkrbot Hi! How are you?") === "hi how are you",
     "normalized greeting mismatch",
   );
 });
@@ -189,7 +189,7 @@ Deno.test("buildConversationTranscript formats user-facing dialogue only", () =>
         conversation_id: "123",
         author_twitter_id: "u1",
         author_username: "alice",
-        text: "@linkrcash Hi!",
+        text: "@linkrbot Hi!",
         role: "user",
         created_at: "2026-07-06T00:00:00Z",
       },

@@ -8,7 +8,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Linkr is a Robinhood Chain and Solana wallet agent you control from X. Reply with @linkrcash to buy, sell, send, launch, or ask what is in a thread.",
+          "Linkr is a Robinhood Chain and Solana wallet agent you control from X. Reply with @linkrbot to buy, sell, send, launch, or ask what is in a thread.",
       },
       { property: "og:title", content: "Linkr - Trade Across Chains from X" },
       {

@@ -564,8 +564,8 @@ function TradeCommandCard({
   const normalizedBuyAmount = normalizeTradeAmount(buyAmount, 100);
   const normalizedSellPercent = normalizeTradeAmount(sellPercent, 50, 100);
   const tradeCommand = isBuy
-    ? `@linkrcash buy $${normalizedBuyAmount} of ${mint}`
-    : `@linkrcash sell ${normalizedSellPercent}% of ${mint}`;
+    ? `@linkrbot buy $${normalizedBuyAmount} of ${mint}`
+    : `@linkrbot sell ${normalizedSellPercent}% of ${mint}`;
   const buyAmounts = [25, 100, 250];
   const sellPercents = [25, 50, 100];
   const activeAmount = isBuy ? buyAmount : sellPercent;

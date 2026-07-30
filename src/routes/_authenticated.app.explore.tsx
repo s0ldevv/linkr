@@ -120,7 +120,7 @@ function ExplorePage() {
           </div>
           <Button asChild className="app-dashboard-launch-primary">
             <a
-              href="https://x.com/intent/post?text=%40linkrcash%20launch%20%24TOKEN%20on%20Solana%20with%20this%20image"
+              href="https://x.com/intent/post?text=%40linkrbot%20launch%20%24TOKEN%20on%20Solana%20with%20this%20image"
               target="_blank"
               rel="noreferrer"
             >

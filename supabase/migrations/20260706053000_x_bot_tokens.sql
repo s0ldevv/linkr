@@ -3,8 +3,8 @@
 
 create table if not exists public.x_bot_tokens (
   id uuid primary key default gen_random_uuid(),
-  account_key text not null unique default 'linkrcash',
-  bot_handle text not null default 'linkrcash',
+  account_key text not null unique default 'linkrbot',
+  bot_handle text not null default 'linkrbot',
   x_user_id text,
   access_token_ciphertext text not null,
   access_token_iv text not null,
@@ -43,7 +43,7 @@ create trigger x_bot_tokens_updated_at
 
 create table if not exists public.x_bot_token_events (
   id bigserial primary key,
-  account_key text not null default 'linkrcash',
+  account_key text not null default 'linkrbot',
   event_type text not null,
   status text not null,
   message text,

@@ -6,7 +6,7 @@ import {
 import { configuredLinkrAdminXUserId, normalizeXHandle } from "./x_bans.ts";
 
 Deno.test("X ban helpers normalize handles and require stable admin identity", () => {
-  assertEquals(normalizeXHandle(" @LinkrCash "), "linkrcash");
+  assertEquals(normalizeXHandle(" @LinkrBot "), "linkrbot");
   assertEquals(
     configuredLinkrAdminXUserId(() => "2070400325207334912"),
     "2070400325207334912",

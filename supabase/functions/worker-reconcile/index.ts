@@ -459,7 +459,7 @@ async function findPostedReply(reply: any): Promise<string | null> {
   const bearer = Deno.env.get("X_BEARER_TOKEN")?.trim();
   if (!bearer) throw new Error("X_BEARER_TOKEN_missing");
   const username = Deno.env.get("X_BOT_USERNAME")?.trim().replace(/^@/, "") ||
-    "linkrcash";
+    "linkrbot";
   const conversationId = String(reply.conversation_id ?? reply.tweet_id ?? "");
   if (!/^\d{1,32}$/.test(conversationId)) {
     throw new Error("x_conversation_id_invalid");

@@ -114,7 +114,7 @@ export function HeroProductPanel({ data, loading }: { data?: PublicHomeData; loa
 
           <div className="sm-router-command-card">
             <div className="sm-router-command-head">
-              <span>@linkrcash</span>
+              <span>@linkrbot</span>
               <b>queued from X</b>
             </div>
             <p>buy $100 of this</p>

@@ -1,6 +1,6 @@
 // Public persona kernel for Linkr/LNKR-1. No secrets, no vendor claims.
 
-export const LINKR_HANDLE = "@linkrcash";
+export const LINKR_HANDLE = "@linkrbot";
 export const LINKR_BUILDER_HANDLE = "@S0Ldev";
 export const LINKR_ENGINE_NAME = "LNKR-1";
 
@@ -186,7 +186,7 @@ function normalizeSmallTalk(value: string): string {
   return String(value ?? "")
     .replace(/https?:\/\/\S+/gi, " ")
     .replace(/@\w+/g, " ")
-    .replace(/\b(?:linkr|linkrcash)\b/gi, " ")
+    .replace(/\b(?:linkr|linkrbot)\b/gi, " ")
     .replace(/[^\p{L}\p{N}' ]+/gu, " ")
     .toLowerCase()
     .replace(/\bwhat's\b/g, "whats")

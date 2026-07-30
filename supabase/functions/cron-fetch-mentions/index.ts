@@ -30,7 +30,7 @@ import {
   oldestFirstXPages,
 } from "../_shared/x_pagination.ts";
 
-const BOT_HANDLE = "linkrcash";
+const BOT_HANDLE = "linkrbot";
 const X_API = "https://api.twitter.com/2/tweets/search/recent";
 
 // Detection latency is the first term in the end-to-end budget. pg_cron cannot

@@ -26,7 +26,7 @@ psql -h <host> -U postgres -d postgres \
 **Look for:** All 5 checks show `✓ PASSED`
 
 ### 3. Test Swap
-Tweet: `@linkrcash buy 0.03 SOL worth of Ge87EtsjwRQbHaqQmKRno69RFTwh9bfSsm99XNxTpump`
+Tweet: `@linkrbot buy 0.03 SOL worth of Ge87EtsjwRQbHaqQmKRno69RFTwh9bfSsm99XNxTpump`
 
 **Expected:** Bot replies with explorer URL within 60 seconds
 

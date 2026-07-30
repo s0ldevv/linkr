@@ -190,7 +190,7 @@ export async function executeXNftCommand(
       );
       if (!description) {
         description =
-          `${input.command.name} — a Solana NFT collection minted via @linkrcash.`;
+          `${input.command.name} — a Solana NFT collection minted via @linkrbot.`;
       }
     }
 

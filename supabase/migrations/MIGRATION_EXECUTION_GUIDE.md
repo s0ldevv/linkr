@@ -3,7 +3,7 @@
 
 **Migration ID:** `20260723050000_transactions_idempotency_constraint`  
 **Date:** 2026-07-23  
-**Impact:** Enables swap execution for both X bot (@linkrcash) and Agent API (/api/trade)  
+**Impact:** Enables swap execution for both X bot (@linkrbot) and Agent API (/api/trade)  
 **Risk Level:** LOW (read-only check before write, fails safely on duplicates)  
 **Downtime:** NONE (online migration, no table locks beyond row-level updates)
 
@@ -18,7 +18,7 @@
 **Solution:** Replace the partial unique index with a full unique constraint and NOT NULL column constraint.
 
 **Affected Systems:**
-- ✅ X bot swap execution (`@linkrcash buy/sell` commands)
+- ✅ X bot swap execution (`@linkrbot buy/sell` commands)
 - ✅ Agent API swap execution (`POST /api/trade`)
 - ✅ Token burn execution (records burn transactions)
 
@@ -131,7 +131,7 @@ No Duplicates       | ✓ PASSED
 
 #### Test 1: X Bot Buy Command
 ```
-Tweet: "@linkrcash buy 0.03 SOL worth of Ge87EtsjwRQbHaqQmKRno69RFTwh9bfSsm99XNxTpump"
+Tweet: "@linkrbot buy 0.03 SOL worth of Ge87EtsjwRQbHaqQmKRno69RFTwh9bfSsm99XNxTpump"
 Expected:
 - Bot replies within 60 seconds
 - Reply includes explorer URL

@@ -112,7 +112,7 @@ const flowSteps = [
   {
     label: "01",
     title: "Send a request",
-    text: "Mention @linkrcash on X, message @LinkrCashBot privately on Telegram, use the private terminal, or open a supported dashboard flow.",
+    text: "Mention @linkrbot on X, message @LinkrCashBot privately on Telegram, use the private terminal, or open a supported dashboard flow.",
   },
   {
     label: "02",
@@ -172,9 +172,9 @@ const commandDocs: CommandDoc[] = [
     purpose:
       "Buy a Robinhood Chain token from the primary EVM wallet or a Solana token from the primary Solana wallet.",
     examples: [
-      "@linkrcash buy 0.05 ETH of 0x1234...abcd",
-      "@linkrcash buy 0.25 SOL of <Solana mint>",
-      "@linkrcash buy 100 dollars of <contract address or Solana mint>",
+      "@linkrbot buy 0.05 ETH of 0x1234...abcd",
+      "@linkrbot buy 0.25 SOL of <Solana mint>",
+      "@linkrbot buy 100 dollars of <contract address or Solana mint>",
     ],
     checks: [
       "The selected chain swap path is available for X execution.",
@@ -203,9 +203,9 @@ const commandDocs: CommandDoc[] = [
     purpose:
       "Sell part or all of a full-address token currently held by the user's matching Linkr wallet.",
     examples: [
-      "@linkrcash sell 25% of 0x1234...abcd",
-      "@linkrcash sell all of <Solana mint>",
-      "@linkrcash dump 10% of <contract address or Solana mint>",
+      "@linkrbot sell 25% of 0x1234...abcd",
+      "@linkrbot sell all of <Solana mint>",
+      "@linkrbot dump 10% of <contract address or Solana mint>",
     ],
     checks: [
       "The selected chain swap path is available for X execution.",
@@ -234,11 +234,11 @@ const commandDocs: CommandDoc[] = [
     purpose:
       "Send native ETH from the primary EVM wallet, or native SOL and native Solana USDC from the primary Solana wallet.",
     examples: [
-      "@linkrcash send 0.1 ETH to <recipient address>",
-      "@linkrcash transfer .05 SOL to <Solana recipient>",
-      "@linkrcash send 25 USDC to @recipient",
-      "@linkrcash send 25 USDC to <Solana recipient>",
-      "@linkrcash pay 1 ETH to <EVM recipient>",
+      "@linkrbot send 0.1 ETH to <recipient address>",
+      "@linkrbot transfer .05 SOL to <Solana recipient>",
+      "@linkrbot send 25 USDC to @recipient",
+      "@linkrbot send 25 USDC to <Solana recipient>",
+      "@linkrbot pay 1 ETH to <EVM recipient>",
     ],
     checks: [
       "Amount is present. USDC is parsed exactly to six decimal places; USD amounts for native transfers can convert to ETH or SOL.",
@@ -268,8 +268,8 @@ const commandDocs: CommandDoc[] = [
     purpose:
       "Swap native SOL for native Solana USDC, or native Solana USDC for SOL, from the primary Solana wallet through Jupiter.",
     examples: [
-      "@linkrcash swap 0.25 SOL for USDC",
-      "@linkrcash swap 25 USDC for SOL",
+      "@linkrbot swap 0.25 SOL for USDC",
+      "@linkrbot swap 25 USDC for SOL",
       "Open /app/wallet and select SOL to USDC or USDC to SOL",
     ],
     checks: [
@@ -300,9 +300,9 @@ const commandDocs: CommandDoc[] = [
     purpose:
       "Permanently destroy an exact amount of a fungible token held by the user's matching Linkr wallet on Solana or Robinhood Chain.",
     examples: [
-      "@linkrcash burn 100 tokens on Solana, mint <full Solana mint>",
-      "@linkrcash burn 25.5 tokens on Robinhood Chain, CA 0x1234...abcd",
-      "@linkrcash burn all tokens on Solana, mint <full Solana mint>",
+      "@linkrbot burn 100 tokens on Solana, mint <full Solana mint>",
+      "@linkrbot burn 25.5 tokens on Robinhood Chain, CA 0x1234...abcd",
+      "@linkrbot burn all tokens on Solana, mint <full Solana mint>",
     ],
     checks: [
       "The user explicitly names Solana or Robinhood Chain; Linkr never infers the chain for a burn.",
@@ -334,14 +334,14 @@ const commandDocs: CommandDoc[] = [
     purpose:
       "Schedule future wallet actions, token launches, creator-reward claims, and liquidity actions, or create market-cap-triggered buys and sells for Robinhood Chain and Solana tokens.",
     examples: [
-      "@linkrcash buy 0.05 ETH of 0x1234...abcd in 2 hours",
-      "@linkrcash sell 100% of <Solana mint> in 2 hours",
-      "@linkrcash buy 0.2 SOL of <Solana mint> if market cap gets below 50k",
-      "@linkrcash sell 100% of 0x1234...abcd if market cap goes above 170k",
-      "@linkrcash send 0.1 SOL to <recipient> in 2 hours",
-      "@linkrcash launch a coin called XYZ ticker XYZ in 2 hours",
-      "@linkrcash claim my Pump.fun creator rewards every day",
-      "@linkrcash add liquidity to <Solana mint> every hour",
+      "@linkrbot buy 0.05 ETH of 0x1234...abcd in 2 hours",
+      "@linkrbot sell 100% of <Solana mint> in 2 hours",
+      "@linkrbot buy 0.2 SOL of <Solana mint> if market cap gets below 50k",
+      "@linkrbot sell 100% of 0x1234...abcd if market cap goes above 170k",
+      "@linkrbot send 0.1 SOL to <recipient> in 2 hours",
+      "@linkrbot launch a coin called XYZ ticker XYZ in 2 hours",
+      "@linkrbot claim my Pump.fun creator rewards every day",
+      "@linkrbot add liquidity to <Solana mint> every hour",
     ],
     checks: [
       "The command must include the full EVM contract address or Solana mint for scheduled buys and sells.",
@@ -372,10 +372,10 @@ const commandDocs: CommandDoc[] = [
     purpose:
       "Prepare and launch a Robinhood Chain ERC-20 token or a Solana Pump.fun token from X, a Telegram DM, the terminal, or the guided website form.",
     examples: [
-      "@linkrcash launch a coin called GREEN on Solana",
-      "@linkrcash launch coin called Linkr on Robinhood Chain with this image",
-      "@linkrcash launch on pump.fun coin called CASHCAT ticker CASH dev buy 0.1 SOL",
-      "@linkrcash launch Solana coin called Cash Cat ticker CASH with this image",
+      "@linkrbot launch a coin called GREEN on Solana",
+      "@linkrbot launch coin called Linkr on Robinhood Chain with this image",
+      "@linkrbot launch on pump.fun coin called CASHCAT ticker CASH dev buy 0.1 SOL",
+      "@linkrbot launch Solana coin called Cash Cat ticker CASH with this image",
     ],
     checks: [
       "The user explicitly selects exactly one chain: Robinhood Chain or Solana. Linkr never generates, infers, or defaults it.",
@@ -410,10 +410,10 @@ const commandDocs: CommandDoc[] = [
     purpose:
       "Create a Solana NFT collection or mint an NFT into an existing collection from X, then review collections and mints in the app and public NFT gallery.",
     examples: [
-      '@linkrcash mint nft collection called "My Punks" symbol PUNK',
-      '@linkrcash mint nft collection called "My Punks" symbol PUNK description "Pixel punks on Solana"',
-      "@linkrcash mint this nft to my collection My Punks",
-      '@linkrcash mint this nft into collection PUNK called "Punk #1"',
+      '@linkrbot mint nft collection called "My Punks" symbol PUNK',
+      '@linkrbot mint nft collection called "My Punks" symbol PUNK description "Pixel punks on Solana"',
+      "@linkrbot mint this nft to my collection My Punks",
+      '@linkrbot mint this nft into collection PUNK called "Punk #1"',
     ],
     checks: [
       "The user has a Solana wallet linked to the Linkr account.",
@@ -442,13 +442,13 @@ const commandDocs: CommandDoc[] = [
     purpose:
       "Add, remove, collect fees from, or list user-owned Robinhood Chain Uniswap V3 LP positions and Pump.fun PumpSwap LP positions.",
     examples: [
-      "@linkrcash add 0.2 ETH liquidity to CASH",
-      "@linkrcash add 100000 PumpSwap liquidity to <Pump.fun mint>",
-      "@linkrcash add 100000 tokens liquidity on pump.fun to <Pump.fun mint>",
-      "@linkrcash remove 50% liquidity from CASH",
-      "@linkrcash remove 50% PumpSwap liquidity from <Pump.fun mint>",
-      "@linkrcash collect fees from my CASH LP",
-      "@linkrcash show my LP positions",
+      "@linkrbot add 0.2 ETH liquidity to CASH",
+      "@linkrbot add 100000 PumpSwap liquidity to <Pump.fun mint>",
+      "@linkrbot add 100000 tokens liquidity on pump.fun to <Pump.fun mint>",
+      "@linkrbot remove 50% liquidity from CASH",
+      "@linkrbot remove 50% PumpSwap liquidity from <Pump.fun mint>",
+      "@linkrbot collect fees from my CASH LP",
+      "@linkrbot show my LP positions",
     ],
     checks: [
       "Robinhood Chain liquidity uses an existing Linkr-launched token and its token/WETH V3 pool.",
@@ -479,9 +479,9 @@ const commandDocs: CommandDoc[] = [
     purpose:
       "Check and claim supported creator rewards from eligible Linkr launches on Robinhood Chain or eligible Pump.fun fee-sharing launches on Solana.",
     examples: [
-      "@linkrcash claim creator rewards for 0x1234...abcd",
-      "@linkrcash claim my rewards for <Solana mint>",
-      "@linkrcash claim rewards from my latest launch",
+      "@linkrbot claim creator rewards for 0x1234...abcd",
+      "@linkrbot claim my rewards for <Solana mint>",
+      "@linkrbot claim rewards from my latest launch",
     ],
     checks: [
       "The launch can be identified by a full contract address, full Solana mint, cashtag, or clear latest-launch reference.",
@@ -508,10 +508,10 @@ const commandDocs: CommandDoc[] = [
     confirmation: "Not applicable. This command confirms an existing pending action.",
     purpose: "Execute the latest unexpired pending action within its 15-minute window.",
     examples: [
-      "@linkrcash confirm",
-      "@linkrcash yes",
-      "@linkrcash do it",
-      "@linkrcash confirm buy",
+      "@linkrbot confirm",
+      "@linkrbot yes",
+      "@linkrbot do it",
+      "@linkrbot confirm buy",
     ],
     checks: [
       "A pending action exists.",
@@ -536,10 +536,10 @@ const commandDocs: CommandDoc[] = [
     confirmation: "Not applicable. This cancels an existing pending action.",
     purpose: "Cancel the latest unexpired pending action before execution.",
     examples: [
-      "@linkrcash cancel",
-      "@linkrcash stop",
-      "@linkrcash never mind",
-      "@linkrcash don't do it",
+      "@linkrbot cancel",
+      "@linkrbot stop",
+      "@linkrbot never mind",
+      "@linkrbot don't do it",
     ],
     checks: ["A pending action exists for the user."],
     happens: [
@@ -559,10 +559,10 @@ const commandDocs: CommandDoc[] = [
     confirmation: "Never confirms because no transaction is created.",
     purpose: "Show the user's native ETH and SOL balances.",
     examples: [
-      "@linkrcash balance",
-      "@linkrcash how much ETH do I have?",
-      "@linkrcash how much SOL do I have?",
-      "@linkrcash wallet balance",
+      "@linkrbot balance",
+      "@linkrbot how much ETH do I have?",
+      "@linkrbot how much SOL do I have?",
+      "@linkrbot wallet balance",
     ],
     checks: [
       "Primary EVM wallet exists.",
@@ -588,10 +588,10 @@ const commandDocs: CommandDoc[] = [
     confirmation: "Never confirms because no transaction is created.",
     purpose: "Tell the user where to deposit ETH or SOL.",
     examples: [
-      "@linkrcash deposit address",
-      "@linkrcash what's my wallet address?",
-      "@linkrcash where do I send ETH?",
-      "@linkrcash where do I send SOL?",
+      "@linkrbot deposit address",
+      "@linkrbot what's my wallet address?",
+      "@linkrbot where do I send ETH?",
+      "@linkrbot where do I send SOL?",
     ],
     checks: ["Primary EVM wallet exists.", "Primary Solana wallet exists for SOL requests."],
     happens: [
@@ -612,11 +612,11 @@ const commandDocs: CommandDoc[] = [
     purpose:
       "Show Robinhood Chain ETH/ERC-20 holdings and Solana SOL/SPL holdings, either broadly or for a specific token.",
     examples: [
-      "@linkrcash portfolio",
-      "@linkrcash what tokens do I hold?",
-      "@linkrcash how much CASHCAT do I have?",
-      "@linkrcash show my bags",
-      "@linkrcash show my sol portfolio",
+      "@linkrbot portfolio",
+      "@linkrbot what tokens do I hold?",
+      "@linkrbot how much CASHCAT do I have?",
+      "@linkrbot show my bags",
+      "@linkrbot show my sol portfolio",
     ],
     checks: [
       "The matching primary EVM or Solana wallet exists.",
@@ -642,12 +642,12 @@ const commandDocs: CommandDoc[] = [
     purpose:
       "Answer Robinhood Chain and Solana token, chart, liquidity, market cap, volume, buyer, seller, and pair questions.",
     examples: [
-      "@linkrcash what is this token?",
-      "@linkrcash price of CASHCAT",
-      "@linkrcash liquidity for <Robinhood contract address>",
-      "@linkrcash analytics for <Solana mint address>",
-      "@linkrcash compare <Robinhood contract address> and <Solana mint address>",
-      "@linkrcash buyers and sellers on this pair?",
+      "@linkrbot what is this token?",
+      "@linkrbot price of CASHCAT",
+      "@linkrbot liquidity for <Robinhood contract address>",
+      "@linkrbot analytics for <Solana mint address>",
+      "@linkrbot compare <Robinhood contract address> and <Solana mint address>",
+      "@linkrbot buyers and sellers on this pair?",
     ],
     checks: [
       "Market data is enabled.",
@@ -674,11 +674,11 @@ const commandDocs: CommandDoc[] = [
     confirmation: "Never confirms because no transaction is created.",
     purpose: "Find trending, boosted, or searched Robinhood Chain and Solana tokens.",
     examples: [
-      "@linkrcash what's trending on Robinhood Chain?",
-      "@linkrcash what's trending on Solana?",
-      "@linkrcash show boosted tokens",
-      "@linkrcash find tokens named green",
-      "@linkrcash top tokens by liquidity",
+      "@linkrbot what's trending on Robinhood Chain?",
+      "@linkrbot what's trending on Solana?",
+      "@linkrbot show boosted tokens",
+      "@linkrbot find tokens named green",
+      "@linkrbot top tokens by liquidity",
     ],
     checks: [
       "Discovery provider is enabled.",
@@ -704,10 +704,10 @@ const commandDocs: CommandDoc[] = [
     purpose:
       "Search public X posts for a cashtag, token, project, profile, or follow-up question and summarize what people appear to be saying.",
     examples: [
-      "@linkrcash what are people on X saying about $CASHCAT?",
-      "@linkrcash check recent posts about this token",
-      "@linkrcash what is the sentiment around <Solana mint>?",
-      "@linkrcash look at @project's recent posts",
+      "@linkrbot what are people on X saying about $CASHCAT?",
+      "@linkrbot check recent posts about this token",
+      "@linkrbot what is the sentiment around <Solana mint>?",
+      "@linkrbot look at @project's recent posts",
     ],
     checks: [
       "The request clearly asks for X posts, public social context, a profile, or sentiment.",
@@ -732,8 +732,8 @@ const commandDocs: CommandDoc[] = [
     purpose:
       "Explain an X post or thread, or give a balanced token risk read using the public context and market facts Linkr can verify.",
     examples: [
-      "@linkrcash what does this post mean?",
-      "@linkrcash explain the thread above",
+      "@linkrbot what does this post mean?",
+      "@linkrbot explain the thread above",
       "Is this token risky?",
       "What should I check before buying <full contract or mint>?",
     ],
@@ -760,10 +760,10 @@ const commandDocs: CommandDoc[] = [
     purpose:
       "Answer what Linkr has done for the user across transactions, launches, settings, replies, and recent activity.",
     examples: [
-      "@linkrcash show my transactions today",
-      "@linkrcash what did I buy last week?",
-      "@linkrcash show my launches",
-      "@linkrcash what did you do for me yesterday?",
+      "@linkrbot show my transactions today",
+      "@linkrbot what did I buy last week?",
+      "@linkrbot show my launches",
+      "@linkrbot what did you do for me yesterday?",
     ],
     checks: [
       "History scope can be inferred.",
@@ -787,8 +787,8 @@ const commandDocs: CommandDoc[] = [
     confirmation: "Does not currently require transaction confirmation.",
     purpose: "Save off-chain Linkr notes or settings-like updates for launched coins.",
     examples: [
-      "@linkrcash remember my GREEN launch used a 0.2 ETH dev buy",
-      "@linkrcash note that my latest launch used the green mascot art",
+      "@linkrbot remember my GREEN launch used a 0.2 ETH dev buy",
+      "@linkrbot note that my latest launch used the green mascot art",
     ],
     checks: [
       "Referenced launch can be found when needed.",
@@ -810,10 +810,10 @@ const commandDocs: CommandDoc[] = [
     purpose:
       "Handle help, greetings, thanks, and general conversation without triggering wallet actions.",
     examples: [
-      "@linkrcash help",
-      "@linkrcash what can you do?",
-      "@linkrcash gm",
-      "@linkrcash thanks",
+      "@linkrbot help",
+      "@linkrbot what can you do?",
+      "@linkrbot gm",
+      "@linkrbot thanks",
     ],
     checks: [
       "Message is not a wallet action.",
@@ -836,9 +836,9 @@ const commandDocs: CommandDoc[] = [
     confirmation: "Not supported as public X execution.",
     purpose: "Clearly identify commands that do not work through X yet.",
     examples: [
-      "@linkrcash change my slippage to 10%",
-      "@linkrcash export my private key",
-      "@linkrcash buy $TOKEN without a contract address",
+      "@linkrbot change my slippage to 10%",
+      "@linkrbot export my private key",
+      "@linkrbot buy $TOKEN without a contract address",
     ],
     checks: [
       "Whether the action is supported.",
@@ -1015,7 +1015,7 @@ export function LinkrDocsPage() {
         <section className="lkd-masthead" aria-labelledby="docs-title">
           <div className="lkd-masthead-main">
             <h1 id="docs-title">
-              Everything <span>@linkrcash</span> can do
+              Everything <span>@linkrbot</span> can do
             </h1>
             <p>
               Learn what you can ask Linkr to do on X, Telegram, the private terminal, the CLI, and
@@ -1027,10 +1027,10 @@ export function LinkrDocsPage() {
             <CodeBlock
               id="masthead-examples"
               lines={[
-                "@linkrcash buy 0.05 ETH of 0x...",
-                "@linkrcash buy 0.2 SOL of <Solana mint>",
-                "@linkrcash launch MOON on both Solana and Robinhood with this image",
-                "@linkrcash show my transactions today",
+                "@linkrbot buy 0.05 ETH of 0x...",
+                "@linkrbot buy 0.2 SOL of <Solana mint>",
+                "@linkrbot launch MOON on both Solana and Robinhood with this image",
+                "@linkrbot show my transactions today",
               ]}
               compact
             />
@@ -1056,7 +1056,7 @@ export function LinkrDocsPage() {
                 <FeatureCard
                   icon={<Terminal />}
                   title="X commands"
-                  text="Mention @linkrcash in a post or reply. Linkr can use clear thread context and attached launch media while keeping public answers concise."
+                  text="Mention @linkrbot in a post or reply. Linkr can use clear thread context and attached launch media while keeping public answers concise."
                 />
                 <FeatureCard
                   icon={<MessageCircle />}
@@ -1112,7 +1112,7 @@ export function LinkrDocsPage() {
                   "Connect or log in with X from the app.",
                   "Fund the Linkr EVM wallet with ETH and the Solana wallet with SOL and native Solana USDC as needed.",
                   "Set slippage and max auto rules if needed.",
-                  "Mention @linkrcash, message @LinkrCashBot privately, open /app/terminal, run the Linkr CLI, or use a guided dashboard flow such as Launch or Scheduler.",
+                  "Mention @linkrbot, message @LinkrCashBot privately, open /app/terminal, run the Linkr CLI, or use a guided dashboard flow such as Launch or Scheduler.",
                   "Reply with the requested confirmation only after reviewing every detail. Token burns always require a later CONFIRM and cannot be recovered.",
                   "Check the X receipt or the app history after execution.",
                 ].map((step, index) => (
@@ -1125,23 +1125,23 @@ export function LinkrDocsPage() {
               <CodeBlock
                 id="quick-start-examples"
                 lines={[
-                  "@linkrcash what's my wallet address?",
-                  "@linkrcash balance",
-                  "@linkrcash buy 0.05 ETH of 0x...",
-                  "@linkrcash buy 0.2 SOL of <Solana mint>",
-                  "@linkrcash sell 25% of <contract or mint>",
-                  "@linkrcash compare <Robinhood contract> and <Solana mint>",
-                  "@linkrcash send 0.1 ETH to <recipient address>",
-                  "@linkrcash send 0.05 SOL to <Solana recipient>",
-                  "@linkrcash send 25 USDC to @recipient",
-                  "@linkrcash swap 0.25 SOL for USDC",
-                  "@linkrcash swap 25 USDC for SOL",
-                  "@linkrcash buy 0.2 SOL of <Solana mint> in 2 hours",
-                  "@linkrcash sell 100% of <contract or mint> if market cap goes above 170k",
-                  '@linkrcash mint nft collection called "My Punks" symbol PUNK',
-                  "@linkrcash mint this nft to my collection My Punks",
-                  "@linkrcash what is this token?",
-                  "@linkrcash what are people on X saying about $CASHCAT?",
+                  "@linkrbot what's my wallet address?",
+                  "@linkrbot balance",
+                  "@linkrbot buy 0.05 ETH of 0x...",
+                  "@linkrbot buy 0.2 SOL of <Solana mint>",
+                  "@linkrbot sell 25% of <contract or mint>",
+                  "@linkrbot compare <Robinhood contract> and <Solana mint>",
+                  "@linkrbot send 0.1 ETH to <recipient address>",
+                  "@linkrbot send 0.05 SOL to <Solana recipient>",
+                  "@linkrbot send 25 USDC to @recipient",
+                  "@linkrbot swap 0.25 SOL for USDC",
+                  "@linkrbot swap 25 USDC for SOL",
+                  "@linkrbot buy 0.2 SOL of <Solana mint> in 2 hours",
+                  "@linkrbot sell 100% of <contract or mint> if market cap goes above 170k",
+                  '@linkrbot mint nft collection called "My Punks" symbol PUNK',
+                  "@linkrbot mint this nft to my collection My Punks",
+                  "@linkrbot what is this token?",
+                  "@linkrbot what are people on X saying about $CASHCAT?",
                   "Message @LinkrCashBot: show my Solana portfolio",
                   "Open /app/terminal and ask: buy 0.1 SOL of <mint>",
                   'Run linkr chat "show my portfolio"',
@@ -1764,14 +1764,14 @@ export function LinkrDocsPage() {
                   <CodeBlock
                     id="scheduler-timed-examples"
                     lines={[
-                      "@linkrcash buy 0.05 ETH of 0x1234...abcd in 2 hours",
-                      "@linkrcash buy 0.2 SOL of <Solana mint> in 2 hours",
-                      "@linkrcash sell 100% of <contract or mint> in 2 hours",
-                      "@linkrcash send 0.1 ETH to <recipient> in 2 hours",
-                      "@linkrcash send 0.05 SOL to <Solana recipient> in 2 hours",
-                      "@linkrcash launch a coin called GREEN ticker GREEN on Solana in 2 hours",
-                      "@linkrcash claim my Pump.fun creator rewards tomorrow",
-                      "@linkrcash add liquidity to <Solana mint> every hour",
+                      "@linkrbot buy 0.05 ETH of 0x1234...abcd in 2 hours",
+                      "@linkrbot buy 0.2 SOL of <Solana mint> in 2 hours",
+                      "@linkrbot sell 100% of <contract or mint> in 2 hours",
+                      "@linkrbot send 0.1 ETH to <recipient> in 2 hours",
+                      "@linkrbot send 0.05 SOL to <Solana recipient> in 2 hours",
+                      "@linkrbot launch a coin called GREEN ticker GREEN on Solana in 2 hours",
+                      "@linkrbot claim my Pump.fun creator rewards tomorrow",
+                      "@linkrbot add liquidity to <Solana mint> every hour",
                     ]}
                     compact
                   />
@@ -1780,10 +1780,10 @@ export function LinkrDocsPage() {
                   <CodeBlock
                     id="scheduler-market-examples"
                     lines={[
-                      "@linkrcash buy 0.05 ETH of 0x1234...abcd if market cap gets below 50k",
-                      "@linkrcash buy 0.2 SOL of <Solana mint> if market cap drops below 50k",
-                      "@linkrcash sell 100% of 0x1234...abcd if market cap goes above 170k",
-                      "@linkrcash sell 50% of <Solana mint> if mcap goes over 1.2m",
+                      "@linkrbot buy 0.05 ETH of 0x1234...abcd if market cap gets below 50k",
+                      "@linkrbot buy 0.2 SOL of <Solana mint> if market cap drops below 50k",
+                      "@linkrbot sell 100% of 0x1234...abcd if market cap goes above 170k",
+                      "@linkrbot sell 50% of <Solana mint> if mcap goes over 1.2m",
                     ]}
                     compact
                   />
@@ -1891,7 +1891,7 @@ export function LinkrDocsPage() {
                 <InfoPanel title="Creator rewards claims from X">
                   <CheckList
                     items={[
-                      "Users can tag @linkrcash to claim creator rewards from a Linkr launch by providing the launch contract address, Solana mint, cashtag, or latest-launch reference.",
+                      "Users can tag @linkrbot to claim creator rewards from a Linkr launch by providing the launch contract address, Solana mint, cashtag, or latest-launch reference.",
                       "Robinhood Chain claims collect the launch locker position and claim available creator WETH/ETH plus launch-token fees when present.",
                       "Solana claims distribute Pump.fun fee-sharing creator rewards for eligible Pump.fun launches and report the SOL amount available at claim time.",
                       "Linkr prepares an inspectable pending action first. The user must reply confirm claim before any claim transaction is submitted.",
@@ -1904,7 +1904,7 @@ export function LinkrDocsPage() {
                 <CheckList
                   items={[
                     "If the user does not specify a website, Linkr can use the public Linkr coin page after the Robinhood token address or Pump.fun mint is known.",
-                    "If the user does not specify a Twitter/X link from an X launch, Linkr uses the launch post URL that tagged @linkrcash.",
+                    "If the user does not specify a Twitter/X link from an X launch, Linkr uses the launch post URL that tagged @linkrbot.",
                     "Telegram metadata is optional for both Robinhood Chain and Pump.fun launches and defaults to empty.",
                     "Users can explicitly request a custom website, an x.com or twitter.com URL, and a Telegram @handle or t.me link in the launch post.",
                     "Telegram handles are normalized to https://t.me/<handle> before they are stored or sent to Pump.fun metadata.",
@@ -1993,10 +1993,10 @@ export function LinkrDocsPage() {
                   <CodeBlock
                     id="nft-command-examples"
                     lines={[
-                      '@linkrcash mint nft collection called "My Punks" symbol PUNK',
-                      '@linkrcash mint nft collection called "My Punks" symbol PUNK description "Pixel punks on Solana"',
-                      "@linkrcash mint this nft to my collection My Punks",
-                      '@linkrcash mint this nft into collection PUNK called "Punk #1"',
+                      '@linkrbot mint nft collection called "My Punks" symbol PUNK',
+                      '@linkrbot mint nft collection called "My Punks" symbol PUNK description "Pixel punks on Solana"',
+                      "@linkrbot mint this nft to my collection My Punks",
+                      '@linkrbot mint this nft into collection PUNK called "Punk #1"',
                     ]}
                     compact
                   />
@@ -2054,7 +2054,7 @@ export function LinkrDocsPage() {
                     items={[
                       "Use the Earnings page to review supported rewards and start a claim.",
                       "The Earnings page can filter by chain and chart cumulative claimed ETH and SOL over time.",
-                      "Tag @linkrcash, message @LinkrCashBot privately, or use the terminal with a launch contract, Solana mint, clear launch reference, or latest-launch request.",
+                      "Tag @linkrbot, message @LinkrCashBot privately, or use the terminal with a launch contract, Solana mint, clear launch reference, or latest-launch request.",
                       "Every claim is prepared first and requires an explicit confirmation before funds move.",
                     ]}
                   />
@@ -2063,8 +2063,8 @@ export function LinkrDocsPage() {
                   <CodeBlock
                     id="creator-reward-examples"
                     lines={[
-                      "@linkrcash claim creator rewards for 0x1234...abcd",
-                      "@linkrcash claim Pump.fun rewards for <Solana mint>",
+                      "@linkrbot claim creator rewards for 0x1234...abcd",
+                      "@linkrbot claim Pump.fun rewards for <Solana mint>",
                       "Claim rewards from my latest launch",
                     ]}
                     compact
@@ -2181,12 +2181,12 @@ export function LinkrDocsPage() {
                   <CodeBlock
                     id="liquidity-pool-commands"
                     lines={[
-                      "@linkrcash add 0.2 ETH liquidity to CASH",
-                      "@linkrcash add 100000 PumpSwap liquidity to <Pump.fun mint>",
-                      "@linkrcash remove 50% liquidity from CASH",
-                      "@linkrcash remove 50% PumpSwap liquidity from <Pump.fun mint>",
-                      "@linkrcash collect fees from my CASH LP",
-                      "@linkrcash show my LP positions",
+                      "@linkrbot add 0.2 ETH liquidity to CASH",
+                      "@linkrbot add 100000 PumpSwap liquidity to <Pump.fun mint>",
+                      "@linkrbot remove 50% liquidity from CASH",
+                      "@linkrbot remove 50% PumpSwap liquidity from <Pump.fun mint>",
+                      "@linkrbot collect fees from my CASH LP",
+                      "@linkrbot show my LP positions",
                     ]}
                     compact
                   />

@@ -11,8 +11,8 @@ Deno.test("reported chain follow-up cannot overwrite protected name or symbol", 
     slot_updates: {
       name: {
         action: "set",
-        value: "linkrcash",
-        evidence: "@linkrcash",
+        value: "linkrbot",
+        evidence: "@linkrbot",
         confidence: 0.95,
         reason: "bad model read the bot mention as a token name",
         edit_intent: false,
@@ -42,14 +42,14 @@ Deno.test("reported chain follow-up cannot overwrite protected name or symbol", 
       existingFields: { name: "test", symbol: "TEST" },
       existingProvenance: { name: "user_text", symbol: "user_text" },
       originalLaunchText:
-        "@linkrcash launch a coin called test with ticker test",
-      latestUserText: "@linkrcash Use Solana",
+        "@linkrbot launch a coin called test with ticker test",
+      latestUserText: "@linkrbot Use Solana",
       latestTweetId: "2081983131007984078",
       originalTweetId: "2081982677964427495",
       previousAssistantReplyText:
         "Your launch is saved. Which chain should I use: Solana or Robinhood?",
       currentMissingFields: ["chain"],
-      botHandle: "linkrcash",
+      botHandle: "linkrbot",
     },
     reconciliation,
     "2026-07-28T05:59:10.000Z",
@@ -88,9 +88,9 @@ Deno.test("explicit user edit can overwrite a protected user-owned name", () => 
         chain: "user_text",
       },
       originalLaunchText: "launch a coin called test ticker TEST",
-      latestUserText: "@linkrcash change the name to Foo",
+      latestUserText: "@linkrbot change the name to Foo",
       latestTweetId: "2",
-      botHandle: "linkrcash",
+      botHandle: "linkrbot",
     },
     reconciliation,
     "2026-07-28T06:00:00.000Z",
@@ -120,8 +120,8 @@ Deno.test("low confidence slot updates ask instead of mutating", () => {
   const patch = buildLaunchDraftSlotPatch({
     existingFields: { name: "test", symbol: "TEST" },
     existingProvenance: { name: "user_text", symbol: "user_text" },
-    latestUserText: "@linkrcash maybe Solana",
-    botHandle: "linkrcash",
+    latestUserText: "@linkrbot maybe Solana",
+    botHandle: "linkrbot",
   }, reconciliation);
 
   assertEquals(patch.filledFields, {});
@@ -131,11 +131,11 @@ Deno.test("low confidence slot updates ask instead of mutating", () => {
 
 Deno.test("tweet text context separates the bot handle from user content", () => {
   const context = buildLaunchSlotTextContext(
-    "@linkrcash Use Solana https://x.com/linkrcash/status/1 @dev",
-    "linkrcash",
+    "@linkrbot Use Solana https://x.com/linkrbot/status/1 @dev",
+    "linkrbot",
   );
-  assertEquals(context.mentioned_bot_handle, "linkrcash");
+  assertEquals(context.mentioned_bot_handle, "linkrbot");
   assertEquals(context.mentioned_user_handles, ["dev"]);
-  assertEquals(context.urls, ["https://x.com/linkrcash/status/1"]);
+  assertEquals(context.urls, ["https://x.com/linkrbot/status/1"]);
   assertEquals(context.clean_user_text, "Use Solana @dev");
 });

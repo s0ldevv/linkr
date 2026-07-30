@@ -30,7 +30,7 @@ const QUICK_ACTIONS = [
   {
     key: "buy",
     className: "sm-viewer-action-buy",
-    intent: "@linkrcash buy $100 of ",
+    intent: "@linkrbot buy $100 of ",
     icon: ShoppingCart,
     title: "Buy Token",
     subtitle: "Swap ETH into any mint",
@@ -38,7 +38,7 @@ const QUICK_ACTIONS = [
   {
     key: "launch",
     className: "sm-viewer-action-launch",
-    intent: "@linkrcash launch $TOKEN with this image",
+    intent: "@linkrbot launch $TOKEN with this image",
     icon: Rocket,
     title: "Launch Coin",
     subtitle: "Create a token with media",
@@ -46,7 +46,7 @@ const QUICK_ACTIONS = [
   {
     key: "ask",
     className: "sm-viewer-action-ask",
-    intent: "@linkrcash what is the CA above?",
+    intent: "@linkrbot what is the CA above?",
     icon: MessageSquare,
     title: "Ask Linkr",
     subtitle: "Analyze anything on-chain",
@@ -201,7 +201,7 @@ function QuickActionsPanel({ hasSellableTokens }: { hasSellableTokens: boolean }
       <div className="sm-viewer-action-grid">
         <a
           className="sm-viewer-action sm-viewer-action-buy"
-          href={xIntent("@linkrcash buy $100 of ")}
+          href={xIntent("@linkrbot buy $100 of ")}
           target="_blank"
           rel="noreferrer"
         >
@@ -211,7 +211,7 @@ function QuickActionsPanel({ hasSellableTokens }: { hasSellableTokens: boolean }
         {hasSellableTokens ? (
           <a
             className="sm-viewer-action sm-viewer-action-sell"
-            href={xIntent("@linkrcash sell 50% of ")}
+            href={xIntent("@linkrbot sell 50% of ")}
             target="_blank"
             rel="noreferrer"
           >

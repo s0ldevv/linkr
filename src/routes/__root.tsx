@@ -22,7 +22,7 @@ import { useAuth } from "@/hooks/use-auth";
 
 const APP_TITLE = "Linkr - Your Robinhood Chain wallet bot on X";
 const APP_DESCRIPTION =
-  "A Robinhood Chain wallet bot for X. Reply with @linkrcash to trade, send, launch, or read a thread.";
+  "A Robinhood Chain wallet bot for X. Reply with @linkrbot to trade, send, launch, or read a thread.";
 const OG_DESCRIPTION =
   "Reply on X. Linkr reads the thread, checks your rules, and handles the wallet action.";
 const OG_IMAGE_URL =
@@ -141,7 +141,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:image:height", content: "630" },
       { property: "og:image:alt", content: OG_IMAGE_ALT },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@linkrcash" },
+      { name: "twitter:site", content: "@linkrbot" },
       { name: "twitter:title", content: APP_TITLE },
       { name: "twitter:description", content: OG_DESCRIPTION },
       { name: "twitter:image", content: OG_IMAGE_URL },

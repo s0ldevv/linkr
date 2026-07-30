@@ -16,6 +16,6 @@ export function loadExpectedXBotIdentity(
   if (!/^\d+$/.test(userId)) throw new Error("X_BOT_USER_ID is not configured correctly");
 
   const handle = normalizeXBotHandle(String(readEnv("X_BOT_HANDLE") ?? ""));
-  if (handle !== "linkrcash") throw new Error("X_BOT_HANDLE is not configured correctly");
+  if (handle !== "linkrbot") throw new Error("X_BOT_HANDLE is not configured correctly");
   return { userId, handle };
 }

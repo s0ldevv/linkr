@@ -2,9 +2,9 @@
 
 ## **Problem Summary**
 
-X bot (@linkrcash) was not replying to swap commands like:
+X bot (@linkrbot) was not replying to swap commands like:
 ```
-@linkrcash buy 0.025 SOL worth of Ge87EtsjwRQbHaqQmKRno69RFTwh9bfSsm99XNxTpump
+@linkrbot buy 0.025 SOL worth of Ge87EtsjwRQbHaqQmKRno69RFTwh9bfSsm99XNxTpump
 ```
 
 **Symptoms:**
@@ -93,9 +93,9 @@ But the application code uses Supabase's `.upsert({ onConflict: "idempotency_key
 ## **Next Steps - Live Testing**
 
 ### **Test Command**
-Tweet to @linkrcash:
+Tweet to @linkrbot:
 ```
-@linkrcash buy 0.02 SOL worth of Ge87EtsjwRQbHaqQmKRno69RFTwh9bfSsm99XNxTpump
+@linkrbot buy 0.02 SOL worth of Ge87EtsjwRQbHaqQmKRno69RFTwh9bfSsm99XNxTpump
 ```
 
 **Expected Behavior:**

@@ -78,13 +78,13 @@ export const Route = createFileRoute("/nfts/")({
       {
         name: "description",
         content:
-          "Browse Solana NFT collections and fresh mints created from X by tagging @linkrcash.",
+          "Browse Solana NFT collections and fresh mints created from X by tagging @linkrbot.",
       },
       { property: "og:title", content: "NFT Gallery — Linkr" },
       {
         property: "og:description",
         content:
-          "Browse Solana NFT collections and fresh mints created from X by tagging @linkrcash.",
+          "Browse Solana NFT collections and fresh mints created from X by tagging @linkrbot.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -160,7 +160,7 @@ function NftsGalleryPage() {
             <div className="sm-public-filter-toolbar">
               <a
                 className="sm-public-launch-action"
-                href="https://x.com/linkrcash"
+                href="https://x.com/linkrbot"
                 target="_blank"
                 rel="noreferrer"
               >

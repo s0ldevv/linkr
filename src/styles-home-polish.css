@@ -2415,7 +2415,7 @@ body,
 }
 
 .sm-command-grid a::before {
-  content: "@linkrcash" !important;
+  content: "@linkrbot" !important;
   position: absolute !important;
   right: 14px !important;
   top: 13px !important;

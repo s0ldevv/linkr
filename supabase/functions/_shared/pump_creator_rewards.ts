@@ -616,7 +616,7 @@ function maybeHandle(value: unknown): string | null {
 }
 
 function ignoredHandle(handle: string): boolean {
-  return ["linkr", "linkrcash", "linkr_cash"].includes(handle.toLowerCase());
+  return ["linkr", "linkrbot", "linkr_cash"].includes(handle.toLowerCase());
 }
 
 function readString(body: any, keys: string[]): string | null {

@@ -9,7 +9,7 @@ const env = {
   X_OAUTH1_ACCESS_TOKEN: "access",
   X_OAUTH1_ACCESS_TOKEN_SECRET: "access-secret",
   X_BOT_USER_ID: "2070400325207334912",
-  X_BOT_HANDLE: "linkrcash",
+  X_BOT_HANDLE: "linkrbot",
 };
 
 async function withEnv(run: () => Promise<void>, values: Record<string, string> = env) {
@@ -35,12 +35,12 @@ Deno.test("X posting verifier accepts the exact configured identity", async () =
       assertEquals(authorization.startsWith("OAuth "), true);
       return Promise.resolve(
         Response.json({
-          data: { id: env.X_BOT_USER_ID, username: "LinkrCash" },
+          data: { id: env.X_BOT_USER_ID, username: "LinkrBot" },
         }),
       );
     });
     assertEquals(result.xUserId, env.X_BOT_USER_ID);
-    assertEquals(result.botHandle, "linkrcash");
+    assertEquals(result.botHandle, "linkrbot");
   });
 });
 
@@ -58,14 +58,14 @@ Deno.test("X posting verifier accepts OAuth 2.0 bot token mode", async () => {
           assertEquals(authorization, "Bearer oauth2-access-token");
           return Promise.resolve(
             Response.json({
-              data: { id: env.X_BOT_USER_ID, username: "LinkrCash" },
+              data: { id: env.X_BOT_USER_ID, username: "LinkrBot" },
             }),
           );
         },
       });
       assertEquals(result.authMode, "oauth2");
       assertEquals(result.xUserId, env.X_BOT_USER_ID);
-      assertEquals(result.botHandle, "linkrcash");
+      assertEquals(result.botHandle, "linkrbot");
     },
     { ...env, X_BOT_POST_AUTH_MODE: "oauth2" },
   );

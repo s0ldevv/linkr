@@ -39,7 +39,7 @@ export function TerminalBar({ mobileMenuOpen = false }: { mobileMenuOpen?: boole
   const submit = (event: FormEvent) => {
     event.preventDefault();
     const text = command.trim();
-    window.open(xIntent(`@linkrcash ${text || "help"}`), "_blank", "noopener");
+    window.open(xIntent(`@linkrbot ${text || "help"}`), "_blank", "noopener");
     setTerminalOpen(false);
   };
 
