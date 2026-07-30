@@ -269,7 +269,10 @@ export function fallbackPumpFunLaunchFundingEstimate(
     estimatorVersion: ESTIMATOR_VERSION,
     minimumLaunchLamports,
     bufferLamports: 0n,
-    fundingTargetLamports: minimumLaunchLamports,
+    // Same rent headroom as the simulated path, so a launch funded through the
+    // fallback reserve cannot be left below the rent-exempt floor either.
+    fundingTargetLamports: minimumLaunchLamports +
+      PUMP_FUN_LAUNCH_RENT_HEADROOM_LAMPORTS,
     feeLamports: 0n,
     payerDebitLamports: minimumLaunchLamports,
     simulationUnitsConsumed: null,
@@ -279,9 +282,34 @@ export function fallbackPumpFunLaunchFundingEstimate(
       source: "fallback_reserve",
       reserve_sol: reserveSol,
       fee_sharing_reserve_sol: feeSharingReserveSol,
+      rent_headroom_lamports: PUMP_FUN_LAUNCH_RENT_HEADROOM_LAMPORTS.toString(),
     },
   };
 }
+
+/**
+ * Extra SOL funded on top of the estimated launch cost. Hardcoded on purpose.
+ *
+ * Solana rejects any transaction that would leave a surviving account below the
+ * rent-exempt minimum — 890,880 lamports for a basic account. The cost estimate
+ * is measured by simulating against a well-funded quote wallet that never
+ * approaches that floor, so a launch wallet funded to exactly the estimate is
+ * left underneath it and the launch fails with:
+ *
+ *   InsufficientFundsForRent { account_index: 0 }   // account 0 is the payer
+ *
+ * Observed in production on 2026-07-30: the wallet was funded to 7,572,480
+ * lamports and the launch needed to debit 7,422,480, leaving 150,000 — some
+ * 740,880 short of the floor. The transaction never landed and the work item
+ * retried on a permanently failing condition.
+ *
+ * This headroom is not consumed. It stays in the user's wallet keeping the
+ * account rent-exempt, so it is capital parked per launch rather than spend.
+ *
+ * Note this cannot be expressed through PUMP_FUN_LAUNCH_FUNDING_BUFFER_LAMPORTS
+ * below: that value is capped at 300_000, still well under the rent floor.
+ */
+export const PUMP_FUN_LAUNCH_RENT_HEADROOM_LAMPORTS = 9_000_000n; // 0.009 SOL
 
 export function pumpFunLaunchFundingBufferLamports(
   env: (name: string) => string | undefined = (name) =>
@@ -326,7 +354,9 @@ export function estimatePumpFunLaunchFundingFromSimulation(args: {
     estimatorVersion: ESTIMATOR_VERSION,
     minimumLaunchLamports: guardedMinimumLamports,
     bufferLamports: effectiveBufferLamports,
-    fundingTargetLamports: guardedMinimumLamports + effectiveBufferLamports,
+    // The payer must still be rent-exempt once the launch debits it.
+    fundingTargetLamports: guardedMinimumLamports + effectiveBufferLamports +
+      PUMP_FUN_LAUNCH_RENT_HEADROOM_LAMPORTS,
     feeLamports: simulatedFee ?? args.feeLamports,
     payerDebitLamports,
     simulationUnitsConsumed: Number.isFinite(
@@ -341,8 +371,9 @@ export function estimatePumpFunLaunchFundingFromSimulation(args: {
       source: "quote_wallet_simulation",
       minimum_launch_lamports: guardedMinimumLamports.toString(),
       buffer_lamports: effectiveBufferLamports.toString(),
+      rent_headroom_lamports: PUMP_FUN_LAUNCH_RENT_HEADROOM_LAMPORTS.toString(),
       funding_target_lamports: (guardedMinimumLamports +
-        effectiveBufferLamports)
+        effectiveBufferLamports + PUMP_FUN_LAUNCH_RENT_HEADROOM_LAMPORTS)
         .toString(),
       fee_lamports: (simulatedFee ?? args.feeLamports).toString(),
       payer_debit_lamports: payerDebitLamports.toString(),
