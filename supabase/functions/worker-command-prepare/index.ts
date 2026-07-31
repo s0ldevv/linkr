@@ -29,6 +29,10 @@ import {
 } from "../_shared/x_nft_command.ts";
 import { prepareXNftXFlow } from "../_shared/x_nft_prepare.ts";
 import { executeXTradeCommand } from "../_shared/x_trade_execute.ts";
+import {
+  launchCooldownMessage,
+  readLaunchCooldown,
+} from "../_shared/launch_cooldown.ts";
 
 const VERSION = "worker-command-prepare-v2";
 
@@ -320,6 +324,24 @@ Deno.serve((req) =>
       }
       if (!launchCommand && !existingDraft) {
         launchCommand = await detectLaunchIntentWithAi(tweet.text);
+      }
+      if (launchCommand && !existingDraft) {
+        const cooldown = await readLaunchCooldown(admin, userId);
+        if (!cooldown.allowed) {
+          await queueReply(
+            admin,
+            claim.work_item.id,
+            "launch_cooldown_active",
+            1,
+            launchCooldownMessage(cooldown),
+          );
+          await markTweetCompleted(admin, tweetId);
+          return {
+            kind: "complete",
+            state: "rejected",
+            resultRef: "launch-cooldown-active",
+          };
+        }
       }
       if (!existingDraft && !launchCommand) {
         if (alreadyEscapedToConversation(claim.work_item.payload)) {

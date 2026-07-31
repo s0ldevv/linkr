@@ -1,10 +1,28 @@
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import {
+  normalizeLaunchCooldownPolicy,
   normalizeLaunchFundingPolicy,
   normalizeMetadataTestingPolicy,
   normalizeXUserGatingPolicy,
   normalizeXUserMetrics,
 } from "./admin_settings.ts";
+
+Deno.test("launch cooldown policy normalizes enabled state and bounds duration", () => {
+  assertEquals(
+    normalizeLaunchCooldownPolicy({ enabled: true, duration_minutes: 20_000.8 }),
+    {
+      enabled: true,
+      duration_minutes: 10_080,
+    },
+  );
+  assertEquals(
+    normalizeLaunchCooldownPolicy({ enabled: "true", duration_minutes: 0 }),
+    {
+      enabled: false,
+      duration_minutes: 1,
+    },
+  );
+});
 
 Deno.test("launch funding policy rejects unsupported modes", () => {
   assertEquals(

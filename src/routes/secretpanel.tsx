@@ -5,6 +5,7 @@ import {
   Ban,
   CheckCircle2,
   CircleAlert,
+  Clock3,
   FlaskConical,
   Loader2,
   LogOut,
@@ -78,9 +79,7 @@ type HealthRow = {
 };
 
 type LaunchFundingMode =
-  | "funding_disabled"
-  | "first_eligible_launch"
-  | "fund_every_eligible_launch";
+  "funding_disabled" | "first_eligible_launch" | "fund_every_eligible_launch";
 
 type LaunchFundingPolicy = {
   mode: LaunchFundingMode;
@@ -102,10 +101,16 @@ type MetadataTestingPolicy = {
   test_telegram_url: string | null;
 };
 
+type LaunchCooldownPolicy = {
+  enabled: boolean;
+  duration_minutes: number;
+};
+
 type SecretPanelSettings = {
   launch_funding_policy: LaunchFundingPolicy;
   x_user_gating_policy: XUserGatingPolicy;
   metadata_testing_policy: MetadataTestingPolicy;
+  launch_cooldown_policy: LaunchCooldownPolicy;
 };
 
 type SecretPanelStatus = {
@@ -669,11 +674,13 @@ function PolicyControls({
   );
   const [gating, setGating] = useState<XUserGatingPolicy>(settings.x_user_gating_policy);
   const [metadata, setMetadata] = useState<MetadataTestingPolicy>(settings.metadata_testing_policy);
+  const [cooldown, setCooldown] = useState<LaunchCooldownPolicy>(settings.launch_cooldown_policy);
 
   useEffect(() => {
     setFundingMode(settings.launch_funding_policy.mode);
     setGating(settings.x_user_gating_policy);
     setMetadata(settings.metadata_testing_policy);
+    setCooldown(settings.launch_cooldown_policy);
   }, [settings]);
 
   return (
@@ -688,7 +695,7 @@ function PolicyControls({
         <SlidersHorizontal aria-hidden="true" className="h-6 w-6 text-[#66706b]" />
       </div>
 
-      <div className="mt-5 grid gap-4 lg:grid-cols-3">
+      <div className="mt-5 grid gap-4 lg:grid-cols-4">
         <div className="rounded-md border border-[#d9decf] p-4">
           <div className="mb-4 flex items-center gap-2">
             <ShieldCheck aria-hidden="true" className="h-5 w-5 text-[#66706b]" />
@@ -843,6 +850,50 @@ function PolicyControls({
               <Save aria-hidden="true" className="h-4 w-4" />
             )}
             Save metadata
+          </Button>
+        </div>
+
+        <div className="rounded-md border border-[#d9decf] p-4">
+          <div className="mb-4 flex items-center gap-2">
+            <Clock3 aria-hidden="true" className="h-5 w-5 text-[#66706b]" />
+            <h3 className="text-base font-black">Launch cooldown</h3>
+          </div>
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <span className="text-sm font-bold">One coin per window</span>
+            <Switch
+              checked={cooldown.enabled}
+              onCheckedChange={(enabled) => setCooldown((current) => ({ ...current, enabled }))}
+            />
+          </div>
+          <label className="block text-sm font-bold">
+            Duration (minutes)
+            <Input
+              className="mt-1"
+              type="number"
+              min={1}
+              max={10080}
+              step={1}
+              value={cooldown.duration_minutes}
+              onChange={(event) =>
+                setCooldown((current) => ({
+                  ...current,
+                  duration_minutes: boundedNumber(event.target.value, 60),
+                }))
+              }
+            />
+          </label>
+          <Button
+            type="button"
+            className="mt-4 w-full"
+            disabled={savingKey === "launch_cooldown_policy"}
+            onClick={() => onSave("launch_cooldown_policy", cooldown)}
+          >
+            {savingKey === "launch_cooldown_policy" ? (
+              <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
+            ) : (
+              <Save aria-hidden="true" className="h-4 w-4" />
+            )}
+            Save cooldown
           </Button>
         </div>
       </div>

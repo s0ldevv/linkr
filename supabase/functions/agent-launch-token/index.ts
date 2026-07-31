@@ -15,6 +15,7 @@ import {
 import { stringField } from "../_shared/agent_api_core.ts";
 import { rehostLaunchImageUrl } from "../_shared/bounded_media.ts";
 import { serviceClient } from "../_shared/supabase.ts";
+import { readLaunchCooldown } from "../_shared/launch_cooldown.ts";
 
 type LaunchChain = "robinhood" | "solana";
 
@@ -54,6 +55,20 @@ Deno.serve(async (req) => {
       }),
       "invalid_image_url",
     );
+    if (ctx.body.dry_run !== true) {
+      const cooldown = await readLaunchCooldown(admin, ctx.userId);
+      if (!cooldown.allowed) {
+        throw new AgentApiError(
+          "launch_cooldown_active",
+          429,
+          "You already launched a coin recently.",
+          {
+            retry_after_seconds: cooldown.retry_after_seconds,
+            cooldown_until: cooldown.cooldown_until,
+          },
+        );
+      }
+    }
     // Re-host external images into trusted storage now so the media-capture
     // worker (which only fetches trusted hosts) can always process the launch.
     let imageUrl: string;

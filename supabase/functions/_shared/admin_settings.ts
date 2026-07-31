@@ -28,6 +28,11 @@ export interface MetadataTestingPolicy {
   test_telegram_url: string | null;
 }
 
+export interface LaunchCooldownPolicy {
+  enabled: boolean;
+  duration_minutes: number;
+}
+
 export interface XUserMetrics {
   followers_count?: number | null;
   following_count?: number | null;
@@ -64,6 +69,11 @@ export const DEFAULT_METADATA_TESTING_POLICY: MetadataTestingPolicy = {
   test_telegram_url: null,
 };
 
+export const DEFAULT_LAUNCH_COOLDOWN_POLICY: LaunchCooldownPolicy = {
+  enabled: false,
+  duration_minutes: 60,
+};
+
 export async function readLaunchFundingPolicy(
   admin: any,
 ): Promise<LaunchFundingPolicy> {
@@ -85,6 +95,13 @@ export async function readMetadataTestingPolicy(
   return normalizeMetadataTestingPolicy(value);
 }
 
+export async function readLaunchCooldownPolicy(
+  admin: any,
+): Promise<LaunchCooldownPolicy> {
+  const value = await readSetting(admin, "launch_cooldown_policy");
+  return normalizeLaunchCooldownPolicy(value);
+}
+
 export async function readAllAdminSettings(
   admin: any,
 ): Promise<Record<string, unknown>> {
@@ -101,12 +118,16 @@ export async function readAllAdminSettings(
       metadata_testing_policy: normalizeMetadataTestingPolicy(
         data?.metadata_testing_policy,
       ),
+      launch_cooldown_policy: normalizeLaunchCooldownPolicy(
+        data?.launch_cooldown_policy,
+      ),
     };
   } catch (_) {
     return {
       launch_funding_policy: DEFAULT_LAUNCH_FUNDING_POLICY,
       x_user_gating_policy: DEFAULT_X_USER_GATING_POLICY,
       metadata_testing_policy: DEFAULT_METADATA_TESTING_POLICY,
+      launch_cooldown_policy: DEFAULT_LAUNCH_COOLDOWN_POLICY,
     };
   }
 }
@@ -141,6 +162,9 @@ export async function setAdminSetting(args: {
   }
   if (args.key === "metadata_testing_policy") {
     return normalizeMetadataTestingPolicy(data);
+  }
+  if (args.key === "launch_cooldown_policy") {
+    return normalizeLaunchCooldownPolicy(data);
   }
   return data;
 }
@@ -234,6 +258,16 @@ export function normalizeMetadataTestingPolicy(
     test_telegram_url: normalizeOptionalHttpsUrl(row.test_telegram_url, {
       allowedHosts: ["t.me", "telegram.me"],
     }),
+  };
+}
+
+export function normalizeLaunchCooldownPolicy(
+  value: unknown,
+): LaunchCooldownPolicy {
+  const row = record(value);
+  return {
+    enabled: row.enabled === true,
+    duration_minutes: boundedInteger(row.duration_minutes ?? 60, 1, 10_080),
   };
 }
 

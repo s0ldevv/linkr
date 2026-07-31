@@ -6,6 +6,7 @@ import { rehostLaunchImageUrl } from "../_shared/bounded_media.ts";
 import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
 import { readJsonBody, RequestBodyError } from "../_shared/http.ts";
 import { getCallerUserId, serviceClient } from "../_shared/supabase.ts";
+import { readLaunchCooldown } from "../_shared/launch_cooldown.ts";
 
 type LaunchChain = "robinhood" | "solana";
 const IMAGE_MAX_BYTES = 4 * 1024 * 1024;
@@ -30,6 +31,20 @@ Deno.serve(async (req) => {
     const requests = normalizeRequests(body);
     for (const request of requests) {
       validateText(request.chain, name, symbol, description);
+    }
+    const cooldown = await readLaunchCooldown(admin, userId);
+    if (!cooldown.allowed) {
+      return jsonResponse(
+        {
+          error: "launch_cooldown_active",
+          retry_after_seconds: cooldown.retry_after_seconds,
+          cooldown_until: cooldown.cooldown_until,
+        },
+        {
+          status: 429,
+          headers: { "Retry-After": String(cooldown.retry_after_seconds) },
+        },
+      );
     }
     const rawIdempotency = normalizeIdempotency(body.idempotency_key);
     const baseKey = `web-launch:${userId}:${rawIdempotency}`;
@@ -430,6 +445,7 @@ function bytesToHex(bytes: Uint8Array): string {
 
 function errorStatus(message: string): number {
   if (message === "unauthorized") return 401;
+  if (message === "launch_cooldown_active") return 429;
   if (/not_found/.test(message)) return 404;
   if (/paused|disabled/.test(message)) return 503;
   if (/invalid|missing|unsupported|duplicate|too_|cap_|wallet|image|idempotency/.test(message)) {
