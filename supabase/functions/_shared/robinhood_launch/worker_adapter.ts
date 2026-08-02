@@ -6,11 +6,17 @@ import { decryptSecret } from "../crypto.ts";
 import { SINGLE_SIDED_LAUNCH_FACTORY_ABI } from "./abi.ts";
 import {
   readLaunchFactoryAddress,
+  SINGLE_SIDED_LAUNCH_DESCRIPTION_MAX_LENGTH,
+  SINGLE_SIDED_LAUNCH_LOGO_URI_MAX_LENGTH,
+  SINGLE_SIDED_LAUNCH_METADATA_URI_MAX_LENGTH,
   SINGLE_SIDED_LAUNCH_NAME_MAX_LENGTH,
+  SINGLE_SIDED_LAUNCH_SOCIAL_URL_MAX_LENGTH,
   SINGLE_SIDED_LAUNCH_SYMBOL_MAX_LENGTH,
 } from "./constants.ts";
 
 const ROBINHOOD_CHAIN_ID = 4663;
+const DEFAULT_LAUNCH_FUNDING_HEADROOM_BPS = 2_500n;
+const MAX_LAUNCH_FUNDING_HEADROOM_BPS = 10_000n;
 
 export interface LoadedLaunchWallet {
   id: string;
@@ -25,6 +31,13 @@ export type LaunchDraft = {
   name: string;
   symbol: string;
   metadataURI: string;
+  logoURI: string;
+  description?: string | null;
+  twitter?: string | null;
+  telegram?: string | null;
+  discord?: string | null;
+  website?: string | null;
+  farcaster?: string | null;
   initialBuyWei: bigint;
   saltSeed?: string | null;
 };
@@ -217,6 +230,42 @@ export async function broadcastSignedSingleSidedLaunch(
   return response.hash;
 }
 
+/**
+ * The balance the platform tops a launch signer up to, not the bare minimum.
+ *
+ * `requiredBalanceWei` is a snapshot: `gasLimit * gasPrice` at preflight. After
+ * funding, the worker retries and preflights *again*, and only then signs. The
+ * gas estimate for `launch()` is deterministic (measured: 6,224,081 on every
+ * sample), but the gas price moves every block — 8 distinct prices and a 2.04%
+ * spread across 8 samples taken at the worker's own 3s retry cadence.
+ *
+ * Funding the exact deficit therefore loses a coin flip about half the time:
+ * the second preflight sees a deficit again, and because the funding event is
+ * already `confirmed`, `fundRobinhoodLaunchIfNeeded` reports `funded` without
+ * sending anything more. The launch then retries every 3s until the 900s
+ * watchdog cancels it, and the user is told only that something took too long.
+ *
+ * The headroom is what breaks that loop. Overshoot is not spent and not lost —
+ * it stays in the user's own wallet and offsets their next action.
+ */
+export function launchFundingTargetWei(preflight: LaunchPreflight): bigint {
+  const required = preflight.requiredBalanceWei;
+  if (required <= 0n) return required;
+  return required + (required * readFundingHeadroomBps()) / 10_000n;
+}
+
+function readFundingHeadroomBps(): bigint {
+  const raw = Deno.env.get("ROBINHOOD_LAUNCH_FUNDING_HEADROOM_BPS")?.trim();
+  if (!raw || !/^\d{1,5}$/.test(raw)) {
+    return DEFAULT_LAUNCH_FUNDING_HEADROOM_BPS;
+  }
+  const bps = BigInt(raw);
+  // A fat-fingered override must never become a dev-wallet drain.
+  return bps > MAX_LAUNCH_FUNDING_HEADROOM_BPS
+    ? DEFAULT_LAUNCH_FUNDING_HEADROOM_BPS
+    : bps;
+}
+
 export function parseInitialBuyWei(value: unknown): bigint {
   if (typeof value === "bigint") return value;
   const text = String(value ?? "0").trim();
@@ -288,7 +337,48 @@ function buildLaunchParams(draft: LaunchDraft) {
       "symbol",
       SINGLE_SIDED_LAUNCH_SYMBOL_MAX_LENGTH,
     ).toUpperCase(),
-    metadataURI: sanitizeRequired(draft.metadataURI, "metadata_uri", 2048),
+    metadataURI: sanitizeRequired(
+      draft.metadataURI,
+      "metadata_uri",
+      SINGLE_SIDED_LAUNCH_METADATA_URI_MAX_LENGTH,
+    ),
+    logo: sanitizeRequired(
+      draft.logoURI,
+      "logo_uri",
+      SINGLE_SIDED_LAUNCH_LOGO_URI_MAX_LENGTH,
+    ),
+    description: sanitizeOptionalText(
+      draft.description,
+      "description",
+      SINGLE_SIDED_LAUNCH_DESCRIPTION_MAX_LENGTH,
+    ),
+    socials: {
+      twitter: sanitizeOptionalText(
+        draft.twitter,
+        "twitter",
+        SINGLE_SIDED_LAUNCH_SOCIAL_URL_MAX_LENGTH,
+      ),
+      telegram: sanitizeOptionalText(
+        draft.telegram,
+        "telegram",
+        SINGLE_SIDED_LAUNCH_SOCIAL_URL_MAX_LENGTH,
+      ),
+      discord: sanitizeOptionalText(
+        draft.discord,
+        "discord",
+        SINGLE_SIDED_LAUNCH_SOCIAL_URL_MAX_LENGTH,
+      ),
+      website: sanitizeOptionalText(
+        draft.website,
+        "website",
+        SINGLE_SIDED_LAUNCH_SOCIAL_URL_MAX_LENGTH,
+      ),
+      farcaster: sanitizeOptionalText(
+        draft.farcaster,
+        "farcaster",
+        SINGLE_SIDED_LAUNCH_SOCIAL_URL_MAX_LENGTH,
+      ),
+    },
     initialBuyWeth: assertInitialBuyWithinCap(draft.initialBuyWei),
     salt: buildLaunchSalt(draft),
   };
@@ -312,6 +402,16 @@ function sanitizeRequired(
   if (typeof value !== "string") throw new Error(`${field}_must_be_string`);
   const text = value.trim();
   if (!text) throw new Error(`${field}_required`);
+  if (text.length > maxLength) throw new Error(`${field}_too_long`);
+  return text;
+}
+
+function sanitizeOptionalText(
+  value: unknown,
+  field: string,
+  maxLength: number,
+): string {
+  const text = String(value ?? "").trim();
   if (text.length > maxLength) throw new Error(`${field}_too_long`);
   return text;
 }

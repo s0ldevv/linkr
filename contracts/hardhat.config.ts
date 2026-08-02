@@ -1,4 +1,5 @@
 import hardhatEthersPlugin from "@nomicfoundation/hardhat-ethers";
+import hardhatVerifyPlugin from "@nomicfoundation/hardhat-verify";
 import "dotenv/config";
 import { defineConfig } from "hardhat/config";
 
@@ -8,7 +9,18 @@ const robinhoodForkBlock = process.env.ROBINHOOD_FORK_BLOCK
   : undefined;
 
 const config = defineConfig({
-  plugins: [hardhatEthersPlugin],
+  plugins: [hardhatEthersPlugin, hardhatVerifyPlugin],
+  verify: {
+    etherscan: {
+      apiKey: ""
+    },
+    blockscout: {
+      enabled: true
+    }
+  },
+  sourcify: {
+    enabled: false
+  },
   solidity: {
     compilers: [
       { version: "0.8.26", settings: { evmVersion: "cancun", optimizer: { enabled: true, runs: 500 }, viaIR: true } },

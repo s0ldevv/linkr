@@ -34,6 +34,9 @@ contract LaunchFactory is ReentrancyGuard, IUniswapV3SwapCallback {
         string name;
         string symbol;
         string metadataURI;
+        string logo;
+        string description;
+        LaunchToken.Socials socials;
         uint256 initialBuyWeth;
         bytes32 salt;
     }
@@ -239,7 +242,11 @@ contract LaunchFactory is ReentrancyGuard, IUniswapV3SwapCallback {
         _validateLaunchParams(p);
 
         SaltCandidate memory candidate = _selectSaltCandidate(p, msg.sender, _launchSaltEntropy());
-        token = address(new LaunchToken{salt: candidate.salt}(p.name, p.symbol, msg.sender, p.metadataURI));
+        token = address(
+            new LaunchToken{salt: candidate.salt}(
+                p.name, p.symbol, msg.sender, p.metadataURI, p.logo, p.description, p.socials
+            )
+        );
         if (token != candidate.predictedToken) revert InvalidSalt();
         if (IERC20(token).totalSupply() != TOKEN_SUPPLY) revert WrongTokenAmount();
 
@@ -349,7 +356,8 @@ contract LaunchFactory is ReentrancyGuard, IUniswapV3SwapCallback {
     function _validateLaunchParamFields(LaunchParams calldata p) internal pure {
         if (
             p.salt == bytes32(0) || bytes(p.name).length == 0 || bytes(p.symbol).length == 0
-                || bytes(p.metadataURI).length == 0 || p.initialBuyWeth > uint256(type(int256).max)
+                || bytes(p.metadataURI).length == 0 || bytes(p.logo).length == 0
+                || p.initialBuyWeth > uint256(type(int256).max)
         ) revert InvalidParams();
     }
 
@@ -570,7 +578,10 @@ contract LaunchFactory is ReentrancyGuard, IUniswapV3SwapCallback {
 
     function _launchTokenBytecodeHash(LaunchParams calldata p, address creator) internal pure returns (bytes32) {
         return keccak256(
-            abi.encodePacked(type(LaunchToken).creationCode, abi.encode(p.name, p.symbol, creator, p.metadataURI))
+            abi.encodePacked(
+                type(LaunchToken).creationCode,
+                abi.encode(p.name, p.symbol, creator, p.metadataURI, p.logo, p.description, p.socials)
+            )
         );
     }
 

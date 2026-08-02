@@ -135,28 +135,28 @@ Deno.serve((req) =>
       try {
         let currentLaunch = launch;
         const metadataPolicy = await readMetadataTestingPolicy(admin);
-        if (!String(currentLaunch.metadata_uri ?? "").trim()) {
-          const provisionalMetadata = resolvePumpFunLaunchMetadata(
-            currentLaunch,
-            {
-              testingMode: metadataPolicy.enabled,
-              testingWebsiteUrl: metadataPolicy.test_website_url,
-              testingTwitterUrl: metadataPolicy.test_twitter_url,
-              testingTelegramUrl: metadataPolicy.test_telegram_url,
-              mintAddress: null,
-            },
-          );
+        const onchainMetadata = resolvePumpFunLaunchMetadata(
+          currentLaunch,
+          {
+            testingMode: metadataPolicy.enabled,
+            testingWebsiteUrl: metadataPolicy.test_website_url,
+            testingTwitterUrl: metadataPolicy.test_twitter_url,
+            testingTelegramUrl: metadataPolicy.test_telegram_url,
+            mintAddress: null,
+          },
+        );
+        if (needsRobinhoodIpfsAssets(currentLaunch)) {
           const assets = await assetsModule
-            .prepareLaunchSupabaseAssetsAtStablePath(admin, {
+            .prepareLaunchAssets(admin, {
               launchId: launch.id,
               name: launch.name,
               symbol: launch.symbol,
               description: launch.description,
               imageUrl: launch.stable_logo_url ?? launch.image_url,
-              website: provisionalMetadata.websiteUrl,
-              twitter: provisionalMetadata.twitterUrl,
-              telegram: provisionalMetadata.telegramUrl,
-              externalUrl: provisionalMetadata.websiteUrl,
+              website: onchainMetadata.websiteUrl,
+              twitter: onchainMetadata.twitterUrl,
+              telegram: onchainMetadata.telegramUrl,
+              externalUrl: onchainMetadata.websiteUrl,
             });
           const updated = await admin.from("coin_launches").update({
             image_url: assets.imageUrl,
@@ -202,7 +202,12 @@ Deno.serve((req) =>
           launchId: currentLaunch.id,
           name: currentLaunch.name,
           symbol: currentLaunch.symbol,
-          metadataURI: currentLaunch.metadata_uri,
+          metadataURI: requireIpfsUri(currentLaunch.metadata_uri, "metadata_uri"),
+          logoURI: requireIpfsUri(currentLaunch.ipfs_image_uri, "logo_uri"),
+          description: currentLaunch.description ?? "",
+          twitter: onchainMetadata.twitterUrl,
+          telegram: onchainMetadata.telegramUrl,
+          website: onchainMetadata.websiteUrl,
           initialBuyWei,
           saltSeed: currentLaunch.launch_metadata?.robinhood_launch_salt_seed,
         };
@@ -210,56 +215,12 @@ Deno.serve((req) =>
           signer,
           draft,
         );
-        if (
-          String(currentLaunch.token_metadata_storage_path ?? "").trim() &&
-          String(currentLaunch.metadata_storage_provider ?? "") === "supabase"
-        ) {
-          const metadata = resolvePumpFunLaunchMetadata(currentLaunch, {
-            testingMode: metadataPolicy.enabled,
-            testingWebsiteUrl: metadataPolicy.test_website_url,
-            testingTwitterUrl: metadataPolicy.test_twitter_url,
-            testingTelegramUrl: metadataPolicy.test_telegram_url,
-            mintAddress: preflight.predictedToken,
-          });
-          const refreshedMetadata = await assetsModule
-            .refreshLaunchMetadataAtPath(
-              admin,
-              {
-                launchId: currentLaunch.id,
-                name: currentLaunch.name,
-                symbol: currentLaunch.symbol,
-                description: currentLaunch.description,
-                imageUrl: currentLaunch.stable_logo_url ??
-                  currentLaunch.image_url,
-                imageGatewayUrl: currentLaunch.stable_logo_url ??
-                  currentLaunch.image_url,
-                tokenMetadataStoragePath:
-                  currentLaunch.token_metadata_storage_path,
-                website: metadata.websiteUrl,
-                twitter: metadata.twitterUrl,
-                telegram: metadata.telegramUrl,
-                externalUrl: metadata.websiteUrl,
-              },
-            );
-          if (
-            refreshedMetadata.uri !== currentLaunch.metadata_uri ||
-            refreshedMetadata.hash !== currentLaunch.token_metadata_hash
-          ) {
-            const metadataUpdated = await admin.from("coin_launches").update({
-              metadata_uri: refreshedMetadata.uri,
-              token_metadata_hash: refreshedMetadata.hash,
-              launch_metadata: {
-                ...(currentLaunch.launch_metadata ?? {}),
-                robinhood_metadata_token_address: preflight.predictedToken,
-                robinhood_metadata_website: metadata.websiteUrl,
-              },
-            }).eq("id", currentLaunch.id).select("*").single();
-            if (metadataUpdated.error) throw metadataUpdated.error;
-            currentLaunch = metadataUpdated.data;
-          }
-        }
         if (preflight.signerBalanceWei < preflight.requiredBalanceWei) {
-          const deficitWei = preflight.requiredBalanceWei -
+          // Top up to the funding target, not to the bare requirement: the gas
+          // price moves between this preflight and the one the retry runs
+          // before signing, and funding the exact deficit leaves the launch
+          // looping until the watchdog kills it. See launchFundingTargetWei.
+          const deficitWei = launchModule.launchFundingTargetWei(preflight) -
             preflight.signerBalanceWei;
           const fundingPolicy = await readLaunchFundingPolicy(admin);
           if (
@@ -382,6 +343,9 @@ Deno.serve((req) =>
           launch_metadata: {
             ...(currentLaunch.launch_metadata ?? {}),
             outbox_transaction_id: transactionId,
+            robinhood_metadata_token_address: prepared.predictedToken,
+            robinhood_onchain_logo: draft.logoURI,
+            robinhood_onchain_website: draft.website,
             signed_transaction_hash: persisted.signed_transaction_hash,
             salt: prepared.salt,
           },
@@ -500,6 +464,23 @@ function readBoolean(name: string, fallback: boolean): boolean {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function needsRobinhoodIpfsAssets(launch: any): boolean {
+  const metadataUri = String(launch.metadata_uri ?? "").trim();
+  const logoUri = String(launch.ipfs_image_uri ?? "").trim();
+  const provider = String(launch.metadata_storage_provider ?? "").trim();
+  return provider !== "filebase" ||
+    !/^ipfs:\/\//i.test(metadataUri) ||
+    !/^ipfs:\/\//i.test(logoUri);
+}
+
+function requireIpfsUri(value: unknown, field: string): string {
+  const text = String(value ?? "").trim();
+  if (!/^ipfs:\/\//i.test(text)) {
+    throw new Error(`invalid_robinhood_${field}_ipfs_required`);
+  }
+  return text;
 }
 
 function sanitizeError(error: unknown): string {

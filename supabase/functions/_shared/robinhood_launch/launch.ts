@@ -11,7 +11,11 @@ import type { LoadedWallet } from "../wallet.ts";
 import { SINGLE_SIDED_LAUNCH_FACTORY_ABI } from "./abi.ts";
 import {
   readLaunchFactoryAddress,
+  SINGLE_SIDED_LAUNCH_DESCRIPTION_MAX_LENGTH,
+  SINGLE_SIDED_LAUNCH_LOGO_URI_MAX_LENGTH,
+  SINGLE_SIDED_LAUNCH_METADATA_URI_MAX_LENGTH,
   SINGLE_SIDED_LAUNCH_NAME_MAX_LENGTH,
+  SINGLE_SIDED_LAUNCH_SOCIAL_URL_MAX_LENGTH,
   SINGLE_SIDED_LAUNCH_SYMBOL_MAX_LENGTH,
 } from "./constants.ts";
 
@@ -20,6 +24,13 @@ export type SingleSidedLaunchDraft = {
   name: string;
   symbol: string;
   metadataURI: string;
+  logoURI: string;
+  description?: string | null;
+  twitter?: string | null;
+  telegram?: string | null;
+  discord?: string | null;
+  website?: string | null;
+  farcaster?: string | null;
   initialBuyWei: bigint;
   saltSeed?: string | null;
 };
@@ -333,7 +344,48 @@ function buildLaunchParams(draft: SingleSidedLaunchDraft) {
       "symbol",
       SINGLE_SIDED_LAUNCH_SYMBOL_MAX_LENGTH,
     ).toUpperCase(),
-    metadataURI: sanitizeRequired(draft.metadataURI, "metadata_uri", 2048),
+    metadataURI: sanitizeRequired(
+      draft.metadataURI,
+      "metadata_uri",
+      SINGLE_SIDED_LAUNCH_METADATA_URI_MAX_LENGTH,
+    ),
+    logo: sanitizeRequired(
+      draft.logoURI,
+      "logo_uri",
+      SINGLE_SIDED_LAUNCH_LOGO_URI_MAX_LENGTH,
+    ),
+    description: sanitizeOptionalText(
+      draft.description,
+      "description",
+      SINGLE_SIDED_LAUNCH_DESCRIPTION_MAX_LENGTH,
+    ),
+    socials: {
+      twitter: sanitizeOptionalText(
+        draft.twitter,
+        "twitter",
+        SINGLE_SIDED_LAUNCH_SOCIAL_URL_MAX_LENGTH,
+      ),
+      telegram: sanitizeOptionalText(
+        draft.telegram,
+        "telegram",
+        SINGLE_SIDED_LAUNCH_SOCIAL_URL_MAX_LENGTH,
+      ),
+      discord: sanitizeOptionalText(
+        draft.discord,
+        "discord",
+        SINGLE_SIDED_LAUNCH_SOCIAL_URL_MAX_LENGTH,
+      ),
+      website: sanitizeOptionalText(
+        draft.website,
+        "website",
+        SINGLE_SIDED_LAUNCH_SOCIAL_URL_MAX_LENGTH,
+      ),
+      farcaster: sanitizeOptionalText(
+        draft.farcaster,
+        "farcaster",
+        SINGLE_SIDED_LAUNCH_SOCIAL_URL_MAX_LENGTH,
+      ),
+    },
     initialBuyWeth: assertInitialBuyWithinCap(draft.initialBuyWei),
     salt: buildLaunchSalt(draft),
   };
@@ -398,6 +450,16 @@ function sanitizeRequired(
   if (typeof value !== "string") throw new Error(`${field}_must_be_string`);
   const trimmed = value.trim();
   if (!trimmed) throw new Error(`${field}_required`);
+  if (trimmed.length > maxLength) throw new Error(`${field}_too_long`);
+  return trimmed;
+}
+
+function sanitizeOptionalText(
+  value: unknown,
+  field: string,
+  maxLength: number,
+): string {
+  const trimmed = String(value ?? "").trim();
   if (trimmed.length > maxLength) throw new Error(`${field}_too_long`);
   return trimmed;
 }

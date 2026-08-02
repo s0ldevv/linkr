@@ -10,6 +10,15 @@ function baseParams(overrides: Record<string, unknown> = {}) {
     name: "Sherwood",
     symbol: "WOOD",
     metadataURI: "ipfs://metadata",
+    logo: "ipfs://logo",
+    description: "A Linkr launch token",
+    socials: {
+      twitter: "https://x.com/linkrcash",
+      telegram: "https://t.me/linkr",
+      discord: "",
+      website: "https://linkr.cash",
+      farcaster: "",
+    },
     initialBuyWeth: 0n,
     salt: ethers.id(`salt-${Math.random()}`),
     ...overrides,
@@ -235,6 +244,11 @@ describe("LaunchFactory", () => {
       "InvalidParams",
     );
     await assertCustomError(
+      factory.connect(creator).launch(baseParams({ logo: "" }), { value: await factory.launchFee() }),
+      factory,
+      "InvalidParams",
+    );
+    await assertCustomError(
       factory.connect(creator).launch(baseParams({ salt: ethers.ZeroHash }), { value: await factory.launchFee() }),
       factory,
       "InvalidParams",
@@ -273,6 +287,13 @@ describe("LaunchFactory", () => {
     const { predicted } = await launch(factory, creator, baseParams({ salt: ethers.id("hardwired-defaults") }));
     const token = await ethers.getContractAt("LaunchToken", predicted);
     assert.equal(await token.totalSupply(), await factory.TOKEN_SUPPLY());
+    assert.equal(await token.tokenURI(), "ipfs://metadata");
+    assert.equal(await token.logo(), "ipfs://logo");
+    assert.equal(await token.description(), "A Linkr launch token");
+    const info = await token.getTokenInfo();
+    assert.equal(info.tokenDeployer, creator.address);
+    assert.equal(info.tokenLogo, "ipfs://logo");
+    assert.equal(info.tokenDescription, "A Linkr launch token");
   });
 
   it("handles an existing uninitialized pool", async () => {
