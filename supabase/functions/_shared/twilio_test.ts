@@ -7,6 +7,7 @@ import {
   normalizeTwilioInbound,
   parseTwilioForm,
   redactPhone,
+  smsWorkAcceptanceInput,
   splitSmsText,
   verifyTwilioSignature,
   xmlEscape,
@@ -109,4 +110,32 @@ Deno.test("phone normalization, hashing, and redaction avoid raw identifiers", a
     "unsafe/unstable phone hash",
   );
   assert(redactPhone("+14165551212") === "***1212", "redaction mismatch");
+});
+
+Deno.test("SMS queue admission uses only the deployed RPC contract", () => {
+  const input = smsWorkAcceptanceInput({
+    messageSid: "SM1234567890123456",
+    userId: "a4b78c86-a000-485c-b161-7c747d0c728e",
+    surfaceConversationId: "sms:number:tohash:fromhash",
+  });
+  const expected = [
+    "p_consumer_version",
+    "p_conversation_id",
+    "p_execution_generation",
+    "p_idempotency_key",
+    "p_payload",
+    "p_payload_ref",
+    "p_priority",
+    "p_request_type",
+    "p_resource_key",
+    "p_resource_type",
+    "p_route",
+    "p_source_event_id",
+    "p_source_surface",
+    "p_user_id",
+  ];
+  assert(
+    JSON.stringify(Object.keys(input).sort()) === JSON.stringify(expected),
+    "queue admission drifted from accept_linkr_work_item",
+  );
 });

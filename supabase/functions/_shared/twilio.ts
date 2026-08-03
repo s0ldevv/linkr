@@ -451,6 +451,32 @@ export function configuredMaxReplyChars(): number {
   );
 }
 
+export function smsWorkAcceptanceInput(args: {
+  messageSid: string;
+  userId: string;
+  surfaceConversationId: string;
+}): Record<string, unknown> {
+  return {
+    p_idempotency_key: `sms-inbound:${args.messageSid}`,
+    p_source_surface: "sms",
+    p_source_event_id: args.messageSid,
+    p_user_id: args.userId,
+    p_conversation_id: null,
+    p_request_type: "conversation_turn",
+    p_route: "sms.turn",
+    p_priority: 80,
+    p_resource_type: "conversation",
+    p_resource_key: `sms:${args.surfaceConversationId}`,
+    p_payload: {
+      message_sid: args.messageSid,
+      surface_conversation_id: args.surfaceConversationId,
+    },
+    p_payload_ref: null,
+    p_consumer_version: "worker-sms-turn-v1",
+    p_execution_generation: 0,
+  };
+}
+
 function twimlResponse(inner: string): Response {
   return new Response(
     `<?xml version="1.0" encoding="UTF-8"?><Response>${inner}</Response>`,

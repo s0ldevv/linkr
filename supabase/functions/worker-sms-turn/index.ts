@@ -44,7 +44,7 @@ Deno.serve((req) =>
       if (inbound.status === "processed" && existingOutbound.data) {
         return {
           kind: "complete",
-          state: "processing",
+          state: "queued",
           nextRoute: "reply.sms",
           resultRef: `sms-outbound:${existingOutbound.data.id}`,
         };
@@ -96,7 +96,7 @@ Deno.serve((req) =>
         );
         return {
           kind: "complete",
-          state: "processing",
+          state: "queued",
           nextRoute: "reply.sms",
           resultRef: `sms-outbound:${outbound.id}`,
         };
@@ -116,7 +116,7 @@ Deno.serve((req) =>
       if (!processing.data && existingOutbound.data) {
         return {
           kind: "complete",
-          state: "processing",
+          state: "queued",
           nextRoute: "reply.sms",
           resultRef: `sms-outbound:${existingOutbound.data.id}`,
         };
@@ -173,7 +173,7 @@ Deno.serve((req) =>
         });
         return {
           kind: "complete",
-          state: "processing",
+          state: "queued",
           nextRoute: "reply.sms",
           resultRef: `sms-outbound:${outbound.id}`,
         };
@@ -200,7 +200,7 @@ Deno.serve((req) =>
         await markInbound(admin, messageSid, "processed", safeError(error));
         return {
           kind: "complete",
-          state: "processing",
+          state: "queued",
           nextRoute: "reply.sms",
           resultRef: `sms-outbound:${outbound.id}`,
         };

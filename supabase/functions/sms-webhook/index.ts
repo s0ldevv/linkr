@@ -15,6 +15,7 @@ import {
   messageResponse,
   normalizeTwilioInbound,
   parseTwilioForm,
+  smsWorkAcceptanceInput,
   unlinkSmsAccount,
   upsertSmsAccount,
   verifyTwilioSignature,
@@ -82,7 +83,12 @@ Deno.serve(async (req) => {
       message_sid: inbound.message_sid,
       phone_hash: phoneHash,
     });
-    return emptyMessagingResponse();
+    // A prior invocation may have durably written the provider ledger and then
+    // failed before queue admission. Let accepted/failed rows resume from that
+    // durable checkpoint; all later states are already safely handled.
+    if (!["accepted", "failed"].includes(existing.data.status)) {
+      return emptyMessagingResponse();
+    }
   }
 
   const account = await upsertSmsAccount(admin, inbound.from, phoneHash);
@@ -97,30 +103,29 @@ Deno.serve(async (req) => {
     limit: linked ? configuredLimit() : 5,
   });
 
-  const ledger = await admin.from("sms_inbound_messages").insert({
-    message_sid: inbound.message_sid,
-    account_sid: inbound.account_sid,
-    messaging_service_sid: inbound.messaging_service_sid,
-    from_phone_e164: inbound.from,
-    from_phone_hash: phoneHash,
-    to_phone_e164: inbound.to,
-    to_phone_hash: toHash,
-    body: inbound.body,
-    num_media: inbound.num_media,
-    media: inbound.media,
-    status: "accepted",
-    user_id: linked?.user_id ?? null,
-    payload: Object.fromEntries(params.entries()),
-  });
-  if (ledger.error) {
-    if (String(ledger.error.code) === "23505") return emptyMessagingResponse();
-    throw ledger.error;
+  if (!existing.data) {
+    const ledger = await admin.from("sms_inbound_messages").insert({
+      message_sid: inbound.message_sid,
+      account_sid: inbound.account_sid,
+      messaging_service_sid: inbound.messaging_service_sid,
+      from_phone_e164: inbound.from,
+      from_phone_hash: phoneHash,
+      to_phone_e164: inbound.to,
+      to_phone_hash: toHash,
+      body: inbound.body,
+      num_media: inbound.num_media,
+      media: inbound.media,
+      status: "accepted",
+      user_id: linked?.user_id ?? null,
+      payload: Object.fromEntries(params.entries()),
+    });
+    if (ledger.error) throw ledger.error;
+    console.info("sms_webhook_accepted", {
+      message_sid: inbound.message_sid,
+      phone_hash: phoneHash,
+      media_count: inbound.num_media,
+    });
   }
-  console.info("sms_webhook_accepted", {
-    message_sid: inbound.message_sid,
-    phone_hash: phoneHash,
-    media_count: inbound.num_media,
-  });
 
   if (!limit.allowed && !isCompliance) {
     await markInbound(
@@ -210,31 +215,24 @@ Deno.serve(async (req) => {
     );
   }
 
+  // The branch above returns for every unlinked account. Keep this explicit so
+  // queue admission cannot receive a nullable user identifier if that flow is
+  // changed later.
+  if (!linked.user_id) throw new Error("linked_sms_account_missing_user_id");
+
   const surfaceConversationId = inbound.messaging_service_sid
     ? `sms:mg:${inbound.messaging_service_sid}:${phoneHash.slice(0, 12)}`
     : `sms:number:${(toHash ?? "unknown").slice(0, 12)}:${
       phoneHash.slice(0, 12)
     }`;
-  const accepted = await acceptWork(admin, {
-    p_idempotency_key: `sms-inbound:${inbound.message_sid}`,
-    p_source_surface: "sms",
-    p_source_event_id: inbound.message_sid,
-    p_user_id: linked.user_id,
-    p_conversation_id: null,
-    p_request_type: "conversation_turn",
-    p_route: "sms.turn",
-    p_priority: 80,
-    p_resource_type: "conversation",
-    p_resource_key: `sms:${surfaceConversationId}`,
-    p_payload: {
-      message_sid: inbound.message_sid,
-      surface_conversation_id: surfaceConversationId,
-    },
-    p_payload_ref: null,
-    p_trace_id: crypto.randomUUID(),
-    p_consumer_version: "worker-sms-turn-v1",
-    p_execution_generation: 0,
-  });
+  const accepted = await acceptWork(
+    admin,
+    smsWorkAcceptanceInput({
+      messageSid: inbound.message_sid,
+      userId: linked.user_id,
+      surfaceConversationId,
+    }),
+  );
   await markInbound(admin, inbound.message_sid, "queued");
   if (isLinkrFastHandoffEnabled() && accepted.enqueued) {
     const handoff = wakeAndDispatchStage(
