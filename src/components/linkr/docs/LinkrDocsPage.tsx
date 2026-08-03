@@ -1662,34 +1662,92 @@ export function LinkrDocsPage() {
               icon={MessageCircle}
               eyebrow="SMS / MMS"
               title="Text Linkr"
-              intro="A linked phone can use the same private, account-aware Linkr runtime over ordinary text messages. Incoming messages are verified as Twilio webhooks, stored idempotently, and processed asynchronously."
+              intro="Talk to Linkr from your phone's messaging app. Once your phone is connected to your Linkr account, you can ask questions, check your portfolio, research tokens, and use supported wallet and launch features without opening the website."
             >
               <div className="lkd-feature-grid">
                 <FeatureCard
                   icon={<Lock />}
-                  title="Private account link"
-                  text="Text LOGIN to receive a single-use, ten-minute X authorization link that binds only the phone that requested it."
-                />
-                <FeatureCard
-                  icon={<ShieldCheck />}
-                  title="Exact confirmations"
-                  text="Value-moving actions remain prepared first. Reply with the exact confirmation phrase from the same linked phone and SMS conversation, or reply cancel."
-                />
-                <FeatureCard
-                  icon={<MessageCircle />}
-                  title="Compliance controls"
-                  text="HELP shows commands, STATUS checks the connection, LOGOUT disconnects Linkr, STOP opts out, and START enables messages again."
+                  title="Connect in a few texts"
+                  text="Text LOGIN to the Linkr SMS number, open the secure link in the reply, and continue with X. The link works once, expires after ten minutes, and connects only the phone that requested it."
                 />
                 <FeatureCard
                   icon={<Sparkles />}
-                  title="Durable delivery"
-                  text="Inbound MessageSids, agent runs, outbound replies, retries, and Twilio delivery callbacks are recorded so duplicate webhooks cannot duplicate actions."
+                  title="Ask naturally"
+                  text="Use everyday language for portfolio questions, token research, swaps, transfers, launches, rewards, liquidity, schedules, and other supported Linkr features."
+                />
+                <FeatureCard
+                  icon={<Image />}
+                  title="Send launch artwork"
+                  text="Send an image by MMS with a launch request to use it as the token artwork. Include the token name and an explicit chain, plus any symbol, description, dev buy, or social links you want to provide."
+                />
+                <FeatureCard
+                  icon={<ShieldCheck />}
+                  title="Confirm before it moves"
+                  text="Actions that require approval are prepared first. Linkr shows what will happen and tells you the exact confirmation phrase to send from the same phone; you can cancel instead."
                 />
               </div>
-              <Callout tone="info" title="Carrier delivery and message length">
-                SMS delivery depends on Twilio and mobile carriers. Replies are kept concise and may
-                be shortened to the configured SMS limit. Standard carrier messaging rates may
-                apply.
+              <div className="lkd-split">
+                <InfoPanel title="Connect your phone">
+                  <CheckList
+                    items={[
+                      "Text LOGIN to the Linkr SMS number.",
+                      "Open the secure sign-in link Linkr sends back. It expires after ten minutes, so request a new one if it has expired.",
+                      "Choose Continue with X and authorize the X account connected to your Linkr profile.",
+                      "Return to Messages after the connected confirmation, then text Linkr normally.",
+                      "Text STATUS at any time to check whether the phone is connected.",
+                    ]}
+                  />
+                </InfoPanel>
+                <InfoPanel title="Try asking">
+                  <CodeBlock
+                    id="sms-examples"
+                    lines={[
+                      "What's in my portfolio?",
+                      "Research <contract address or Solana mint>",
+                      "Buy 0.05 ETH of 0x1234...abcd",
+                      "Send 0.05 SOL to <Solana recipient>",
+                      "Launch a coin called GREEN on Solana",
+                      "What actions do I have scheduled?",
+                    ]}
+                    compact
+                  />
+                </InfoPanel>
+              </div>
+              <div className="lkd-split">
+                <InfoPanel title="SMS account commands">
+                  <CheckList
+                    items={[
+                      "LOGIN or CONNECT: receive a secure link to connect this phone.",
+                      "STATUS: check whether this phone is connected to Linkr.",
+                      "HELP: see the available SMS account commands and support link.",
+                      "LOGOUT or DISCONNECT: disconnect this phone without changing your Linkr account or wallets.",
+                      "STOP: opt out of Linkr texts and disconnect the phone. START enables texts again; send LOGIN afterward if the phone needs to be reconnected.",
+                    ]}
+                  />
+                </InfoPanel>
+                <InfoPanel title="What to expect">
+                  <CheckList
+                    items={[
+                      "Your SMS conversation uses the connected account's primary wallets, Rules, and recent conversation context.",
+                      "The same balance checks, spending limits, slippage settings, and confirmation requirements used elsewhere in Linkr still apply.",
+                      "SMS requests and replies are also available in your authenticated Linkr conversation history.",
+                      "Replies can arrive as more than one text when an answer or receipt is long.",
+                      "If you send messages too quickly, Linkr may ask you to wait a few minutes before trying again.",
+                    ]}
+                  />
+                </InfoPanel>
+              </div>
+              <Callout tone="warning" title="Treat your connected phone like account access">
+                Anyone who can send texts from a connected phone may be able to ask account-specific
+                questions or prepare actions. Use LOGOUT if you change or lose the phone. Linkr
+                still requires confirmation for protected actions, and disconnecting SMS never
+                removes your Linkr account or wallets.
+              </Callout>
+              <Callout tone="info" title="Messaging and carrier notes">
+                SMS and MMS availability and delivery times depend on your mobile carrier. Standard
+                messaging and data rates may apply. Keep secure sign-in links private, never send a
+                private key or seed phrase by text, and remember that Linkr support will never ask
+                for either one.
               </Callout>
             </DocsSection>
 
