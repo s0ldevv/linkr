@@ -527,17 +527,23 @@ async function insertOrSelect(
   row: any,
   key: string,
 ) {
-  const inserted = await admin.from(table).upsert(row, {
-    onConflict: "idempotency_key",
-    ignoreDuplicates: true,
-  }).select("*").maybeSingle();
-  if (inserted.error) throw inserted.error;
-  if (inserted.data) return inserted.data;
+  // These tables enforce idempotency with partial unique indexes. PostgREST
+  // cannot target those indexes with on_conflict=idempotency_key, so use the
+  // same proven insert/recover pattern as the terminal and Telegram transports.
+  const inserted = await admin.from(table).insert(row).select("*")
+    .maybeSingle();
+  if (!inserted.error) return inserted.data;
+  const code = String(inserted.error?.code ?? "");
+  const message = String(inserted.error?.message ?? "");
+  if (code !== "23505" && !/duplicate key|unique/i.test(message)) {
+    throw inserted.error;
+  }
   const existing = await admin.from(table).select("*").eq(
     "idempotency_key",
     key,
-  ).single();
+  ).maybeSingle();
   if (existing.error) throw existing.error;
+  if (!existing.data) throw new Error(`${table}_idempotent_row_missing`);
   return existing.data;
 }
 async function markInbound(
@@ -585,7 +591,15 @@ function titleFromText(text: string): string {
   return clean.length > 54 ? `${clean.slice(0, 51)}...` : clean || "SMS chat";
 }
 function safeError(error: unknown): string {
-  return String(error instanceof Error ? error.message : error).slice(0, 500);
+  if (error instanceof Error) return error.message.slice(0, 500);
+  if (error && typeof error === "object") {
+    try {
+      return JSON.stringify(serializeUnknownError(error)).slice(0, 500);
+    } catch {
+      // Fall through to the bounded string representation.
+    }
+  }
+  return String(error).slice(0, 500);
 }
 function userSafeError(error: unknown): string {
   const message = safeError(error);
