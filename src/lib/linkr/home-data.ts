@@ -43,6 +43,9 @@ export type PublicTraderRank = {
 
 export type PublicWalletRank = {
   amount_eth: number;
+  amount_sol?: number | null;
+  chain?: "robinhood" | "solana" | string | null;
+  native_symbol?: "ETH" | "SOL" | string | null;
   rank: number;
   trades: number;
   volume_usd: number;

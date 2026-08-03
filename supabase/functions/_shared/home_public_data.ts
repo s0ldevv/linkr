@@ -5,16 +5,13 @@ import { resolvePublicLaunchImageUrl } from "./launch_image_url.ts";
 
 const DEFAULT_PUBLIC_LAUNCH_LIMIT = 12;
 const MAX_PUBLIC_LAUNCH_LIMIT = 100;
-const PUBLIC_HOME_CACHE_KEY = "public_home_v2";
+const PUBLIC_HOME_CACHE_KEY = "public_home_v3";
 
 type PublicHomeDataOptions = {
   launchLimit?: number;
 };
 
-export async function loadPublicHomeData(
-  admin: any,
-  options: PublicHomeDataOptions = {},
-) {
+export async function loadPublicHomeData(admin: any, options: PublicHomeDataOptions = {}) {
   const launchLimit = clampPositiveInt(
     options.launchLimit,
     DEFAULT_PUBLIC_LAUNCH_LIMIT,
@@ -44,9 +41,7 @@ export async function loadPublicHomeData(
       .limit(launchLimit),
     admin
       .from("public_achievements")
-      .select(
-        "id,kind,title,detail,metric_value,threshold,achieved_at,metadata",
-      )
+      .select("id,kind,title,detail,metric_value,threshold,achieved_at,metadata")
       .order("achieved_at", { ascending: false })
       .limit(6),
     safe(() => admin.rpc("get_home_top_wallets_30d", { limit_count: 5 }), {
@@ -60,26 +55,23 @@ export async function loadPublicHomeData(
   throwIfSupabaseError(launchesResult.error);
   throwIfSupabaseError(achievementsResult.error);
 
-  const launcherHandles = await loadLauncherHandles(
-    admin,
-    launchesResult.data ?? [],
-  );
+  const launcherHandles = await loadLauncherHandles(admin, launchesResult.data ?? []);
 
   const topLaunchedTokens = await Promise.all(
     (launchesResult.data ?? []).map(async (launch: any) => {
       const marketAddress = launch.token_address ?? launch.mint;
       const market = marketAddress
         ? await safe(
-          () =>
-            getMarketDataBundle(admin, {
-              mint: marketAddress,
-              chain: launch.chain === "solana" ? "solana" : "robinhood",
-              includeDexscreener: true,
-              includeMoralis: true,
-              includeAnalytics: false,
-            }),
-          null,
-        )
+            () =>
+              getMarketDataBundle(admin, {
+                mint: marketAddress,
+                chain: launch.chain === "solana" ? "solana" : "robinhood",
+                includeDexscreener: true,
+                includeMoralis: true,
+                includeAnalytics: false,
+              }),
+            null,
+          )
         : null;
       return {
         id: launch.id,
@@ -107,9 +99,7 @@ export async function loadPublicHomeData(
         devBuyUsd: numberOrNull(launch.dev_buy_usd),
         status: launch.status,
         createdAt: launch.created_at,
-        marketCapUsd: numberOrNull(
-          market?.valuation?.marketCapUsd ?? market?.valuation?.fdvUsd,
-        ),
+        marketCapUsd: numberOrNull(market?.valuation?.marketCapUsd ?? market?.valuation?.fdvUsd),
         liquidityUsd: numberOrNull(market?.liquidity?.usd),
         priceChange24h: numberOrNull(market?.price?.change24h),
         pairUrl: market?.primaryPair?.url ?? null,
@@ -130,9 +120,11 @@ export async function loadPublicHomeData(
   const topWalletRows = (topWalletsResult as any)?.data;
   const topWallets = Array.isArray(topWalletRows)
     ? topWalletRows.map((row: any) => ({
-      ...row,
-      amount_eth: numberOrNull(row.amount_eth),
-    }))
+        ...row,
+        amount_eth: numberOrNull(row.amount_eth),
+        amount_sol: numberOrNull(row.amount_sol),
+        volume_usd: numberOrNull(row.volume_usd) ?? 0,
+      }))
     : [];
 
   return {
@@ -141,23 +133,16 @@ export async function loadPublicHomeData(
     topLaunchedTokens,
     recentAchievements: achievementsResult.data ?? [],
     topWallets30d: topWallets,
-    systemStatus: Array.isArray(systemStatusResult?.data)
-      ? systemStatusResult.data
-      : [],
+    systemStatus: Array.isArray(systemStatusResult?.data) ? systemStatusResult.data : [],
   };
 }
 
-async function loadLauncherHandles(
-  admin: any,
-  launches: any[],
-): Promise<Map<string, string>> {
+async function loadLauncherHandles(admin: any, launches: any[]): Promise<Map<string, string>> {
   const userIds = Array.from(
     new Set(
       launches
         .map((launch) => launch.user_id)
-        .filter((userId): userId is string =>
-          typeof userId === "string" && userId.length > 0
-        ),
+        .filter((userId): userId is string => typeof userId === "string" && userId.length > 0),
     ),
   );
 
@@ -238,19 +223,14 @@ function numberOrNull(value: unknown): number | null {
   return Number.isFinite(number) ? number : null;
 }
 
-function clampPositiveInt(
-  value: unknown,
-  fallback: number,
-  max: number,
-): number {
+function clampPositiveInt(value: unknown, fallback: number, max: number): number {
   const number = Number(value);
   if (!Number.isFinite(number) || number <= 0) return fallback;
   return Math.max(1, Math.min(Math.floor(number), max));
 }
 
 function isTwitterUsername(value: unknown): value is string {
-  return typeof value === "string" &&
-    /^[A-Za-z0-9_]{1,15}$/.test(value.replace(/^@/, ""));
+  return typeof value === "string" && /^[A-Za-z0-9_]{1,15}$/.test(value.replace(/^@/, ""));
 }
 
 function throwIfSupabaseError(error: unknown) {

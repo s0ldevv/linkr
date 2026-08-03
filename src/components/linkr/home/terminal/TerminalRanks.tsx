@@ -70,6 +70,9 @@ function TopWalletsColumn({ data }: { data: HomeDashboardData | undefined }) {
                 <Wallet size={14} strokeWidth={2.2} />
               </span>
               <span className="lkt-rank-name lkt-mono">{wallet.wallet}</span>
+              <span className="lkt-wallet-chain" data-chain={wallet.chain ?? "robinhood"}>
+                {wallet.native_symbol ?? (wallet.chain === "solana" ? "SOL" : "ETH")}
+              </span>
               <span className="lkt-rank-value">{formatCompactUsd(wallet.volume_usd)} volume</span>
             </div>
           </li>

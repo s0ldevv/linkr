@@ -7904,6 +7904,23 @@ a.lkt-post-handle:focus-visible,
   font-weight: 750;
 }
 
+.lkt-wallet-chain {
+  background: rgb(250 247 246 / 8%);
+  border: 1px solid rgb(250 247 246 / 10%);
+  border-radius: 999px;
+  color: var(--lkt-muted);
+  flex: none;
+  font-family: var(--lkt-display);
+  font-size: 0.58rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  padding: 3px 5px;
+}
+
+.lkt-wallet-chain[data-chain="solana"] {
+  color: var(--lkt-lime);
+}
+
 .lkt-wallet-icon {
   align-items: center;
   background: rgb(250 247 246 / 6%);
