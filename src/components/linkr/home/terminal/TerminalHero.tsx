@@ -15,10 +15,12 @@ import {
   Braces,
   CalendarClock,
   Check,
+  CheckCheck,
   ChevronLeft,
   ChevronRight,
   Globe,
   ImageIcon,
+  MessageCircle,
   Rocket,
   Send,
   ShieldCheck,
@@ -75,14 +77,7 @@ const WALLET_ACTIONS = [
   { icon: WalletCards, label: "Wallets" },
 ] as const;
 
-const HERO_SCREENS = [
-  "CLI",
-  "Command",
-  "Actions",
-  "Agent API",
-  "Networks",
-  "How it works",
-] as const;
+const HERO_SCREENS = ["CLI", "SMS", "Command", "Actions", "Agent API", "Networks", "Flow"] as const;
 const SCREEN_DWELL_MS = 5600;
 const SCREEN_TRANSITION_MS = 850;
 
@@ -232,6 +227,89 @@ function CliMovie({ active }: { active: boolean }) {
   );
 }
 
+function SmsMovie({ active }: { active: boolean }) {
+  return (
+    <>
+      <div className="lkx-sms-movie" aria-hidden="true">
+        <div className="lkx-sms-head">
+          <span className="lkx-sms-avatar">
+            <MessageCircle aria-hidden="true" size={20} strokeWidth={2.6} />
+            <i />
+          </span>
+          <span className="lkx-sms-contact">
+            <small>Messages</small>
+            <strong>
+              Linkr
+              <ShieldCheck aria-hidden="true" size={14} strokeWidth={2.7} />
+            </strong>
+            <a href="sms:+12498033331" tabIndex={active ? 0 : -1}>
+              +1 (249) 803-3331
+            </a>
+          </span>
+          <span className="lkx-sms-available">
+            <i /> Text anytime
+          </span>
+        </div>
+
+        <div className="lkx-sms-thread">
+          <span className="lkx-sms-timestamp">Today 9:41 AM</span>
+
+          <div className="lkx-sms-bubble lkx-sms-bubble--user lkx-sms-message--request">
+            Buy $100 of SOL on Solana.
+          </div>
+
+          <div className="lkx-sms-typing lkx-sms-typing--review">
+            <i /> <i /> <i />
+          </div>
+
+          <div className="lkx-sms-bubble lkx-sms-bubble--linkr lkx-sms-message--review">
+            <span className="lkx-sms-message-label">Linkr · review</span>
+            <p>Ready to swap $100 USDC for ≈ 0.61 SOL.</p>
+            <span className="lkx-sms-quote">
+              <span>
+                <small>You pay</small>
+                <strong>$100 USDC</strong>
+              </span>
+              <ArrowLeftRight aria-hidden="true" size={15} strokeWidth={2.5} />
+              <span>
+                <small>You receive</small>
+                <strong>≈ 0.61 SOL</strong>
+              </span>
+            </span>
+            <b>Reply exactly: confirm buy</b>
+          </div>
+
+          <div className="lkx-sms-bubble lkx-sms-bubble--user lkx-sms-message--confirm">
+            confirm buy
+            <CheckCheck aria-hidden="true" size={14} strokeWidth={2.6} />
+          </div>
+
+          <div className="lkx-sms-typing lkx-sms-typing--execute">
+            <i /> <i /> <i />
+          </div>
+
+          <div className="lkx-sms-bubble lkx-sms-bubble--receipt lkx-sms-message--receipt">
+            <span className="lkx-sms-receipt-check">
+              <Check aria-hidden="true" size={16} strokeWidth={3} />
+            </span>
+            <span>
+              <small>Swap complete</small>
+              <strong>0.61 SOL bought</strong>
+              <code>Solana · 7xQ4…9Pk2</code>
+            </span>
+            <span className="lkx-sms-receipt-network">SOL</span>
+          </div>
+        </div>
+      </div>
+      <span className="lkx-sr-only">
+        Text Linkr at +1 (249) 803-3331. In this example, the user asks Linkr to buy one hundred
+        dollars of SOL. Linkr presents the transaction for review, waits for the exact confirmation
+        phrase, then replies with a finalized Solana receipt.
+      </span>
+    </>
+  );
+}
+
 function CommandMovie() {
   return (
     <>
@@ -332,9 +410,9 @@ function CommandMovie() {
         </div>
       </div>
       <span className="lkx-sr-only">
-        Composing a post on X that tags @linkrbot: Launch a coin called MOON on Solana and
-        Robinhood Chain. Linkr reads the post, identifies the asset and networks, then prepares the
-        launch plan.
+        Composing a post on X that tags @linkrbot: Launch a coin called MOON on Solana and Robinhood
+        Chain. Linkr reads the post, identifies the asset and networks, then prepares the launch
+        plan.
       </span>
     </>
   );
@@ -915,6 +993,7 @@ function WorkflowMovie() {
 
 const HERO_PLATFORMS = [
   "X",
+  "SMS",
   "Telegram",
   "Terminal",
   "OpenClaw",
@@ -1053,7 +1132,7 @@ export function TerminalHero() {
   }
 
   return (
-    <section className="lkx-hero" aria-label="The AI wallet agent for X">
+    <section className="lkx-hero" aria-label="The AI wallet agent for X, SMS, and more">
       <div className="lkx-hero-shard" aria-hidden="true" />
 
       <div className="lkx-hero-copy">
@@ -1112,7 +1191,7 @@ export function TerminalHero() {
               className="lkx-screen lkx-screen--cli"
               data-state={screenState(0)}
               aria-hidden={activeScreen !== 0}
-              aria-label="1 of 6: Linkr CLI"
+              aria-label="1 of 7: Linkr CLI"
             >
               <header className="lkx-card-label">
                 <i className="lkt-dot" />
@@ -1122,10 +1201,23 @@ export function TerminalHero() {
             </article>
 
             <article
-              className="lkx-screen lkx-screen--command"
+              className="lkx-screen lkx-screen--sms"
               data-state={screenState(1)}
               aria-hidden={activeScreen !== 1}
-              aria-label="2 of 6: Linkr command"
+              aria-label="2 of 7: Linkr by SMS"
+            >
+              <header className="lkx-card-label">
+                <i className="lkt-dot" />
+                Linkr by SMS
+              </header>
+              <SmsMovie active={activeScreen === 1} />
+            </article>
+
+            <article
+              className="lkx-screen lkx-screen--command"
+              data-state={screenState(2)}
+              aria-hidden={activeScreen !== 2}
+              aria-label="3 of 7: Linkr command"
             >
               <header className="lkx-card-label">
                 <i className="lkt-dot" />
@@ -1136,9 +1228,9 @@ export function TerminalHero() {
 
             <article
               className="lkx-screen lkx-screen--actions"
-              data-state={screenState(2)}
-              aria-hidden={activeScreen !== 2}
-              aria-label="3 of 6: Wallet actions"
+              data-state={screenState(3)}
+              aria-hidden={activeScreen !== 3}
+              aria-label="4 of 7: Wallet actions"
             >
               <header className="lkx-card-label">
                 <i className="lkt-dot" />
@@ -1149,9 +1241,9 @@ export function TerminalHero() {
 
             <article
               className="lkx-screen lkx-screen--api"
-              data-state={screenState(3)}
-              aria-hidden={activeScreen !== 3}
-              aria-label="4 of 6: Agent API"
+              data-state={screenState(4)}
+              aria-hidden={activeScreen !== 4}
+              aria-label="5 of 7: Agent API"
             >
               <header className="lkx-card-label">
                 <i className="lkt-dot" />
@@ -1162,9 +1254,9 @@ export function TerminalHero() {
 
             <article
               className="lkx-screen lkx-screen--networks"
-              data-state={screenState(4)}
-              aria-hidden={activeScreen !== 4}
-              aria-label="5 of 6: Supported networks"
+              data-state={screenState(5)}
+              aria-hidden={activeScreen !== 5}
+              aria-label="6 of 7: Supported networks"
             >
               <header className="lkx-card-label">
                 <i className="lkt-dot" />
@@ -1175,9 +1267,9 @@ export function TerminalHero() {
 
             <article
               className="lkx-screen lkx-screen--steps"
-              data-state={screenState(5)}
-              aria-hidden={activeScreen !== 5}
-              aria-label="6 of 6: How it works"
+              data-state={screenState(6)}
+              aria-hidden={activeScreen !== 6}
+              aria-label="7 of 7: How it works"
             >
               <header className="lkx-card-label">
                 <i className="lkt-dot" />

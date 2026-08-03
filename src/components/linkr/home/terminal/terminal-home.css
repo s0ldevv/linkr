@@ -583,6 +583,10 @@
   transform: translate3d(2%, -3%, 0) scale(1.02);
 }
 
+.lkx-hero-showcase[data-screen="6"] .lkx-showcase-aura {
+  transform: translate3d(4%, 2%, 0) scale(0.99);
+}
+
 .lkx-showcase-stage {
   animation: lkx-stage-arrive 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
   background: #171717;
@@ -630,6 +634,10 @@
 
 .lkx-hero-showcase[data-screen="5"] .lkx-showcase-stage::after {
   animation: lkx-stage-sheen-1 0.9s ease-out both;
+}
+
+.lkx-hero-showcase[data-screen="6"] .lkx-showcase-stage::after {
+  animation: lkx-stage-sheen-2 0.9s ease-out both;
 }
 
 .lkx-showcase-viewport {
@@ -720,7 +728,7 @@
 .lkx-showcase-tabs {
   display: grid;
   gap: 6px;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(7, minmax(0, 1fr));
 }
 
 .lkx-showcase-tabs button {
@@ -731,11 +739,11 @@
   color: rgb(255 255 255 / 38%);
   cursor: pointer;
   display: grid;
-  gap: 2px 8px;
+  gap: 2px 6px;
   grid-template-columns: auto minmax(0, 1fr);
   min-height: 38px;
   overflow: hidden;
-  padding: 6px 9px 8px;
+  padding: 6px 7px 8px;
   position: relative;
   text-align: left;
   transition:
@@ -760,7 +768,7 @@
 }
 
 .lkx-showcase-tabs button strong {
-  font-size: 0.69rem;
+  font-size: 0.64rem;
   font-weight: 700;
   min-width: 0;
   overflow: hidden;
@@ -1554,6 +1562,414 @@
   to {
     opacity: 1;
     transform: none;
+  }
+}
+
+/* ---------- SMS movie ---------- */
+
+.lkx-screen--sms {
+  gap: 8px;
+  padding: 14px 18px 18px;
+}
+
+.lkx-sms-movie {
+  background: #f3f1ea;
+  border: 0;
+  border-radius: 24px;
+  color: #11130f;
+  display: grid;
+  flex: 1;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.lkx-sms-head {
+  align-items: center;
+  background: #faf8f2;
+  display: grid;
+  gap: 11px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  padding: 6px 14px;
+}
+
+.lkx-sms-avatar {
+  align-items: center;
+  background: #151713;
+  border-radius: 50%;
+  color: var(--lkt-lime);
+  display: flex;
+  height: 36px;
+  justify-content: center;
+  position: relative;
+  width: 36px;
+}
+
+.lkx-sms-avatar i {
+  background: #4ad66d;
+  border-radius: 50%;
+  bottom: 1px;
+  height: 9px;
+  position: absolute;
+  right: 0;
+  width: 9px;
+}
+
+.lkx-sms-contact {
+  display: grid;
+  line-height: 1.08;
+  min-width: 0;
+}
+
+.lkx-sms-contact > small {
+  color: #777970;
+  font-family: var(--lkt-mono);
+  font-size: 0.48rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.lkx-sms-contact > strong {
+  align-items: center;
+  display: flex;
+  font-size: 0.9rem;
+  gap: 5px;
+  margin-top: 3px;
+}
+
+.lkx-sms-contact > strong svg {
+  color: #4462e9;
+}
+
+.lkx-sms-contact > a {
+  color: #24261f;
+  font-family: var(--lkt-mono);
+  font-size: 0.64rem;
+  font-weight: 700;
+  margin-top: 3px;
+  text-decoration: none;
+  width: max-content;
+}
+
+.lkx-sms-contact > a:focus-visible {
+  border-radius: 3px;
+  outline: 2px solid #4462e9;
+  outline-offset: 2px;
+}
+
+.lkx-sms-available {
+  align-items: center;
+  background: #e9ff91;
+  border-radius: 999px;
+  color: #1c2410;
+  display: inline-flex;
+  font-family: var(--lkt-mono);
+  font-size: 0.5rem;
+  font-weight: 800;
+  gap: 6px;
+  padding: 7px 10px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.lkx-sms-available i {
+  background: #2ca34a;
+  border-radius: 50%;
+  height: 6px;
+  width: 6px;
+}
+
+.lkx-sms-thread {
+  align-content: end;
+  display: grid;
+  gap: 5px;
+  min-height: 0;
+  overflow: hidden;
+  padding: 6px clamp(14px, 1.4vw, 21px) 10px;
+  position: relative;
+}
+
+.lkx-sms-timestamp {
+  color: #8a8d84;
+  font-family: var(--lkt-mono);
+  font-size: 0.46rem;
+  font-weight: 700;
+  justify-self: center;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.lkx-sms-bubble {
+  border: 0;
+  font-size: clamp(0.62rem, 0.66vw, 0.74rem);
+  line-height: 1.32;
+  max-width: 78%;
+  opacity: 0;
+  padding: 7px 11px;
+  position: relative;
+  transform: translateY(8px) scale(0.97);
+}
+
+.lkx-sms-bubble--user {
+  align-items: center;
+  background: #315cf4;
+  border-radius: 15px 15px 4px 15px;
+  color: #ffffff;
+  display: flex;
+  gap: 7px;
+  justify-self: end;
+}
+
+.lkx-sms-bubble--linkr {
+  background: #e2e2dc;
+  border-radius: 15px 15px 15px 4px;
+  justify-self: start;
+}
+
+.lkx-sms-message-label {
+  color: #6c7066;
+  display: block;
+  font-family: var(--lkt-mono);
+  font-size: 0.43rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  margin-bottom: 3px;
+  text-transform: uppercase;
+}
+
+.lkx-sms-bubble p {
+  margin: 0;
+}
+
+.lkx-sms-bubble--linkr > b {
+  color: #263bb5;
+  display: block;
+  font-family: var(--lkt-mono);
+  font-size: 0.5rem;
+  margin-top: 4px;
+}
+
+.lkx-sms-quote {
+  align-items: center;
+  background: #f5f4ee;
+  border-radius: 10px;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 1fr auto 1fr;
+  margin-top: 4px;
+  padding: 5px 8px;
+}
+
+.lkx-sms-quote > span {
+  display: grid;
+  gap: 1px;
+}
+
+.lkx-sms-quote > span:last-child {
+  text-align: right;
+}
+
+.lkx-sms-quote small {
+  color: #777a72;
+  font-family: var(--lkt-mono);
+  font-size: 0.39rem;
+  text-transform: uppercase;
+}
+
+.lkx-sms-quote strong {
+  font-size: 0.54rem;
+}
+
+.lkx-sms-quote > svg {
+  color: #315cf4;
+}
+
+.lkx-sms-message--confirm {
+  font-family: var(--lkt-mono);
+  font-weight: 700;
+}
+
+.lkx-sms-message--confirm svg {
+  color: #bff4ff;
+}
+
+.lkx-sms-typing {
+  align-items: center;
+  background: #e2e2dc;
+  border-radius: 13px 13px 13px 4px;
+  display: flex;
+  gap: 3px;
+  height: 28px;
+  justify-content: center;
+  justify-self: start;
+  opacity: 0;
+  padding-inline: 12px;
+  position: absolute;
+}
+
+.lkx-sms-typing--review {
+  bottom: 13px;
+  left: clamp(14px, 1.4vw, 21px);
+}
+
+.lkx-sms-typing--execute {
+  bottom: 13px;
+  left: clamp(14px, 1.4vw, 21px);
+}
+
+.lkx-sms-typing i {
+  animation: lkx-sms-dot 0.72s ease-in-out infinite;
+  background: #8d9088;
+  border-radius: 50%;
+  height: 4px;
+  width: 4px;
+}
+
+.lkx-sms-typing i:nth-child(2) {
+  animation-delay: 0.12s;
+}
+
+.lkx-sms-typing i:nth-child(3) {
+  animation-delay: 0.24s;
+}
+
+.lkx-sms-bubble--receipt {
+  align-items: center;
+  background: #151713;
+  border-radius: 15px 15px 15px 4px;
+  color: #ffffff;
+  display: grid;
+  gap: 9px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  justify-self: start;
+  max-width: none;
+  min-height: 52px;
+  overflow: hidden;
+  padding: 9px 10px;
+  width: min(82%, 270px);
+}
+
+.lkx-sms-receipt-check {
+  align-items: center;
+  background: var(--lkt-lime);
+  border-radius: 50%;
+  color: #10120d;
+  display: flex;
+  height: 28px;
+  justify-content: center;
+  width: 28px;
+}
+
+.lkx-sms-bubble--receipt > span:nth-child(2) {
+  display: grid;
+  gap: 1px;
+}
+
+.lkx-sms-bubble--receipt small {
+  color: var(--lkt-lime);
+  font-family: var(--lkt-mono);
+  font-size: 0.43rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.lkx-sms-bubble--receipt strong {
+  font-size: 0.66rem;
+}
+
+.lkx-sms-bubble--receipt code {
+  color: rgb(255 255 255 / 52%);
+  font-family: var(--lkt-mono);
+  font-size: 0.42rem;
+}
+
+.lkx-sms-receipt-network {
+  align-items: center;
+  background: var(--lkt-lime);
+  border-radius: 999px;
+  color: #11130f;
+  display: flex;
+  font-family: var(--lkt-mono);
+  font-size: 0.43rem;
+  font-weight: 900;
+  height: 24px;
+  justify-content: center;
+  letter-spacing: 0.04em;
+  width: 30px;
+}
+
+.lkx-screen--sms[data-state="active"] .lkx-sms-movie {
+  animation: lkx-sms-canvas-in 0.34s ease-out both;
+}
+
+.lkx-screen--sms[data-state="active"] .lkx-sms-message--request {
+  animation: lkx-sms-message-in 0.38s 0.48s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.lkx-screen--sms[data-state="active"] .lkx-sms-typing--review {
+  animation: lkx-sms-typing 0.66s 0.73s ease both;
+}
+
+.lkx-screen--sms[data-state="active"] .lkx-sms-message--review {
+  animation: lkx-sms-message-in 0.42s 1.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.lkx-screen--sms[data-state="active"] .lkx-sms-message--confirm {
+  animation: lkx-sms-message-in 0.38s 2.85s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.lkx-screen--sms[data-state="active"] .lkx-sms-typing--execute {
+  animation: lkx-sms-typing 0.62s 3.23s ease both;
+}
+
+.lkx-screen--sms[data-state="active"] .lkx-sms-message--receipt {
+  animation: lkx-sms-message-in 0.46s 3.92s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes lkx-sms-canvas-in {
+  from {
+    opacity: 0;
+    transform: translateY(7px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes lkx-sms-message-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes lkx-sms-typing {
+  0%,
+  100% {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  18%,
+  78% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes lkx-sms-dot {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-3px);
   }
 }
 
@@ -6335,6 +6751,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .lkx-cli-movie *,
+  .lkx-sms-movie *,
   .lkx-cmd-movie *,
   .lkx-actions-demo *,
   .lkx-api-movie *,
@@ -6362,8 +6779,14 @@
 
   .lkx-cli-result-run,
   .lkx-cli-caret,
-  .lkx-cli-spinner {
+  .lkx-cli-spinner,
+  .lkx-sms-typing {
     display: none;
+  }
+
+  .lkx-sms-bubble {
+    opacity: 1;
+    transform: none;
   }
 
   .lkx-actions-ui {
