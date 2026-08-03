@@ -18,15 +18,15 @@ function PrivacyPolicyPage() {
   const sections = [
     {
       title: "Overview",
-      text: "Linkr provides custodial wallet, transaction, automation, social-account, Telegram, and developer API features. This policy describes the information Linkr handles to provide and secure those services. Public blockchain activity remains publicly visible and may be copied or indexed by third parties independently of Linkr.",
+      text: "Linkr provides custodial wallet, transaction, automation, social-account, Telegram, SMS/MMS, and developer API features. This policy describes the information Linkr handles to provide and secure those services. Public blockchain activity remains publicly visible and may be copied or indexed by third parties independently of Linkr.",
     },
     {
       title: "Information we handle",
-      text: "We may handle account and profile details; X and Telegram identifiers; wallet addresses; encrypted wallet private-key material; raw private-key material transiently during wallet import, signing, or an export you request; API credential hashes and metadata; transaction, launch, schedule, terminal, and agent activity; security and audit events; support communications; IP address, user agent, device or browser information; cookie preferences; and information you submit through the service.",
+      text: "We may handle account and profile details; X and Telegram identifiers; phone numbers; SMS/MMS message content, media, delivery metadata, consent and opt-out records; wallet addresses; encrypted wallet private-key material; raw private-key material transiently during wallet import, signing, or an export you request; API credential hashes and metadata; transaction, launch, schedule, terminal, and agent activity; security and audit events; support communications; IP address, user agent, device or browser information; cookie preferences; and information you submit through the service.",
     },
     {
       title: "How we use information",
-      text: "We use information to authenticate users, provision and operate wallets, sign and submit authorized transactions, execute configured automations, connect X and Telegram, provide API and dashboard features, prevent abuse, investigate incidents, maintain audit records, troubleshoot failures, improve reliability, comply with law, and communicate important service information.",
+      text: "We use information to authenticate users, provision and operate wallets, sign and submit authorized transactions, execute configured automations, connect X, Telegram, and SMS, deliver requested text messages, honor STOP/START choices, provide API and dashboard features, prevent abuse, investigate incidents, maintain audit records, troubleshoot failures, improve reliability, comply with law, and communicate important service information.",
     },
     {
       title: "Wallet keys and security-sensitive information",
@@ -34,7 +34,7 @@ function PrivacyPolicyPage() {
     },
     {
       title: "Connected platforms and service providers",
-      text: "To provide requested features, Linkr may exchange information with X, Telegram, Supabase, Vercel, blockchain networks, RPC providers, block explorers, market-data and routing providers, token and liquidity protocols, storage or media providers, and other infrastructure used by the service. Those providers process information under their own terms and privacy practices. You can change connected-account permissions through Linkr or the relevant platform when controls are available.",
+      text: "To provide requested features, Linkr may exchange information with X, Telegram, Twilio, mobile carriers, Supabase, Vercel, blockchain networks, RPC providers, block explorers, market-data and routing providers, token and liquidity protocols, storage or media providers, and other infrastructure used by the service. Twilio and carriers process phone numbers, message content, media, and delivery metadata needed to transport SMS/MMS. Those providers process information under their own terms and privacy practices. You can change connected-account permissions through Linkr or the relevant platform when controls are available, and reply STOP to opt out of Linkr texts.",
     },
     {
       title: "Sharing and public blockchain data",

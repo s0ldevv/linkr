@@ -18,6 +18,8 @@ function Callback() {
   const navigate = useNavigate();
   const [telegramLinked, setTelegramLinked] = useState(false);
   const [telegramError, setTelegramError] = useState<string | null>(null);
+  const [smsLinked, setSmsLinked] = useState(false);
+  const [smsError, setSmsError] = useState<string | null>(null);
   const [stalled, setStalled] = useState(false);
 
   // A popup either closes itself or renders a result. If neither happened,
@@ -30,6 +32,8 @@ function Callback() {
       params.has("auth_flow") ||
       params.has("telegram_link") ||
       params.get("telegram_auth") === "1" ||
+      params.has("sms_link") ||
+      params.get("sms_auth") === "1" ||
       Boolean(window.opener);
     if (!closesItself) return;
     const timer = window.setTimeout(() => setStalled(true), AUTH_CALLBACK_STALL_MS);
@@ -42,9 +46,12 @@ function Callback() {
       const url = new URL(window.location.href);
       const isTelegramAuth =
         url.searchParams.has("telegram_link") || url.searchParams.get("telegram_auth") === "1";
+      const isSmsAuth =
+        url.searchParams.has("sms_link") || url.searchParams.get("sms_auth") === "1";
       const pendingPopup = readPendingAuthPopupFlow();
       const isPopupAuth =
         !isTelegramAuth &&
+        !isSmsAuth &&
         (url.searchParams.get("auth_popup") === "1" ||
           url.searchParams.has("auth_flow") ||
           Boolean(pendingPopup));
@@ -62,6 +69,11 @@ function Callback() {
             if (isTelegramAuth) {
               notifyTelegramAuthOpener("error", callbackError);
               setTelegramError(callbackError);
+              return;
+            }
+            if (isSmsAuth) {
+              notifySmsAuthOpener("error", callbackError);
+              setSmsError(callbackError);
               return;
             }
             if (isPopupAuth) {
@@ -101,6 +113,11 @@ function Callback() {
           if (isTelegramAuth) {
             notifyTelegramAuthOpener("error", error.message);
             setTelegramError(error.message);
+            return;
+          }
+          if (isSmsAuth) {
+            notifySmsAuthOpener("error", error.message);
+            setSmsError(error.message);
             return;
           }
           if (isPopupAuth) {
@@ -163,6 +180,12 @@ function Callback() {
             }, TELEGRAM_AUTH_SUCCESS_CLOSE_MS);
             return;
           }
+          if (isSmsAuth) {
+            setSmsLinked(true);
+            notifySmsAuthOpener("ok");
+            window.setTimeout(closeAuthPopup, TELEGRAM_AUTH_SUCCESS_CLOSE_MS);
+            return;
+          }
           if (isPopupAuth) {
             notifyAuthOpener("ok", undefined, authFlowId, data.session.user.id);
             closeAuthPopup();
@@ -174,6 +197,12 @@ function Callback() {
             const message = "No Linkr session was returned. Try the Telegram login again.";
             notifyTelegramAuthOpener("error", message);
             setTelegramError(message);
+            return;
+          }
+          if (isSmsAuth) {
+            const message = "No Linkr session was returned. Text LOGIN to Linkr and try again.";
+            notifySmsAuthOpener("error", message);
+            setSmsError(message);
             return;
           }
           if (isPopupAuth) {
@@ -199,6 +228,11 @@ function Callback() {
         if (isTelegramAuth) {
           notifyTelegramAuthOpener("error", message);
           setTelegramError(message);
+          return;
+        }
+        if (isSmsAuth) {
+          notifySmsAuthOpener("error", message);
+          setSmsError(message);
           return;
         }
         if (isPopupAuth) {
@@ -229,6 +263,23 @@ function Callback() {
     );
   }
 
+  if (smsLinked) {
+    return (
+      <div className="sm-auth-page app-rayo-launches-page app-rayo-login-page telegram-auth-page telegram-auth-callback-page min-h-screen">
+        <main className="telegram-auth-result-shell">
+          <section className="app-login-panel telegram-auth-panel telegram-auth-result-panel">
+            <CheckCircle2 className="telegram-auth-result-icon" aria-hidden="true" />
+            <strong>Linkr SMS is connected.</strong>
+            <p>
+              Return to Messages and text Linkr. Value-moving actions still require an exact
+              confirmation reply.
+            </p>
+          </section>
+        </main>
+      </div>
+    );
+  }
+
   if (telegramError) {
     return (
       <div className="sm-auth-page app-rayo-launches-page app-rayo-login-page telegram-auth-page telegram-auth-callback-page min-h-screen">
@@ -240,6 +291,30 @@ function Callback() {
             <AlertCircle className="telegram-auth-result-icon" aria-hidden="true" />
             <strong>{authErrorTitle(telegramError)}</strong>
             <p>{authErrorBody(telegramError)}</p>
+            <button
+              type="button"
+              onClick={() => window.close()}
+              className="app-login-x-button telegram-auth-x-button telegram-auth-muted-button"
+            >
+              Close window
+            </button>
+          </section>
+        </main>
+      </div>
+    );
+  }
+
+  if (smsError) {
+    return (
+      <div className="sm-auth-page app-rayo-launches-page app-rayo-login-page telegram-auth-page telegram-auth-callback-page min-h-screen">
+        <main className="telegram-auth-result-shell">
+          <section
+            className="app-login-panel telegram-auth-panel telegram-auth-result-panel telegram-auth-result-panel-error"
+            role="alert"
+          >
+            <AlertCircle className="telegram-auth-result-icon" aria-hidden="true" />
+            <strong>{authErrorTitle(smsError)}</strong>
+            <p>{authErrorBody(smsError)}</p>
             <button
               type="button"
               onClick={() => window.close()}
@@ -359,6 +434,14 @@ function notifyTelegramAuthOpener(status: "ok" | "error", message?: string) {
       status,
       message: message ?? null,
     },
+    window.location.origin,
+  );
+}
+
+function notifySmsAuthOpener(status: "ok" | "error", message?: string) {
+  if (!window.opener || window.opener.closed) return;
+  window.opener.postMessage(
+    { type: "linkr:sms-auth", status, message: message ?? null },
     window.location.origin,
   );
 }

@@ -88,6 +88,7 @@ const tocGroups: TocGroup[] = [
       { id: "terminal", label: "Terminal" },
       { id: "cli", label: "CLI" },
       { id: "telegram", label: "Telegram bot" },
+      { id: "sms", label: "SMS / MMS" },
       { id: "market-data", label: "Market data" },
       { id: "scheduler", label: "Scheduler" },
       { id: "launches", label: "Launches" },
@@ -112,7 +113,7 @@ const flowSteps = [
   {
     label: "01",
     title: "Send a request",
-    text: "Mention @linkrbot on X, message @LinkrCashBot privately on Telegram, use the private terminal, or open a supported dashboard flow.",
+    text: "Mention @linkrbot on X, message @LinkrCashBot privately on Telegram, text the configured Linkr SMS number, use the private terminal, or open a supported dashboard flow.",
   },
   {
     label: "02",
@@ -507,12 +508,7 @@ const commandDocs: CommandDoc[] = [
     tone: "mint",
     confirmation: "Not applicable. This command confirms an existing pending action.",
     purpose: "Execute the latest unexpired pending action within its 15-minute window.",
-    examples: [
-      "@linkrbot confirm",
-      "@linkrbot yes",
-      "@linkrbot do it",
-      "@linkrbot confirm buy",
-    ],
+    examples: ["@linkrbot confirm", "@linkrbot yes", "@linkrbot do it", "@linkrbot confirm buy"],
     checks: [
       "A pending action exists.",
       "The pending action has not expired (15-minute window).",
@@ -809,12 +805,7 @@ const commandDocs: CommandDoc[] = [
     confirmation: "Never confirms because no transaction is created.",
     purpose:
       "Handle help, greetings, thanks, and general conversation without triggering wallet actions.",
-    examples: [
-      "@linkrbot help",
-      "@linkrbot what can you do?",
-      "@linkrbot gm",
-      "@linkrbot thanks",
-    ],
+    examples: ["@linkrbot help", "@linkrbot what can you do?", "@linkrbot gm", "@linkrbot thanks"],
     checks: [
       "Message is not a wallet action.",
       "Conversation shortcuts or model replies are enabled.",
@@ -1663,6 +1654,42 @@ export function LinkrDocsPage() {
                 for verification before the person enters the group. Group owners should also give
                 the bot the permissions needed to approve members, restrict access, and remove join
                 service messages.
+              </Callout>
+            </DocsSection>
+
+            <DocsSection
+              id="sms"
+              icon={MessageCircle}
+              eyebrow="SMS / MMS"
+              title="Text Linkr"
+              intro="A linked phone can use the same private, account-aware Linkr runtime over ordinary text messages. Incoming messages are verified as Twilio webhooks, stored idempotently, and processed asynchronously."
+            >
+              <div className="lkd-feature-grid">
+                <FeatureCard
+                  icon={<Lock />}
+                  title="Private account link"
+                  text="Text LOGIN to receive a single-use, ten-minute X authorization link that binds only the phone that requested it."
+                />
+                <FeatureCard
+                  icon={<ShieldCheck />}
+                  title="Exact confirmations"
+                  text="Value-moving actions remain prepared first. Reply with the exact confirmation phrase from the same linked phone and SMS conversation, or reply cancel."
+                />
+                <FeatureCard
+                  icon={<MessageCircle />}
+                  title="Compliance controls"
+                  text="HELP shows commands, STATUS checks the connection, LOGOUT disconnects Linkr, STOP opts out, and START enables messages again."
+                />
+                <FeatureCard
+                  icon={<Sparkles />}
+                  title="Durable delivery"
+                  text="Inbound MessageSids, agent runs, outbound replies, retries, and Twilio delivery callbacks are recorded so duplicate webhooks cannot duplicate actions."
+                />
+              </div>
+              <Callout tone="info" title="Carrier delivery and message length">
+                SMS delivery depends on Twilio and mobile carriers. Replies are kept concise and may
+                be shortened to the configured SMS limit. Standard carrier messaging rates may
+                apply.
               </Callout>
             </DocsSection>
 

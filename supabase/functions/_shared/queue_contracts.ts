@@ -6,6 +6,8 @@ export const LINKR_QUEUE_STAGES = [
   "telegram_control",
   "conversation_turns_high",
   "conversation_turns_normal",
+  "sms_turns_high",
+  "sms_turns_normal",
   "command_prepare",
   "launch_enrich",
   "media_capture",
@@ -21,6 +23,8 @@ export const LINKR_QUEUE_STAGES = [
   "reply_x_normal",
   "reply_telegram_high",
   "reply_telegram_normal",
+  "reply_sms_high",
+  "reply_sms_normal",
   "reconciliation",
 ] as const;
 
@@ -91,6 +95,8 @@ export const LINKR_STAGE_WORKER_FUNCTIONS: Record<LinkrQueueStage, string> = {
   telegram_control: "worker-telegram-control",
   conversation_turns_high: "worker-conversation-turn",
   conversation_turns_normal: "worker-conversation-turn",
+  sms_turns_high: "worker-sms-turn",
+  sms_turns_normal: "worker-sms-turn",
   command_prepare: "worker-command-prepare",
   launch_enrich: "worker-launch-enrich",
   media_capture: "worker-media-capture",
@@ -106,6 +112,8 @@ export const LINKR_STAGE_WORKER_FUNCTIONS: Record<LinkrQueueStage, string> = {
   reply_x_normal: "worker-reply-x",
   reply_telegram_high: "worker-reply-telegram",
   reply_telegram_normal: "worker-reply-telegram",
+  reply_sms_high: "worker-reply-sms",
+  reply_sms_normal: "worker-reply-sms",
   reconciliation: "worker-reconcile",
 };
 
@@ -128,6 +136,8 @@ export function linkrQueueForRoute(
       return "telegram_control";
     case "conversation.turn":
       return high ? "conversation_turns_high" : "conversation_turns_normal";
+    case "sms.turn":
+      return high ? "sms_turns_high" : "sms_turns_normal";
     case "command.prepare":
       return "command_prepare";
     case "launch.enrich":
@@ -152,6 +162,8 @@ export function linkrQueueForRoute(
       return high ? "reply_x_high" : "reply_x_normal";
     case "reply.telegram":
       return high ? "reply_telegram_high" : "reply_telegram_normal";
+    case "reply.sms":
+      return high ? "reply_sms_high" : "reply_sms_normal";
     case "reconciliation":
       return "reconciliation";
     default:

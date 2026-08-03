@@ -22,6 +22,7 @@ import {
   completeTelegramLinkToken,
   sendTelegramMessage,
 } from "../_shared/telegram.ts";
+import { completeSmsLinkToken, sendTwilioMessage } from "../_shared/twilio.ts";
 
 const COOKIE_NAME = "linkr_x_pkce";
 const ACCOUNT_KEY = "linkrbot";
@@ -417,6 +418,17 @@ function telegramLinkTokenFromRedirect(
   if (!redirectTo) return null;
   try {
     return new URL(redirectTo).searchParams.get("telegram_link");
+  } catch (_) {
+    return null;
+  }
+}
+
+function smsLinkTokenFromRedirect(
+  redirectTo: string | undefined,
+): string | null {
+  if (!redirectTo) return null;
+  try {
+    return new URL(redirectTo).searchParams.get("sms_link");
   } catch (_) {
     return null;
   }
@@ -873,6 +885,38 @@ async function callback(req: Request, url: URL): Promise<Response> {
           : String(error);
       }
     }
+    const smsLinkToken = smsLinkTokenFromRedirect(redirectTo);
+    let smsLink: any = null;
+    let smsLinkError: string | null = null;
+    if (smsLinkToken) {
+      try {
+        smsLink = await completeSmsLinkToken(admin, {
+          token: smsLinkToken,
+          userId: provisioned.userId,
+        });
+        await admin.from("sms_opt_events").insert({
+          phone_hash: smsLink.phone_hash,
+          from_phone_e164: smsLink.phone_e164,
+          event_type: "link_completed",
+        });
+        await sendTwilioMessage({
+          to: smsLink.phone_e164,
+          body:
+            `Connected @${username}. You can text Linkr here now. Reply STOP to opt out.`,
+        }).catch((error) => {
+          console.error("sms_link_success_message_failed", {
+            phone_hash: smsLink.phone_hash,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        });
+        console.info("sms_link_completed", {
+          phone_hash: smsLink.phone_hash,
+          user_id: provisioned.userId,
+        });
+      } catch (error) {
+        smsLinkError = error instanceof Error ? error.message : String(error);
+      }
+    }
     const actionLink = await sessionRedirectUrl(
       admin,
       provisioned.userId,
@@ -891,6 +935,8 @@ async function callback(req: Request, url: URL): Promise<Response> {
         redirect_to: redirectTo,
         telegram_linked: Boolean(telegramLink),
         telegram_link_error: telegramLinkError,
+        sms_linked: Boolean(smsLink),
+        sms_link_error: smsLinkError,
         provisioning: {
           user_id: provisioned.userId,
           wallet_public_key: provisioned.wallet.public_key,

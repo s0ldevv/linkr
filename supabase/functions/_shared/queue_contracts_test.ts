@@ -65,6 +65,8 @@ Deno.test("route resolution mirrors public.linkr_queue_for_route exactly", () =>
     ["conversation.turn", 79, "conversation_turns_normal"],
     ["conversation.turn", 80, "conversation_turns_high"],
     ["conversation.turn", 100, "conversation_turns_high"],
+    ["sms.turn", 50, "sms_turns_normal"],
+    ["sms.turn", 80, "sms_turns_high"],
     ["command.prepare", 50, "command_prepare"],
     ["launch.enrich", 50, "launch_enrich"],
     ["media.capture", 50, "media_capture"],
@@ -79,6 +81,8 @@ Deno.test("route resolution mirrors public.linkr_queue_for_route exactly", () =>
     ["reply.x", 80, "reply_x_high"],
     ["reply.telegram", 50, "reply_telegram_normal"],
     ["reply.telegram", 80, "reply_telegram_high"],
+    ["reply.sms", 50, "reply_sms_normal"],
+    ["reply.sms", 80, "reply_sms_high"],
     ["reconciliation", 50, "reconciliation"],
     ["nonexistent.route", 50, null],
     ["nft.solana", 50, null],
@@ -107,12 +111,17 @@ Deno.test("every queue stage maps to a worker function, and resolved stages are 
     "command.prepare",
     "reply.x",
     "reply.telegram",
+    "sms.turn",
+    "reply.sms",
   ].flatMap((route) => [
     linkrQueueForRoute(route, 50),
     linkrQueueForRoute(route, 80),
   ]);
   for (const stage of routedStages) {
-    assert(stage !== null && isLinkrQueueStage(stage), "router produced unknown stage");
+    assert(
+      stage !== null && isLinkrQueueStage(stage),
+      "router produced unknown stage",
+    );
     assert(
       typeof LINKR_STAGE_WORKER_FUNCTIONS[stage] === "string",
       `routed stage ${stage} missing worker function`,

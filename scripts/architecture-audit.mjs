@@ -169,6 +169,7 @@ const authMarkers = [
   "getCallerUserId",
   "redeemOnboardingToken",
   "verifyTelegramWebhookRequest",
+  "verifyTwilioSignature",
 ];
 const noJwt = [...config.matchAll(/\[functions\.([^\]]+)\]\s*\nverify_jwt\s*=\s*false/g)]
   .map((match) => match[1]);

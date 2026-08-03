@@ -260,3 +260,15 @@ verify_jwt = false
 
 [functions.linkr-agent-wallet-read]
 verify_jwt = false
+
+[functions.sms-webhook]
+verify_jwt = false
+
+[functions.sms-status-callback]
+verify_jwt = false
+
+[functions.worker-sms-turn]
+verify_jwt = false
+
+[functions.worker-reply-sms]
+verify_jwt = false

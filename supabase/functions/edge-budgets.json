@@ -251,6 +251,16 @@
       "maxModules": 1030,
       "maxGraphBytes": 10477826
     },
+    "sms-webhook": {
+      "classification": "api_no_growth",
+      "maxModules": 700,
+      "maxGraphBytes": 6500000
+    },
+    "sms-status-callback": {
+      "classification": "api_no_growth",
+      "maxModules": 700,
+      "maxGraphBytes": 6500000
+    },
     "terminal-action": {
       "classification": "api_no_growth",
       "maxModules": 996,
@@ -360,6 +370,18 @@
       "maxModules": 100,
       "maxGraphBytes": 4194304,
       "chain": "none"
+    },
+    "worker-reply-sms": {
+      "classification": "worker_strict",
+      "maxModules": 100,
+      "maxGraphBytes": 4194304,
+      "chain": "none"
+    },
+    "worker-sms-turn": {
+      "classification": "api_no_growth",
+      "maxModules": 1050,
+      "maxGraphBytes": 11000000,
+      "note": "Shares the private linkr_agent_runtime graph with terminal-chat."
     },
     "worker-launch-robinhood": {
       "classification": "worker_strict",

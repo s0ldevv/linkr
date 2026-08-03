@@ -1,7 +1,15 @@
 // deno-lint-ignore-file no-explicit-any
 // Channel-neutral Linkr runtime contracts.
 
-export type LinkrSurface = "terminal" | "cli" | "telegram" | "x" | "cron" | "agent_api" | "future";
+export type LinkrSurface =
+  | "terminal"
+  | "cli"
+  | "telegram"
+  | "sms"
+  | "x"
+  | "cron"
+  | "agent_api"
+  | "future";
 
 export type LinkrStatusEvent =
   | "ack"
@@ -28,14 +36,26 @@ export interface LinkrTurnInput {
   user_id: string;
   text: string;
   actor: {
-    kind: "authenticated_user" | "telegram_user" | "x_user" | "system_job";
+    kind:
+      | "authenticated_user"
+      | "telegram_user"
+      | "sms_user"
+      | "x_user"
+      | "system_job";
     user_id?: string | null;
     twitter_id?: string | null;
     twitter_username?: string | null;
     display_name?: string | null;
   };
   transport: {
-    kind: "terminal_sse" | "cli_sse" | "telegram_reply" | "x_reply" | "cron_job" | "api";
+    kind:
+      | "terminal_sse"
+      | "cli_sse"
+      | "telegram_reply"
+      | "sms_reply"
+      | "x_reply"
+      | "cron_job"
+      | "api";
     public_output: boolean;
     supports_streaming: boolean;
     max_response_chars?: number;
@@ -95,12 +115,19 @@ export interface LinkrSourceRefInput {
   url?: string | null;
   label?: string | null;
   payload?: Record<string, unknown>;
-  privacy_label?: "public" | "user_private" | "recipient_public" | "external_untrusted";
+  privacy_label?:
+    | "public"
+    | "user_private"
+    | "recipient_public"
+    | "external_untrusted";
 }
 
 export interface LinkrTurnOutputSink {
   setStatus(status: string, metadata?: Record<string, unknown>): Promise<void>;
-  emit(event: LinkrStatusEvent | string, payload: Record<string, unknown>): Promise<void>;
+  emit(
+    event: LinkrStatusEvent | string,
+    payload: Record<string, unknown>,
+  ): Promise<void>;
   appendAssistantDelta(delta: string): Promise<void>;
   setAssistantMessage(args: {
     content: string;

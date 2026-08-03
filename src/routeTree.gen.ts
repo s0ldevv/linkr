@@ -26,6 +26,7 @@ import { Route as NftsIndexRouteImport } from './routes/nfts.index'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as TelegramVerifyRouteImport } from './routes/telegram.verify'
 import { Route as TelegramAuthRouteImport } from './routes/telegram.auth'
+import { Route as SmsAuthRouteImport } from './routes/sms.auth'
 import { Route as NftsCollectionIdRouteImport } from './routes/nfts.$collectionId'
 import { Route as CoinMintRouteImport } from './routes/coin.$mint'
 import { Route as CliAuthRouteImport } from './routes/cli.auth'
@@ -130,6 +131,11 @@ const TelegramVerifyRoute = TelegramVerifyRouteImport.update({
 const TelegramAuthRoute = TelegramAuthRouteImport.update({
   id: '/telegram/auth',
   path: '/telegram/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SmsAuthRoute = SmsAuthRouteImport.update({
+  id: '/sms/auth',
+  path: '/sms/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NftsCollectionIdRoute = NftsCollectionIdRouteImport.update({
@@ -264,6 +270,7 @@ export interface FileRoutesByFullPath {
   '/cli/auth': typeof CliAuthRoute
   '/coin/$mint': typeof CoinMintRoute
   '/nfts/$collectionId': typeof NftsCollectionIdRoute
+  '/sms/auth': typeof SmsAuthRoute
   '/telegram/auth': typeof TelegramAuthRoute
   '/telegram/verify': typeof TelegramVerifyRoute
   '/u/$username': typeof UUsernameRoute
@@ -302,6 +309,7 @@ export interface FileRoutesByTo {
   '/cli/auth': typeof CliAuthRoute
   '/coin/$mint': typeof CoinMintRoute
   '/nfts/$collectionId': typeof NftsCollectionIdRoute
+  '/sms/auth': typeof SmsAuthRoute
   '/telegram/auth': typeof TelegramAuthRoute
   '/telegram/verify': typeof TelegramVerifyRoute
   '/u/$username': typeof UUsernameRoute
@@ -343,6 +351,7 @@ export interface FileRoutesById {
   '/cli/auth': typeof CliAuthRoute
   '/coin/$mint': typeof CoinMintRoute
   '/nfts/$collectionId': typeof NftsCollectionIdRoute
+  '/sms/auth': typeof SmsAuthRoute
   '/telegram/auth': typeof TelegramAuthRoute
   '/telegram/verify': typeof TelegramVerifyRoute
   '/u/$username': typeof UUsernameRoute
@@ -384,6 +393,7 @@ export interface FileRouteTypes {
     | '/cli/auth'
     | '/coin/$mint'
     | '/nfts/$collectionId'
+    | '/sms/auth'
     | '/telegram/auth'
     | '/telegram/verify'
     | '/u/$username'
@@ -422,6 +432,7 @@ export interface FileRouteTypes {
     | '/cli/auth'
     | '/coin/$mint'
     | '/nfts/$collectionId'
+    | '/sms/auth'
     | '/telegram/auth'
     | '/telegram/verify'
     | '/u/$username'
@@ -462,6 +473,7 @@ export interface FileRouteTypes {
     | '/cli/auth'
     | '/coin/$mint'
     | '/nfts/$collectionId'
+    | '/sms/auth'
     | '/telegram/auth'
     | '/telegram/verify'
     | '/u/$username'
@@ -499,6 +511,7 @@ export interface RootRouteChildren {
   CliAuthRoute: typeof CliAuthRoute
   CoinMintRoute: typeof CoinMintRoute
   NftsCollectionIdRoute: typeof NftsCollectionIdRoute
+  SmsAuthRoute: typeof SmsAuthRoute
   TelegramAuthRoute: typeof TelegramAuthRoute
   TelegramVerifyRoute: typeof TelegramVerifyRoute
   UUsernameRoute: typeof UUsernameRoute
@@ -624,6 +637,13 @@ declare module '@tanstack/react-router' {
       path: '/telegram/auth'
       fullPath: '/telegram/auth'
       preLoaderRoute: typeof TelegramAuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sms/auth': {
+      id: '/sms/auth'
+      path: '/sms/auth'
+      fullPath: '/sms/auth'
+      preLoaderRoute: typeof SmsAuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/nfts/$collectionId': {
@@ -856,6 +876,7 @@ const rootRouteChildren: RootRouteChildren = {
   CliAuthRoute: CliAuthRoute,
   CoinMintRoute: CoinMintRoute,
   NftsCollectionIdRoute: NftsCollectionIdRoute,
+  SmsAuthRoute: SmsAuthRoute,
   TelegramAuthRoute: TelegramAuthRoute,
   TelegramVerifyRoute: TelegramVerifyRoute,
   UUsernameRoute: UUsernameRoute,

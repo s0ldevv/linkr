@@ -16,7 +16,7 @@ export const Route = createFileRoute("/terms-of-service")({
 
 function TermsOfServicePage() {
   const shortVersion =
-    "Linkr provides custodial wallet and automation tools that can create, import, store in encrypted form, and use private keys to carry out actions you authorize through the web app, X, Telegram, scheduled actions, or API credentials. You can export a raw private key, but anyone who obtains it can control that wallet. Digital assets and automated transactions carry serious risk, including total loss. Use Linkr only if you understand these risks and your use is lawful where you are.";
+    "Linkr provides custodial wallet and automation tools that can create, import, store in encrypted form, and use private keys to carry out actions you authorize through the web app, X, Telegram, SMS/MMS, scheduled actions, or API credentials. You can export a raw private key, but anyone who obtains it can control that wallet. Digital assets and automated transactions carry serious risk, including total loss. Use Linkr only if you understand these risks and your use is lawful where you are.";
 
   const sections = [
     {
@@ -47,7 +47,7 @@ function TermsOfServicePage() {
       title: "Custodial wallets, automation, and key export",
       paragraphs: [
         "Linkr provides custodial wallet functionality. When Linkr creates or imports a supported wallet, its private key is encrypted for storage and may be decrypted by Linkr's backend when needed to sign an action that you request or have previously authorized. Linkr's current wallet encryption design uses server-controlled cryptographic material, so a compromise of Linkr's privileged systems or secrets could put wallets at risk.",
-        "Depending on the feature you use, an action may be requested through the web dashboard, X, Telegram, a schedule, or an API credential. Some actions may execute automatically within the limits and confirmation rules configured for your account. You are responsible for reviewing those rules, protecting connected accounts and API credentials, and promptly disabling automation you no longer want.",
+        "Depending on the feature you use, an action may be requested through the web dashboard, X, Telegram, SMS/MMS, a schedule, or an API credential. SMS requests and confirmations are accepted only from a linked phone and carrier delivery is not guaranteed. Value-moving SMS actions require the exact confirmation phrase Linkr provides. Some actions may execute automatically within the limits and confirmation rules configured for your account. You are responsible for reviewing those rules, protecting connected accounts, phones, and API credentials, and promptly disabling automation you no longer want. Reply STOP to opt out of Linkr texts and START to opt back in.",
         "Linkr allows you to reveal, copy, or download a raw private key for a supported wallet after additional verification. A raw private key gives complete control of that wallet. Browser extensions, malware, screenshots, clipboard managers, downloaded files, backups, or anyone with access to your device may capture it. Linkr cannot prevent use of a key after export and cannot reverse transactions made with it.",
         "Blockchain transactions are generally final. Linkr cannot recover assets sent to the wrong address, reverse an executed trade, restore an exported key that is lost, or guarantee recovery after an account, device, connected service, API credential, or private key is compromised.",
       ],
@@ -93,7 +93,7 @@ function TermsOfServicePage() {
     {
       title: "Account security and authorization",
       paragraphs: [
-        "You are responsible for securing your Linkr session, X and Telegram accounts, email or device access, API credentials, exported private keys, and any device used with the Interface. You must notify Linkr promptly if you suspect unauthorized access and use available controls to revoke sessions, credentials, schedules, or connected accounts.",
+        "You are responsible for securing your Linkr session, X and Telegram accounts, linked phone number and text-message access, email or device access, API credentials, exported private keys, and any device used with the Interface. You must notify Linkr promptly if you suspect unauthorized access and use available controls to revoke sessions, credentials, schedules, or connected accounts.",
         "A request that is authenticated through your account, connected service, or API credential may be treated as authorized by you, subject to Linkr's security checks and configured limits. Additional verification reduces risk but cannot eliminate phishing, malware, social-account compromise, or device compromise.",
       ],
     },
