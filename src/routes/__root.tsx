@@ -198,6 +198,7 @@ function RootComponent() {
   const isLinksSurface = normalizedPathname === "/links";
   const hideEntryGate =
     normalizedPathname === "/terms-of-service" ||
+    normalizedPathname === "/bugs" ||
     isLinksSurface ||
     isAuthSurface ||
     isCliAuthSurface ||

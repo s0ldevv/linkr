@@ -1,0 +1,480 @@
+.sm-bugs-page {
+  min-height: 100vh;
+  overflow-x: hidden;
+  color: #f9f6f1;
+  background: #111111;
+  font-family: "Funnel Sans", "Inter", sans-serif;
+}
+
+body .sm-bugs-page > .sm-marketing-header + main.sm-bugs-main {
+  width: min(1440px, 100%);
+  margin: 0 auto;
+  padding: 156px clamp(24px, 5vw, 76px) 72px;
+}
+
+.sm-bugs-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(460px, 1.1fr);
+  gap: clamp(48px, 8vw, 126px);
+  align-items: start;
+}
+
+.sm-bugs-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 26px;
+  color: #cfff38;
+  font:
+    700 0.78rem/1 "IBM Plex Mono",
+    monospace;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.sm-bugs-kicker::before {
+  width: 9px;
+  height: 9px;
+  content: "";
+  background: #cfff38;
+  border-radius: 50%;
+}
+
+.sm-bugs-copy h1 {
+  max-width: 690px;
+  margin: 0;
+  color: #f9f6f1;
+  font-family: "Funnel Display", "Inter Tight", sans-serif;
+  font-size: clamp(4rem, 7.2vw, 7.3rem);
+  font-weight: 700;
+  line-height: 0.84;
+  letter-spacing: -0.065em;
+}
+
+.sm-bugs-copy h1 span {
+  display: block;
+  color: #cfff38;
+}
+
+.sm-bugs-lede {
+  max-width: 580px;
+  margin: 36px 0 0;
+  color: #b8b8b1;
+  font-size: clamp(1.05rem, 1.5vw, 1.3rem);
+  line-height: 1.55;
+}
+
+.sm-bugs-promise {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 46px;
+}
+
+.sm-bugs-promise div {
+  min-height: 120px;
+  padding: 20px;
+  color: #111111;
+  background: #f7f3ee;
+  border-radius: 18px;
+}
+
+.sm-bugs-promise div:nth-child(2) {
+  background: #cfff38;
+}
+
+.sm-bugs-promise span {
+  display: block;
+  margin-bottom: 27px;
+  font:
+    700 0.7rem/1 "IBM Plex Mono",
+    monospace;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.sm-bugs-promise strong {
+  display: block;
+  max-width: 12ch;
+  font-family: "Funnel Display", sans-serif;
+  font-size: 1.15rem;
+  line-height: 1.08;
+}
+
+.sm-bugs-form-shell,
+.sm-bugs-success {
+  color: #111111;
+  background: #f7f3ee;
+  border-radius: 30px;
+}
+
+.sm-bugs-form-shell {
+  padding: clamp(24px, 4vw, 48px);
+}
+
+.sm-bugs-form-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 34px;
+}
+
+.sm-bugs-form-heading span {
+  display: block;
+  margin-bottom: 10px;
+  color: #6f716a;
+  font:
+    700 0.7rem/1 "IBM Plex Mono",
+    monospace;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.sm-bugs-form-heading h2 {
+  margin: 0;
+  font-family: "Funnel Display", sans-serif;
+  font-size: clamp(2rem, 3vw, 3rem);
+  font-weight: 700;
+  line-height: 0.95;
+  letter-spacing: -0.045em;
+}
+
+.sm-bugs-form-heading .sm-bugs-form-number {
+  display: grid;
+  flex: 0 0 auto;
+  width: 58px;
+  height: 58px;
+  place-items: center;
+  color: #111111;
+  background: #cfff38;
+  border-radius: 50%;
+  margin: 0;
+  font:
+    700 0.78rem/1 "IBM Plex Mono",
+    monospace;
+}
+
+.sm-bugs-form {
+  display: grid;
+  gap: 20px;
+}
+
+.sm-bugs-field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.sm-bugs-field {
+  display: grid;
+  gap: 9px;
+}
+
+.sm-bugs-field > span {
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+.sm-bugs-field > span small {
+  color: #777870;
+  font-size: inherit;
+  font-weight: 500;
+}
+
+.sm-bugs-field input,
+.sm-bugs-field select,
+.sm-bugs-field textarea {
+  width: 100%;
+  margin: 0;
+  padding: 15px 17px;
+  color: #111111;
+  background: #e9e5df;
+  border: 0;
+  border-radius: 12px;
+  outline: 0;
+  font:
+    500 0.93rem/1.45 "Funnel Sans",
+    sans-serif;
+  transition:
+    background 160ms ease,
+    box-shadow 160ms ease;
+}
+
+body .sm-bugs-page .sm-bugs-field input,
+body .sm-bugs-page .sm-bugs-field select,
+body .sm-bugs-page .sm-bugs-field textarea {
+  background: #e9e5df !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.sm-bugs-field input,
+.sm-bugs-field select {
+  min-height: 52px;
+}
+
+.sm-bugs-field textarea {
+  min-height: 122px;
+  resize: vertical;
+}
+
+.sm-bugs-field textarea.sm-bugs-description {
+  min-height: 150px;
+}
+
+.sm-bugs-field input::placeholder,
+.sm-bugs-field textarea::placeholder {
+  color: #888981;
+}
+
+.sm-bugs-field input:focus,
+.sm-bugs-field select:focus,
+.sm-bugs-field textarea:focus {
+  background: #e2ded7;
+  box-shadow: 0 0 0 3px #cfff38;
+}
+
+body .sm-bugs-page .sm-bugs-field input:focus,
+body .sm-bugs-page .sm-bugs-field select:focus,
+body .sm-bugs-page .sm-bugs-field textarea:focus {
+  background: #e2ded7 !important;
+  box-shadow: 0 0 0 3px #cfff38 !important;
+}
+
+.sm-bugs-honeypot {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0) !important;
+  white-space: nowrap !important;
+}
+
+.sm-bugs-submit {
+  display: flex;
+  min-height: 58px;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 4px;
+  padding: 0 24px;
+  color: #111111;
+  background: #cfff38;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  font:
+    750 0.92rem/1 "Funnel Sans",
+    sans-serif;
+  transition:
+    transform 160ms ease,
+    background 160ms ease;
+}
+
+.sm-bugs-submit:hover:not(:disabled) {
+  background: #dcff72;
+  transform: translateY(-2px);
+}
+
+.sm-bugs-submit:disabled {
+  cursor: wait;
+  opacity: 0.66;
+}
+
+.sm-bugs-submit svg[data-loading="true"] {
+  animation: sm-bugs-spin 800ms linear infinite;
+}
+
+.sm-bugs-error {
+  margin: 0;
+  padding: 14px 16px;
+  color: #8d1e12;
+  background: #ffd9d3;
+  border-radius: 12px;
+  font-size: 0.86rem;
+  font-weight: 650;
+}
+
+.sm-bugs-fine-print {
+  margin: 0;
+  color: #73746d;
+  font:
+    500 0.73rem/1.45 "IBM Plex Mono",
+    monospace;
+  text-align: center;
+}
+
+.sm-bugs-success {
+  display: flex;
+  min-height: 680px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  padding: clamp(32px, 5vw, 64px);
+}
+
+.sm-bugs-success-icon {
+  display: grid;
+  width: 78px;
+  height: 78px;
+  place-items: center;
+  color: #111111;
+  background: #cfff38;
+  border-radius: 50%;
+}
+
+.sm-bugs-success h2 {
+  max-width: 8ch;
+  margin: 32px 0 18px;
+  font-family: "Funnel Display", sans-serif;
+  font-size: clamp(3.2rem, 5vw, 5rem);
+  line-height: 0.9;
+  letter-spacing: -0.055em;
+}
+
+.sm-bugs-success p {
+  max-width: 42ch;
+  margin: 0;
+  color: #62635d;
+  font-size: 1.05rem;
+  line-height: 1.55;
+}
+
+.sm-bugs-reference {
+  margin-top: 26px !important;
+  color: #111111 !important;
+  font:
+    700 0.75rem/1 "IBM Plex Mono",
+    monospace !important;
+  text-transform: uppercase;
+}
+
+.sm-bugs-success .sm-bugs-submit {
+  margin-top: 36px;
+  padding-inline: 34px;
+}
+
+.sm-bugs-footer {
+  display: flex;
+  width: min(1440px, 100%);
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin: 0 auto;
+  padding: 28px clamp(24px, 5vw, 76px) 44px;
+  color: #797a75;
+  font:
+    600 0.75rem/1.3 "IBM Plex Mono",
+    monospace;
+}
+
+.sm-bugs-footer nav {
+  display: flex;
+  gap: 24px;
+}
+
+.sm-bugs-footer a {
+  color: #f7f3ee;
+  text-decoration: none;
+}
+
+.sm-bugs-footer a:hover {
+  color: #cfff38;
+}
+
+@keyframes sm-bugs-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 1020px) {
+  .sm-bugs-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sm-bugs-copy {
+    max-width: 760px;
+  }
+}
+
+@media (max-width: 680px) {
+  .sm-bugs-page,
+  .sm-bugs-grid,
+  .sm-bugs-copy,
+  .sm-bugs-form-shell,
+  .sm-bugs-success {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  body .sm-bugs-page > .sm-marketing-header + main.sm-bugs-main {
+    width: 100% !important;
+    min-width: 0;
+    max-width: 100vw !important;
+    box-sizing: border-box;
+    padding: 118px 16px 48px;
+  }
+
+  body .sm-bugs-page .sm-marketing-header {
+    width: 100%;
+    max-width: 100vw;
+    overflow: hidden;
+  }
+
+  body .sm-bugs-page .sm-header-primary,
+  body .sm-bugs-page .sm-header-login,
+  body .sm-bugs-page .sm-header-x-button {
+    display: none !important;
+  }
+
+  body .sm-bugs-page .sm-header-actions {
+    justify-self: end;
+  }
+
+  .sm-bugs-copy h1 {
+    font-size: clamp(3.7rem, 18vw, 5.4rem);
+  }
+
+  .sm-bugs-promise {
+    grid-template-columns: 1fr;
+  }
+
+  .sm-bugs-promise div {
+    min-height: 98px;
+  }
+
+  .sm-bugs-promise span {
+    margin-bottom: 14px;
+  }
+
+  .sm-bugs-form-shell {
+    border-radius: 22px;
+  }
+
+  .sm-bugs-field-row {
+    grid-template-columns: 1fr;
+  }
+
+  .sm-bugs-success {
+    min-height: 560px;
+    border-radius: 22px;
+  }
+
+  .sm-bugs-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    padding-inline: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sm-bugs-submit,
+  .sm-bugs-field input,
+  .sm-bugs-field select,
+  .sm-bugs-field textarea {
+    transition: none;
+  }
+}

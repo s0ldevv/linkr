@@ -17,6 +17,7 @@ import { Route as LaunchesRouteImport } from './routes/launches'
 import { Route as LaunchRouteImport } from './routes/launch'
 import { Route as ExploreRouteImport } from './routes/explore'
 import { Route as DocsRouteImport } from './routes/docs'
+import { Route as BugsRouteImport } from './routes/bugs'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AgentApiRouteImport } from './routes/agent-api'
 import { Route as ActivityRouteImport } from './routes/activity'
@@ -87,6 +88,11 @@ const ExploreRoute = ExploreRouteImport.update({
 const DocsRoute = DocsRouteImport.update({
   id: '/docs',
   path: '/docs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BugsRoute = BugsRouteImport.update({
+  id: '/bugs',
+  path: '/bugs',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -255,6 +261,7 @@ export interface FileRoutesByFullPath {
   '/activity': typeof ActivityRoute
   '/agent-api': typeof AgentApiRoute
   '/auth': typeof AuthRouteWithChildren
+  '/bugs': typeof BugsRoute
   '/docs': typeof DocsRoute
   '/explore': typeof ExploreRoute
   '/launch': typeof LaunchRoute
@@ -295,6 +302,7 @@ export interface FileRoutesByTo {
   '/activity': typeof ActivityRoute
   '/agent-api': typeof AgentApiRoute
   '/auth': typeof AuthRouteWithChildren
+  '/bugs': typeof BugsRoute
   '/docs': typeof DocsRoute
   '/explore': typeof ExploreRoute
   '/launch': typeof LaunchRoute
@@ -336,6 +344,7 @@ export interface FileRoutesById {
   '/activity': typeof ActivityRoute
   '/agent-api': typeof AgentApiRoute
   '/auth': typeof AuthRouteWithChildren
+  '/bugs': typeof BugsRoute
   '/docs': typeof DocsRoute
   '/explore': typeof ExploreRoute
   '/launch': typeof LaunchRoute
@@ -378,6 +387,7 @@ export interface FileRouteTypes {
     | '/activity'
     | '/agent-api'
     | '/auth'
+    | '/bugs'
     | '/docs'
     | '/explore'
     | '/launch'
@@ -418,6 +428,7 @@ export interface FileRouteTypes {
     | '/activity'
     | '/agent-api'
     | '/auth'
+    | '/bugs'
     | '/docs'
     | '/explore'
     | '/launch'
@@ -458,6 +469,7 @@ export interface FileRouteTypes {
     | '/activity'
     | '/agent-api'
     | '/auth'
+    | '/bugs'
     | '/docs'
     | '/explore'
     | '/launch'
@@ -500,6 +512,7 @@ export interface RootRouteChildren {
   ActivityRoute: typeof ActivityRoute
   AgentApiRoute: typeof AgentApiRoute
   AuthRoute: typeof AuthRouteWithChildren
+  BugsRoute: typeof BugsRoute
   DocsRoute: typeof DocsRoute
   ExploreRoute: typeof ExploreRoute
   LaunchRoute: typeof LaunchRoute
@@ -574,6 +587,13 @@ declare module '@tanstack/react-router' {
       path: '/docs'
       fullPath: '/docs'
       preLoaderRoute: typeof DocsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bugs': {
+      id: '/bugs'
+      path: '/bugs'
+      fullPath: '/bugs'
+      preLoaderRoute: typeof BugsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -865,6 +885,7 @@ const rootRouteChildren: RootRouteChildren = {
   ActivityRoute: ActivityRoute,
   AgentApiRoute: AgentApiRoute,
   AuthRoute: AuthRouteWithChildren,
+  BugsRoute: BugsRoute,
   DocsRoute: DocsRoute,
   ExploreRoute: ExploreRoute,
   LaunchRoute: LaunchRoute,

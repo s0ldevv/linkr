@@ -111,23 +111,34 @@ async function loadStatus(admin: any, adminUserId: string) {
   } catch (_) {
     // Missing identity is represented in posting_auth below.
   }
-  const [{ data: tokenRow, error: tokenError }, { count: pendingReplies }] =
-    await Promise.all([
-      admin
-        .from("x_bot_tokens")
-        .select(
-          "account_key,bot_handle,x_user_id,token_type,scope,expires_at,is_active,last_refreshed_at,last_refresh_attempt_at,last_refresh_status,last_error,updated_at",
-        )
-        .eq("account_key", ACCOUNT_KEY)
-        .order("updated_at", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-      admin
-        .from("twitter_replies")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "pending"),
-    ]);
+  const [
+    { data: tokenRow, error: tokenError },
+    { count: pendingReplies },
+    { data: bugReports, error: bugReportsError },
+  ] = await Promise.all([
+    admin
+      .from("x_bot_tokens")
+      .select(
+        "account_key,bot_handle,x_user_id,token_type,scope,expires_at,is_active,last_refreshed_at,last_refresh_attempt_at,last_refresh_status,last_error,updated_at",
+      )
+      .eq("account_key", ACCOUNT_KEY)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    admin
+      .from("twitter_replies")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending"),
+    admin
+      .from("bug_reports")
+      .select(
+        "id,title,category,severity,description,steps_to_reproduce,expected_behavior,page_path,status,created_at,updated_at,fixed_at",
+      )
+      .order("created_at", { ascending: false })
+      .limit(200),
+  ]);
   if (tokenError) throw tokenError;
+  if (bugReportsError) throw bugReportsError;
 
   const healthSources = [
     "x-post-auth",
@@ -228,6 +239,7 @@ async function loadStatus(admin: any, adminUserId: string) {
       }
       : null,
     pending_replies: pendingReplies ?? 0,
+    bug_reports: bugReports ?? [],
     health: healthRows,
     platform: platformHealth.data,
     settings: await readAllAdminSettings(admin),
@@ -347,6 +359,30 @@ async function unban(admin: any, adminUserId: string, body: any) {
   return data;
 }
 
+async function markBugFixed(admin: any, body: any) {
+  const reportId = String(body.report_id ?? "").trim();
+  if (
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+      .test(reportId)
+  ) {
+    throw new Error("invalid_bug_report_id");
+  }
+
+  const now = new Date().toISOString();
+  const { data, error } = await admin
+    .from("bug_reports")
+    .update({ status: "fixed", fixed_at: now, updated_at: now })
+    .eq("id", reportId)
+    .eq("status", "open")
+    .select(
+      "id,title,category,severity,description,steps_to_reproduce,expected_behavior,page_path,status,created_at,updated_at,fixed_at",
+    )
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) throw new Error("bug_report_not_open");
+  return data;
+}
+
 Deno.serve(async (req) => withSensitiveCors(req, await handleSecretPanel(req)));
 
 async function handleSecretPanel(req: Request): Promise<Response> {
@@ -386,6 +422,14 @@ async function handleSecretPanel(req: Request): Promise<Response> {
       return jsonResponse({
         ok: true,
         ban,
+        ...(await loadStatus(admin, access.userId!)),
+      });
+    }
+    if (action === "mark_bug_fixed") {
+      const report = await markBugFixed(admin, body);
+      return jsonResponse({
+        ok: true,
+        report,
         ...(await loadStatus(admin, access.userId!)),
       });
     }
@@ -446,7 +490,7 @@ async function handleSecretPanel(req: Request): Promise<Response> {
       ? 401
       : /forbidden|not_linkr/i.test(message)
       ? 403
-      : /^(invalid_[a-z0-9_]+|x_gating_threshold_out_of_range|unknown_admin_setting)$/i
+      : /^(invalid_[a-z0-9_]+|bug_report_not_open|x_gating_threshold_out_of_range|unknown_admin_setting)$/i
           .test(
             message,
           )

@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import {
   Ban,
+  Bug,
   CheckCircle2,
   CircleAlert,
   Clock3,
@@ -78,8 +79,25 @@ type HealthRow = {
   checked_at: string;
 };
 
+type BugReportRow = {
+  id: string;
+  title: string;
+  category: "functionality" | "transaction" | "wallet" | "account" | "interface" | "other";
+  severity: "low" | "medium" | "high" | "critical";
+  description: string;
+  steps_to_reproduce: string | null;
+  expected_behavior: string | null;
+  page_path: string | null;
+  status: "open" | "fixed";
+  created_at: string;
+  updated_at: string;
+  fixed_at: string | null;
+};
+
 type LaunchFundingMode =
-  "funding_disabled" | "first_eligible_launch" | "fund_every_eligible_launch";
+  | "funding_disabled"
+  | "first_eligible_launch"
+  | "fund_every_eligible_launch";
 
 type LaunchFundingPolicy = {
   mode: LaunchFundingMode;
@@ -120,6 +138,7 @@ type SecretPanelStatus = {
   pending_replies: number;
   posting_auth: PostingAuthStatus;
   bot_token: BotTokenStatus | null;
+  bug_reports: BugReportRow[];
   bans: BanRow[];
   health: HealthRow[];
   platform: {
@@ -288,6 +307,18 @@ function SecretPanelPage() {
     },
   });
 
+  const markFixedMutation = useMutation({
+    mutationFn: (reportId: string) =>
+      postSecretPanel({ action: "mark_bug_fixed", report_id: reportId }),
+    onSuccess: async () => {
+      toast.success("Bug marked as fixed");
+      await statusQuery.refetch();
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Could not update the bug report.");
+    },
+  });
+
   const verifyPostingMutation = useMutation({
     mutationFn: () => postSecretPanel({ action: "verify_posting_auth" }),
     onSuccess: async () => {
@@ -340,6 +371,18 @@ function SecretPanelPage() {
   const inactiveBans = useMemo(
     () => (status?.bans ?? []).filter((item) => !item.is_active),
     [status?.bans],
+  );
+  const bugReports = useMemo(
+    () =>
+      [...(status?.bug_reports ?? [])].sort((left, right) => {
+        if (left.status !== right.status) return left.status === "open" ? -1 : 1;
+        return right.created_at.localeCompare(left.created_at);
+      }),
+    [status?.bug_reports],
+  );
+  const openBugCount = useMemo(
+    () => bugReports.filter((report) => report.status === "open").length,
+    [bugReports],
   );
   const botHealthy =
     !!status?.posting_auth?.configured &&
@@ -399,6 +442,44 @@ function SecretPanelPage() {
           </div>
         ) : status ? (
           <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
+            <section className="rounded-lg border border-[#d9decf] bg-white p-5 shadow-sm lg:col-span-2">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-md bg-[#efffc5]">
+                    <Bug aria-hidden="true" className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold uppercase tracking-[0.12em] text-[#66706b]">
+                      Anonymous bug reports
+                    </p>
+                    <h2 className="mt-1 text-2xl font-black">{openBugCount} need attention</h2>
+                  </div>
+                </div>
+                <span className="rounded-full bg-[#f1ffd0] px-3 py-2 text-xs font-bold">
+                  {bugReports.length} total
+                </span>
+              </div>
+
+              <div className="mt-5 max-h-[760px] space-y-3 overflow-y-auto pr-1">
+                {bugReports.length ? (
+                  bugReports.map((report) => (
+                    <BugReportItem
+                      key={report.id}
+                      report={report}
+                      markingFixed={
+                        markFixedMutation.isPending && markFixedMutation.variables === report.id
+                      }
+                      onMarkFixed={() => markFixedMutation.mutate(report.id)}
+                    />
+                  ))
+                ) : (
+                  <div className="rounded-md bg-[#f6f7f2] p-5 text-sm text-[#66706b]">
+                    No bug reports yet.
+                  </div>
+                )}
+              </div>
+            </section>
+
             <section className="rounded-lg border border-[#d9decf] bg-white p-5 shadow-sm">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
@@ -657,6 +738,99 @@ function SecretPanelPage() {
         ) : null}
       </section>
     </main>
+  );
+}
+
+function BugReportItem({
+  report,
+  markingFixed,
+  onMarkFixed,
+}: {
+  report: BugReportRow;
+  markingFixed: boolean;
+  onMarkFixed: () => void;
+}) {
+  const severityStyles: Record<BugReportRow["severity"], string> = {
+    low: "bg-[#e8ece5] text-[#455049]",
+    medium: "bg-[#fff1ba] text-[#735c00]",
+    high: "bg-[#ffdfc2] text-[#913f00]",
+    critical: "bg-[#ffd8d2] text-[#a1261a]",
+  };
+
+  return (
+    <article
+      className={`rounded-md p-4 ${
+        report.status === "fixed" ? "bg-[#f1f3ed] opacity-70" : "bg-[#f6f7f2]"
+      }`}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={`rounded-full px-2.5 py-1 text-[11px] font-black uppercase tracking-wide ${severityStyles[report.severity]}`}
+            >
+              {report.severity}
+            </span>
+            <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-black uppercase tracking-wide text-[#58615c]">
+              {report.category}
+            </span>
+            {report.status === "fixed" ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-[#dff5df] px-2.5 py-1 text-[11px] font-black uppercase tracking-wide text-[#19703b]">
+                <CheckCircle2 aria-hidden="true" className="h-3 w-3" />
+                Fixed
+              </span>
+            ) : null}
+          </div>
+          <h3 className="mt-3 text-lg font-black leading-tight">{report.title}</h3>
+          <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[#4f5752]">
+            {report.description}
+          </p>
+        </div>
+        {report.status === "open" ? (
+          <Button type="button" onClick={onMarkFixed} disabled={markingFixed} className="shrink-0">
+            {markingFixed ? (
+              <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
+            ) : (
+              <CheckCircle2 aria-hidden="true" className="h-4 w-4" />
+            )}
+            Mark fixed
+          </Button>
+        ) : null}
+      </div>
+
+      {report.steps_to_reproduce || report.expected_behavior || report.page_path ? (
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          {report.steps_to_reproduce ? (
+            <div className="rounded-md bg-white p-3">
+              <strong className="text-xs uppercase tracking-wide text-[#66706b]">Steps</strong>
+              <p className="mt-1 whitespace-pre-wrap text-xs leading-5">
+                {report.steps_to_reproduce}
+              </p>
+            </div>
+          ) : null}
+          {report.expected_behavior ? (
+            <div className="rounded-md bg-white p-3">
+              <strong className="text-xs uppercase tracking-wide text-[#66706b]">Expected</strong>
+              <p className="mt-1 whitespace-pre-wrap text-xs leading-5">
+                {report.expected_behavior}
+              </p>
+            </div>
+          ) : null}
+          {report.page_path ? (
+            <div className="rounded-md bg-white p-3">
+              <strong className="text-xs uppercase tracking-wide text-[#66706b]">Page</strong>
+              <p className="mt-1 break-all font-mono text-xs leading-5">{report.page_path}</p>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
+      <p className="mt-3 text-xs text-[#777f79]">
+        Reported {formatDate(report.created_at)}
+        {report.fixed_at ? ` · fixed ${formatDate(report.fixed_at)}` : ""}
+        {` · ${report.id.slice(0, 8)}`}
+      </p>
+    </article>
   );
 }
 

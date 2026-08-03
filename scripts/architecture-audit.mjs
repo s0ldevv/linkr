@@ -156,6 +156,7 @@ for (const file of walk(root)) {
 }
 
 const publicNoJwt = new Set([
+  "bug-report",
   "creator-rewards-config",
   "market-data",
   "telegram-verify",

@@ -35,6 +35,7 @@ const NAV_ITEMS = [
   { href: "/activity", label: "Activity" },
   { href: "/docs", label: "Docs" },
   { href: "/agent-api", label: "Agent API" },
+  { href: "/bugs", label: "Bugs" },
 ] as const;
 
 function XLogoMark() {

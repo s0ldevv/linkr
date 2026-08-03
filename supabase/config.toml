@@ -39,6 +39,9 @@ verify_jwt = false
 [functions.secretpanel]
 verify_jwt = true
 
+[functions.bug-report]
+verify_jwt = false
+
 [functions.cron-expire-pending-actions]
 verify_jwt = false
 
