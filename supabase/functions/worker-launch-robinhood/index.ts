@@ -21,6 +21,10 @@ import { resolvePumpFunLaunchMetadata } from "../_shared/launch_metadata.ts";
 
 const VERSION = "worker-launch-robinhood-v1";
 const STAGE = "launch_robinhood" as const;
+// Hardcoded on. Previously the ROBINHOOD_LAUNCH_ENABLED edge secret, which had
+// been set to "true" in production since launch. Flip to false to halt Robinhood
+// launches (in-flight work items retry rather than fail).
+const ROBINHOOD_LAUNCH_ENABLED: boolean = true;
 
 Deno.serve((req) =>
   runStageWorker(req, {
@@ -48,7 +52,7 @@ Deno.serve((req) =>
           delaySeconds: 900,
         };
       }
-      if (!readBoolean("ROBINHOOD_LAUNCH_ENABLED", false)) {
+      if (!ROBINHOOD_LAUNCH_ENABLED) {
         return {
           kind: "retry",
           errorCode: "robinhood_launch_disabled",
