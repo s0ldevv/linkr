@@ -130,6 +130,7 @@ export function buildRoutePrompt(text: string): string {
     "Use reply_kind=coin_inquiry for token facts, price, liquidity, market cap, volume, holders, or analysis without a personal trade recommendation.",
     "Use reply_kind=conversation for greetings, capability questions, and normal public conversation.",
     "NFT how-to or capability questions are conversation replies; explicit requests to launch, mint, create, or deploy an NFT or NFT collection are legacy commands.",
+    "A holder airdrop request for a token the user launched is a legacy command, even when the token or total amount needs clarification.",
     "Public jokes, snark, rhetorical asks, impossible asks, or requests for Linkr to give/donate/send money to the user without explicit executable transfer details are conversation replies, not command execution.",
     "Use lane=legacy for explicit commands, confirmations, cancellations, swap/transfer execution with concrete details, launch, schedule creation, wallet/account/history/portfolio request, liquidity action, or anything that could read private account state or move value.",
     "If uncertain whether there is an executable action with concrete details, choose legacy. If uncertain between social banter and a command with no executable details, choose reply. Never route an execution request as a public reply.",

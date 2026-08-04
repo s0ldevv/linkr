@@ -131,6 +131,17 @@ Deno.test("X router keeps NFT how-to conversational but executable NFT requests 
   );
 });
 
+Deno.test("X router sends holder-airdrop actions and ambiguity to command preparation", () => {
+  const routePrompt = buildRoutePrompt(
+    "@linkrbot airdrop some of my launch to its holders",
+  );
+  assert(
+    routePrompt.includes("holder airdrop") &&
+      routePrompt.includes("needs clarification"),
+    "router must keep ambiguous holder airdrops in the agent command flow",
+  );
+});
+
 Deno.test("X reply prompt grounds persona and permits normal conversation", () => {
   const prompt = buildReplyPrompt({
     text: "@linkrbot who made you?",

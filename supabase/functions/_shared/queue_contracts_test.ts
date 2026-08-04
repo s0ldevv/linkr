@@ -71,6 +71,8 @@ Deno.test("route resolution mirrors public.linkr_queue_for_route exactly", () =>
     ["launch.enrich", 50, "launch_enrich"],
     ["media.capture", 50, "media_capture"],
     ["image.generate", 50, "image_generate"],
+    ["nft.solana", 50, "nft_solana"],
+    ["holder_airdrop.solana", 50, "holder_airdrop_solana"],
     ["action.solana", 50, "action_solana"],
     ["action.robinhood", 50, "action_robinhood"],
     ["launch.solana", 50, "launch_solana"],
@@ -85,7 +87,6 @@ Deno.test("route resolution mirrors public.linkr_queue_for_route exactly", () =>
     ["reply.sms", 80, "reply_sms_high"],
     ["reconciliation", 50, "reconciliation"],
     ["nonexistent.route", 50, null],
-    ["nft.solana", 50, null],
   ];
   for (const [route, priority, expected] of cases) {
     const actual = linkrQueueForRoute(route, priority);

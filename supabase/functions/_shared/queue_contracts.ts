@@ -13,6 +13,7 @@ export const LINKR_QUEUE_STAGES = [
   "media_capture",
   "image_generate",
   "nft_solana",
+  "holder_airdrop_solana",
   "action_solana",
   "action_robinhood",
   "launch_solana",
@@ -102,6 +103,7 @@ export const LINKR_STAGE_WORKER_FUNCTIONS: Record<LinkrQueueStage, string> = {
   media_capture: "worker-media-capture",
   image_generate: "worker-image-generate",
   nft_solana: "worker-nft-solana",
+  holder_airdrop_solana: "worker-holder-airdrop-solana",
   action_solana: "worker-action-solana",
   action_robinhood: "worker-action-robinhood",
   launch_solana: "worker-launch-solana",
@@ -146,6 +148,10 @@ export function linkrQueueForRoute(
       return "media_capture";
     case "image.generate":
       return "image_generate";
+    case "nft.solana":
+      return "nft_solana";
+    case "holder_airdrop.solana":
+      return "holder_airdrop_solana";
     case "action.solana":
       return "action_solana";
     case "action.robinhood":

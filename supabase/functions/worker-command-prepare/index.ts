@@ -29,6 +29,7 @@ import {
 } from "../_shared/x_nft_command.ts";
 import { prepareXNftXFlow } from "../_shared/x_nft_prepare.ts";
 import { executeXTradeCommand } from "../_shared/x_trade_execute.ts";
+import { prepareXAirdropXFlow } from "../_shared/x_airdrop_prepare.ts";
 import {
   launchCooldownMessage,
   readLaunchCooldown,
@@ -195,6 +196,29 @@ Deno.serve((req) =>
             resultRef: nftOutcome.resultRef,
           };
         }
+      }
+
+      const airdropOutcome = await prepareXAirdropXFlow({
+        admin,
+        userId,
+        workItem: claim.work_item,
+        tweet,
+        pendingActions,
+      });
+      if (airdropOutcome) {
+        await queueReply(
+          admin,
+          claim.work_item.id,
+          airdropOutcome.replyKind,
+          1,
+          airdropOutcome.replyText,
+        );
+        await markTweetCompleted(admin, tweetId);
+        return {
+          kind: "complete",
+          state: airdropOutcome.state,
+          resultRef: airdropOutcome.resultRef,
+        };
       }
 
       // X trade / transfer commands (buy, sell, transfer). Auto-executes when

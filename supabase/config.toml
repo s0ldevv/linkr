@@ -243,6 +243,9 @@ verify_jwt = false
 [functions.worker-nft-solana]
 verify_jwt = false
 
+[functions.worker-holder-airdrop-solana]
+verify_jwt = false
+
 [functions.worker-reply-x]
 verify_jwt = false
 
