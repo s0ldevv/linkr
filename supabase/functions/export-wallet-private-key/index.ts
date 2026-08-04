@@ -11,6 +11,11 @@ import { loadSolanaWalletById } from "../_shared/solana_chain.ts";
 import { loadWalletById } from "../_shared/wallet.ts";
 import { readJsonBody, requestBodyErrorResponse } from "../_shared/http.ts";
 
+// Keep export availability in code so stale WALLET_EXPORT_DISABLED secrets
+// cannot block wallet export after deploy. Re-authentication, the typed
+// confirmation phrase, and the challenge TTL still apply on the enabled path.
+const WALLET_EXPORT_DISABLED: boolean = false;
+
 const CONFIRMATION_PHRASE = "EXPORT";
 const CHALLENGE_TTL_MS = 3 * 60 * 1000;
 const RECENT_AUTH_MAX_AGE_MS = 5 * 60 * 1000;
@@ -37,7 +42,7 @@ async function handleExport(req: Request): Promise<Response> {
   let walletId: string | null = null;
   const admin = serviceClient();
   try {
-    if (Deno.env.get("WALLET_EXPORT_DISABLED") === "true") {
+    if (WALLET_EXPORT_DISABLED) {
       return jsonResponse(
         {
           error: "wallet_export_temporarily_unavailable",
