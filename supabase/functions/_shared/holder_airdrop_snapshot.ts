@@ -5,7 +5,8 @@ import { solanaConnection } from "./solana_chain.ts";
 import {
   type AirdropAllocation,
   type HolderBalance,
-  parseTokenAmountToRaw,
+  isBalanceFractionAirdropAmount,
+  parseAirdropAmountToRaw,
   planProRataAirdrop,
 } from "./x_airdrop.ts";
 import { sha256Hex } from "./transaction_outbox.ts";
@@ -24,20 +25,21 @@ export async function fetchHeliusHolderSnapshot(args: {
   mint: string;
   rpcUrl?: string;
   fetchImpl?: typeof fetch;
+  maxPages?: number;
+  maxAccounts?: number;
 }): Promise<HeliusHolderSnapshot> {
   const rpcUrl = args.rpcUrl ?? heliusRpcUrl();
   const fetchImpl = args.fetchImpl ?? fetch;
-  const slotBody = await heliusRpc(fetchImpl, rpcUrl, "getSlot", [{
-    commitment: "confirmed",
-  }]);
-  const slot = Number(slotBody);
-  if (!Number.isSafeInteger(slot) || slot <= 0) {
-    throw new Error("helius_snapshot_slot_invalid");
-  }
+  const maxPages = Math.max(1, Math.floor(args.maxPages ?? 50));
+  const maxAccounts = Math.max(1, Math.floor(args.maxAccounts ?? 5_000));
   const accounts: HolderBalance[] = [];
   const pageCursors: string[] = [];
+  const indexedSlots: number[] = [];
   let cursor: string | undefined;
   do {
+    if (pageCursors.length >= maxPages) {
+      throw new Error("helius_holder_snapshot_page_limit_exceeded");
+    }
     pageCursors.push(cursor ?? "first");
     const params: Record<string, unknown> = { mint: args.mint, limit: 1000 };
     if (cursor) params.cursor = cursor;
@@ -47,6 +49,12 @@ export async function fetchHeliusHolderSnapshot(args: {
       "getTokenAccounts",
       params,
     ) as any;
+    const indexedSlot = Number(
+      result?.last_indexed_slot ?? result?.lastIndexedSlot,
+    );
+    if (Number.isSafeInteger(indexedSlot) && indexedSlot > 0) {
+      indexedSlots.push(indexedSlot);
+    }
     const page = Array.isArray(result?.token_accounts)
       ? result.token_accounts
       : [];
@@ -55,12 +63,23 @@ export async function fetchHeliusHolderSnapshot(args: {
       const amount = String(account?.amount ?? "0");
       if (owner && /^\d+$/.test(amount) && BigInt(amount) > 0n) {
         accounts.push({ owner, amount: BigInt(amount) });
+        if (accounts.length > maxAccounts) {
+          throw new Error("helius_holder_snapshot_account_limit_exceeded");
+        }
       }
     }
     cursor = typeof result?.cursor === "string" && result.cursor
       ? result.cursor
       : undefined;
   } while (cursor);
+  const slot = indexedSlots.length ? Math.min(...indexedSlots) : Number(
+    await heliusRpc(fetchImpl, rpcUrl, "getSlot", [{
+      commitment: "confirmed",
+    }]),
+  );
+  if (!Number.isSafeInteger(slot) || slot <= 0) {
+    throw new Error("helius_snapshot_slot_invalid");
+  }
   return {
     slot,
     provider: "helius_getTokenAccounts",
@@ -100,6 +119,44 @@ export interface PreparedHolderAirdropSnapshot {
   aggregatedHolderCount: number;
 }
 
+export interface HolderAirdropSourceAccount {
+  address: string;
+  amount: bigint;
+}
+
+export function walletTokenBalanceRaw(
+  sources: HolderAirdropSourceAccount[],
+): bigint {
+  return sources.reduce((sum, source) => sum + source.amount, 0n);
+}
+
+export function requestedAirdropRawFromWalletBalance(args: {
+  requestedAmount: string;
+  decimals: number;
+  sources: HolderAirdropSourceAccount[];
+}): bigint {
+  const walletBalanceRaw = walletTokenBalanceRaw(args.sources);
+  return isBalanceFractionAirdropAmount(args.requestedAmount)
+    ? parseAirdropAmountToRaw(
+      args.requestedAmount,
+      args.decimals,
+      walletBalanceRaw,
+    ).raw
+    : parseAirdropAmountToRaw(args.requestedAmount, args.decimals, 0n).raw;
+}
+
+export function selectAirdropSourceAccount(args: {
+  requestedRaw: bigint;
+  sources: HolderAirdropSourceAccount[];
+}): HolderAirdropSourceAccount {
+  const source = args.sources.find((item) => item.amount >= args.requestedRaw);
+  if (source) return source;
+  if (walletTokenBalanceRaw(args.sources) >= args.requestedRaw) {
+    throw new Error("holder_airdrop_source_account_consolidation_required");
+  }
+  throw new Error("holder_airdrop_insufficient_token_balance");
+}
+
 export async function prepareHolderAirdropSnapshot(args: {
   mint: string;
   developerWallet: string;
@@ -111,7 +168,6 @@ export async function prepareHolderAirdropSnapshot(args: {
   const developer = new PublicKey(args.developerWallet);
   const supply = await connection.getTokenSupply(mint, "confirmed");
   const decimals = supply.value.decimals;
-  const requestedRaw = parseTokenAmountToRaw(args.requestedAmount, decimals);
   const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
     developer,
     { mint },
@@ -127,8 +183,12 @@ export async function prepareHolderAirdropSnapshot(args: {
   })).filter((item) => item.amount > 0n).sort((a, b) =>
     a.amount === b.amount ? 0 : a.amount > b.amount ? -1 : 1
   );
-  const source = sources.find((item) => item.amount >= requestedRaw);
-  if (!source) throw new Error("holder_airdrop_insufficient_token_balance");
+  const requestedRaw = requestedAirdropRawFromWalletBalance({
+    requestedAmount: args.requestedAmount,
+    decimals,
+    sources,
+  });
+  const source = selectAirdropSourceAccount({ requestedRaw, sources });
 
   const snapshot = await (args.fetchSnapshot ?? fetchHeliusHolderSnapshot)({
     mint: mint.toBase58(),
@@ -144,7 +204,7 @@ export async function prepareHolderAirdropSnapshot(args: {
     0n,
   );
   if (!plan.allocations.length) {
-    throw new Error("airdrop_eligible_holders_not_found");
+    throw new Error("airdrop_amount_too_small_for_all_holders");
   }
   return {
     mint: mint.toBase58(),

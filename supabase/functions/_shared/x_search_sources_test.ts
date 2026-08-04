@@ -12,13 +12,13 @@ function assert(condition: unknown, message: string): asserts condition {
 }
 
 Deno.test("buildInboxSearchSource combines mentions and replies into one request", () => {
-  const source = buildInboxSearchSource("@LinkrBot");
+  const source = buildInboxSearchSource("@LinkrCash");
   assert(
     source.cursorKey === "x_inbox_since_id_v2",
     "combined cursor mismatch",
   );
   assert(
-    source.query === "(@linkrbot OR to:linkrbot) -from:linkrbot",
+    source.query === "(@linkrcash OR to:linkrcash) -from:linkrcash",
     "combined query mismatch",
   );
   assert(
@@ -47,8 +47,8 @@ Deno.test("buildInboxSearchSource preserves the reply scan feature flag", () => 
 });
 
 Deno.test("decideInboxIngest preserves explicit mention precedence", () => {
-  const source = buildInboxSearchSource("linkrbot");
-  const direct = decideInboxIngest(source, "@LinkrBot help", {
+  const source = buildInboxSearchSource("linkrcash");
+  const direct = decideInboxIngest(source, "@LinkrCash help", {
     isFollowUp: true,
   });
   assert(direct.shouldIngest, "explicit mention should ingest");
@@ -61,7 +61,7 @@ Deno.test("decideInboxIngest preserves explicit mention precedence", () => {
     "explicit mention reason mismatch",
   );
 
-  const substring = decideInboxIngest(source, "hello @linkrbot_fake", {
+  const substring = decideInboxIngest(source, "hello @linkrcash_fake", {
     isFollowUp: false,
   });
   assert(

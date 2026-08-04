@@ -101,3 +101,5 @@ Alert on queue age, dead-letter growth, repeated circuit opening, stale run/acti
 ## 7. Rollout
 
 Use staging, then a small production cohort, then full traffic. Keep the queue controller and maintenance job enabled during rollout. Roll back application code independently from database migrations; the migration in this revision is additive and its functions can remain installed if the frontend/Edge deployment is rolled back.
+
+For holder airdrops, follow `docs/HOLDER_AIRDROP_RUNBOOK.md`. Applying `20260804190000_holder_airdrop_durable_flow.sql` and `20260804200000_holder_airdrop_percent_batch_efficiency.sql` installs the current flow, but leaves `holder_airdrop_solana` disabled with `rollout_percent = 0` until an operator explicitly enables a canary or full rollout.

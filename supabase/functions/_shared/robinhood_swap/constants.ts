@@ -15,9 +15,14 @@ export function readBoolean(name: string, fallback: boolean): boolean {
   return fallback;
 }
 
+// Hardcoded on. Previously the ROBINHOOD_SWAP_ENABLED edge secret, which had
+// been set to "true" in production. The remaining conditions below are real
+// configuration checks and still gate the feature.
+const ROBINHOOD_SWAP_ENABLED: boolean = true;
+
 export function isSwapEnabled(): boolean {
   return (
-    readBoolean("ROBINHOOD_SWAP_ENABLED", false) &&
+    ROBINHOOD_SWAP_ENABLED &&
     !!readUniswapApiKey() &&
     !!readSwapRouterAddress() &&
     !!readSwapWethAddress()

@@ -2055,15 +2055,16 @@ export function LinkrDocsPage() {
               icon={BadgeDollarSign}
               eyebrow="Creators"
               title="Holder airdrops"
-              intro="Creators can ask @linkrbot to distribute an exact amount from the creator wallet's current token balance for a token they launched on Linkr to that token's current holders."
+              intro="Creators can ask @linkrcash to distribute an exact token amount, all, or a percentage of the requesting creator's recorded launch wallet token balance for a completed Solana token they launched on Linkr."
             >
               <div className="lkd-split">
                 <InfoPanel title="What to ask">
                   <CodeBlock
                     id="holder-airdrop-examples"
                     lines={[
-                      "@linkrbot airdrop 100,000 of my token to its holders",
-                      "@linkrbot airdrop 250000 of <token address> to current holders",
+                      "@linkrcash airdrop 100,000 of my token to its holders",
+                      "@linkrcash airdrop 100% of my supply of <token address>",
+                      "@linkrcash airdrop 250000 of <token address> to current holders",
                     ]}
                     compact
                   />
@@ -2071,19 +2072,19 @@ export function LinkrDocsPage() {
                 <InfoPanel title="How allocation works">
                   <CheckList
                     items={[
-                      "The token must exist in Linkr's database and must have been launched on Linkr by the requesting creator.",
-                      "The airdrop comes from the selected creator or user wallet's current token balance.",
-                      "Holder airdrops currently require an exact token amount.",
+                      "The token must be a completed Solana launch in Linkr's database owned by the requesting creator.",
+                      "The airdrop comes from the requesting creator's recorded launch wallet current token balance.",
+                      "Holder airdrops accept an exact token amount, all, or a percentage of that wallet token balance.",
                       "Eligible holders receive a proportional share based on their current token balances.",
-                      "Linkr excludes the liquidity or top-holder address and the creator or dev wallet from the recipient set.",
-                      "Linkr reports completion and the result in chat.",
+                      "Linkr excludes the creator or dev wallet first, then excludes the largest remaining holder, usually the liquidity or top-holder address.",
+                      "Linkr reports completion in chat only after the holder sends are confirmed.",
                     ]}
                   />
                 </InfoPanel>
               </div>
               <Callout tone="safety" title="Be specific about the token and amount">
-                If Linkr cannot identify the launch or exact source amount clearly, it may ask a
-                follow-up question before continuing.
+                If Linkr cannot identify the launch or source amount clearly, it may ask a follow-up
+                question before continuing.
               </Callout>
             </DocsSection>
 

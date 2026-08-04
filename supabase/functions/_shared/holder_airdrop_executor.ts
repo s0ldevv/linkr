@@ -16,6 +16,8 @@ import {
 import { base58Encode } from "./solana_chain.ts";
 import { sha256Hex } from "./transaction_outbox.ts";
 
+export const HOLDER_AIRDROP_MAX_RECIPIENTS_PER_BATCH = 6;
+
 export type ImmutableBatchRecipient = {
   ordinal: number;
   owner_address: string;
@@ -29,7 +31,10 @@ export function buildHolderAirdropBatchTransaction(args: {
   decimals: number;
   recipients: ImmutableBatchRecipient[];
 }): { transaction: Transaction; destinationAccounts: string[] } {
-  if (!args.recipients.length || args.recipients.length > 4) {
+  if (
+    !args.recipients.length ||
+    args.recipients.length > HOLDER_AIRDROP_MAX_RECIPIENTS_PER_BATCH
+  ) {
     throw new Error("holder_airdrop_batch_size_invalid");
   }
   const mint = new PublicKey(args.mint);

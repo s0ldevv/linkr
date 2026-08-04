@@ -15,10 +15,15 @@ interface CircuitState {
 
 const circuits = new Map<string, CircuitState>();
 
+// Hardcoded on. Previously the LINKR_RPC_POOL_ENABLED edge secret, which had
+// been set to "true" in production. Note that no *_RPC_ENDPOINTS_JSON is
+// configured, so readProviderEndpoints synthesizes a single "legacy-primary"
+// endpoint from SOLANA_RPC_URL / ROBINHOOD_RPC_URL: the pool currently supplies
+// circuit-breaking over one endpoint, not failover.
+const LINKR_RPC_POOL_ENABLED: boolean = true;
+
 export function providerPoolEnabled(): boolean {
-  return /^(1|true|yes|on)$/i.test(
-    Deno.env.get("LINKR_RPC_POOL_ENABLED")?.trim() ?? "",
-  );
+  return LINKR_RPC_POOL_ENABLED;
 }
 
 export function readProviderEndpoints(

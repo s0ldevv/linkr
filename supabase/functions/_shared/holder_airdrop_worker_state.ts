@@ -39,11 +39,10 @@ export function shouldProcessPersistedBatchBeforeRevalidation(args: {
 export function persistedBatchAction(
   batch: HolderAirdropWorkerBatch,
 ): HolderAirdropPersistedBatchAction {
-  if (batch.status === "signed") return "broadcast_once";
-  if (
-    batch.status === "broadcasting" || batch.status === "broadcast" ||
-    batch.status === "reconciling"
-  ) {
+  if (batch.status === "signed" || batch.status === "broadcasting") {
+    return "broadcast_once";
+  }
+  if (batch.status === "broadcast" || batch.status === "reconciling") {
     return "reconcile_only";
   }
   return "ignore";

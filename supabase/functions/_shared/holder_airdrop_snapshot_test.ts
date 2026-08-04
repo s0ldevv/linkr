@@ -7,10 +7,13 @@ import {
 import {
   aggregateHolderBalances,
   fetchHeliusHolderSnapshot,
+  requestedAirdropRawFromWalletBalance,
+  selectAirdropSourceAccount,
 } from "./holder_airdrop_snapshot.ts";
 import {
   buildHolderAirdropBatchTransaction,
   dryRunHolderAirdropBatch,
+  HOLDER_AIRDROP_MAX_RECIPIENTS_PER_BATCH,
   signHolderAirdropBatchTransaction,
   validateStoredHolderAirdropBatchTransaction,
 } from "./holder_airdrop_executor.ts";
@@ -24,6 +27,7 @@ import {
   shouldProcessPersistedBatchBeforeRevalidation,
 } from "./holder_airdrop_worker_state.ts";
 import {
+  isHolderAirdropStageAdmitted,
   prepareXAirdropXFlow,
   resolveOwnedCompletedSolanaLaunch,
 } from "./x_airdrop_prepare.ts";
@@ -35,9 +39,7 @@ Deno.test("Helius snapshot paginates and records slot provenance", async () => {
     (async (_url: string | URL | Request, init?: RequestInit) => {
       const body = JSON.parse(String(init?.body)) as any;
       calls.push(`${body.method}:${body.params?.cursor ?? "first"}`);
-      const result = body.method === "getSlot"
-        ? 123456
-        : body.params.cursor
+      const result: any = body.params.cursor
         ? { token_accounts: [{ owner: "alice", amount: "3" }] }
         : {
           token_accounts: [
@@ -45,7 +47,9 @@ Deno.test("Helius snapshot paginates and records slot provenance", async () => {
             { owner: "zero", amount: "0" },
           ],
           cursor: "page-2",
+          last_indexed_slot: 123456,
         };
+      if (body.params.cursor) result.last_indexed_slot = 123450;
       return new Response(JSON.stringify({ jsonrpc: "2.0", result }), {
         status: 200,
         headers: { "content-type": "application/json" },
@@ -57,11 +61,10 @@ Deno.test("Helius snapshot paginates and records slot provenance", async () => {
     fetchImpl: fakeFetch,
   });
   assertEquals(calls, [
-    "getSlot:first",
     "getTokenAccounts:first",
     "getTokenAccounts:page-2",
   ]);
-  assertEquals(snapshot.slot, 123456);
+  assertEquals(snapshot.slot, 123450);
   assertEquals(snapshot.pageCount, 2);
   assertEquals(snapshot.pageCursors, ["first", "page-2"]);
   assertEquals(snapshot.checksum.length, 64);
@@ -103,6 +106,32 @@ Deno.test("dry-run refuses insufficient source tokens before fee work", async ()
   );
 });
 
+Deno.test("percentage requests use aggregate wallet token balance", () => {
+  const sources = [
+    { address: "source-a", amount: 60n },
+    { address: "source-b", amount: 40n },
+  ];
+  const requestedRaw = requestedAirdropRawFromWalletBalance({
+    requestedAmount: "50%",
+    decimals: 0,
+    sources,
+  });
+  assertEquals(requestedRaw, 50n);
+  assertEquals(selectAirdropSourceAccount({ requestedRaw, sources }), {
+    address: "source-a",
+    amount: 60n,
+  });
+  assertThrows(
+    () =>
+      selectAirdropSourceAccount({
+        requestedRaw: 100n,
+        sources,
+      }),
+    Error,
+    "holder_airdrop_source_account_consolidation_required",
+  );
+});
+
 Deno.test("owned launch resolution rejects ambiguity and noncanonical records", async () => {
   const admin = fakeLaunchAdmin([
     canonicalLaunch("one", "Token"),
@@ -119,6 +148,22 @@ Deno.test("owned launch resolution rejects ambiguity and noncanonical records", 
   );
 });
 
+Deno.test("owned launch resolution checks exact mint outside latest launch window", async () => {
+  const mint = "11111111111111111111111111111111";
+  const exact = { ...canonicalLaunch("old", "OLD"), mint, token_address: mint };
+  const admin = fakeLaunchAdmin(
+    Array.from(
+      { length: 100 },
+      (_, index) => canonicalLaunch(`new-${index}`, `NEW${index}`),
+    ),
+    exact,
+  );
+  assertEquals(
+    await resolveOwnedCompletedSolanaLaunch(admin, "user", mint),
+    { kind: "resolved", value: exact },
+  );
+});
+
 Deno.test("holder-airdrop route maps to dedicated stage", () => {
   assertEquals(
     linkrQueueForRoute("holder_airdrop.solana", 50),
@@ -131,6 +176,9 @@ Deno.test("AI action preparation persists one immutable pending snapshot", async
   const launch = canonicalLaunch("one", "ONE");
   const admin = {
     from(table: string) {
+      if (table === "linkr_holder_airdrops") {
+        return fakeBuilder({ data: null, error: null }, "maybeSingle");
+      }
       if (table === "coin_launches") {
         return fakeBuilder({ data: [launch], error: null }, "limit");
       }
@@ -192,6 +240,7 @@ Deno.test("AI action preparation persists one immutable pending snapshot", async
       },
       allocations: [{ owner: "holder", amount: 5n, allocation: 9n }],
     }),
+    checkAdmission: async () => true,
   });
   assertEquals(outcome?.state, "waiting_user_confirmation");
   assertEquals(rpcCalls.length, 1);
@@ -206,11 +255,116 @@ Deno.test("AI action preparation persists one immutable pending snapshot", async
 });
 
 Deno.test("duplicate preparation reply uses persisted snapshot totals", async () => {
-  const launch = canonicalLaunch("one", "ONE");
+  let snapshotCalled = false;
   const admin = {
     from(table: string) {
+      if (table === "linkr_holder_airdrops") {
+        return fakeBuilder({
+          data: {
+            id: "persisted",
+            pending_action_id: "pending",
+            recipient_count: 9,
+            allocated_raw: "777",
+            dust_raw: "3",
+            requested_raw: "780",
+            snapshot_slot: 123,
+            snapshot_provider: "helius_getTokenAccounts",
+            snapshot_fetched_at: "2026-08-04T00:00:00.000Z",
+            snapshot_checksum: "b".repeat(64),
+            excluded_largest_owner: "pool",
+          },
+          error: null,
+        }, "maybeSingle");
+      }
+      throw new Error(`unexpected table ${table}`);
+    },
+    async rpc() {
+      throw new Error("duplicate prepare should not call RPC");
+    },
+  };
+  const outcome = await prepareXAirdropXFlow({
+    admin,
+    userId: "user",
+    workItem: { id: "work" },
+    tweet: { tweet_id: "tweet", conversation_id: "thread", text: "request" },
+    pendingActions: [],
+    classifyIntent: async () => ({
+      kind: "airdrop",
+      token: "one-mint",
+      amount: "10",
+      clarification: null,
+    }),
+    prepareSnapshot: async () => {
+      snapshotCalled = true;
+      throw new Error("duplicate prepare should not recompute snapshot");
+    },
+    checkAdmission: async () => true,
+  });
+  assertEquals(snapshotCalled, false);
+  assertStringIncludes(outcome?.replyText ?? "", "9 eligible holders");
+  assertStringIncludes(outcome?.replyText ?? "", "777 raw units");
+  assertStringIncludes(outcome?.replyText ?? "", "retained dust: 3");
+});
+
+Deno.test("disabled holder-airdrop rollout does not prepare or confirm", async () => {
+  const admin = {
+    from(table: string) {
+      if (table === "linkr_holder_airdrops") {
+        return fakeBuilder({ data: null, error: null }, "maybeSingle");
+      }
+      throw new Error(`unexpected table ${table}`);
+    },
+    rpc() {
+      throw new Error("rpc_should_not_be_called");
+    },
+  };
+  const prepare = await prepareXAirdropXFlow({
+    admin,
+    userId: "user",
+    workItem: { id: "work" },
+    tweet: { tweet_id: "tweet", conversation_id: "thread", text: "request" },
+    pendingActions: [],
+    classifyIntent: async () => ({
+      kind: "airdrop",
+      token: "one-mint",
+      amount: "10",
+      clarification: null,
+    }),
+    prepareSnapshot: () => {
+      throw new Error("snapshot_should_not_be_called");
+    },
+    checkAdmission: async () => false,
+  });
+  assertEquals(prepare?.replyKind, "airdrop_not_enabled");
+
+  const confirm = await prepareXAirdropXFlow({
+    admin,
+    userId: "user",
+    workItem: { id: "work" },
+    tweet: { tweet_id: "tweet-2", conversation_id: "thread", text: "confirm" },
+    pendingActions: [{ id: "pending", action_type: "holder_airdrop" }],
+    classifyIntent: async () => ({
+      kind: "confirm",
+      token: null,
+      amount: null,
+      clarification: null,
+    }),
+    checkAdmission: async () => false,
+  });
+  assertEquals(confirm?.replyKind, "airdrop_not_enabled");
+});
+
+Deno.test("too-small holder-airdrop allocation asks for larger amount", async () => {
+  const admin = {
+    from(table: string) {
+      if (table === "linkr_holder_airdrops") {
+        return fakeBuilder({ data: null, error: null }, "maybeSingle");
+      }
       if (table === "coin_launches") {
-        return fakeBuilder({ data: [launch], error: null }, "limit");
+        return fakeBuilder({
+          data: [canonicalLaunch("one", "ONE")],
+          error: null,
+        }, "limit");
       }
       if (table === "wallets") {
         return fakeBuilder({
@@ -226,17 +380,7 @@ Deno.test("duplicate preparation reply uses persisted snapshot totals", async ()
       throw new Error(`unexpected table ${table}`);
     },
     async rpc() {
-      return {
-        data: {
-          duplicate: true,
-          airdrop_id: "persisted",
-          pending_action_id: "pending",
-          recipient_count: 9,
-          allocated_raw: "777",
-          dust_raw: "3",
-        },
-        error: null,
-      };
+      throw new Error("too-small prepare should not persist");
     },
   };
   const outcome = await prepareXAirdropXFlow({
@@ -248,34 +392,46 @@ Deno.test("duplicate preparation reply uses persisted snapshot totals", async ()
     classifyIntent: async () => ({
       kind: "airdrop",
       token: "one-mint",
-      amount: "10",
+      amount: "1",
       clarification: null,
     }),
-    prepareSnapshot: async () => ({
-      mint: "one-mint",
-      decimals: 6,
-      sourceTokenAccount: "source",
-      sourceBalanceRaw: 20n,
-      requestedRaw: 10n,
-      allocatedRaw: 1n,
-      dustRaw: 9n,
-      excludedLargestOwner: "pool",
-      aggregatedHolderCount: 4,
-      snapshot: {
-        slot: 123,
-        provider: "helius_getTokenAccounts",
-        fetchedAt: "2026-08-04T00:00:00.000Z",
-        pageCount: 1,
-        pageCursors: ["first"],
-        checksum: "b".repeat(64),
-        accounts: [],
-      },
-      allocations: [{ owner: "holder", amount: 5n, allocation: 1n }],
-    }),
+    prepareSnapshot: async () => {
+      throw new Error("airdrop_amount_too_small_for_all_holders");
+    },
+    checkAdmission: async () => true,
   });
-  assertStringIncludes(outcome?.replyText ?? "", "9 eligible holders");
-  assertStringIncludes(outcome?.replyText ?? "", "777 raw units");
-  assertStringIncludes(outcome?.replyText ?? "", "retained dust: 3");
+  assertEquals(outcome?.replyKind, "airdrop_amount_too_small");
+});
+
+Deno.test("holder-airdrop admission allows explicit canary without public rollout", async () => {
+  const canaryUserId = "11111111-1111-4111-8111-111111111111";
+  const admin = {
+    from(table: string) {
+      if (table !== "linkr_queue_runtime_config") {
+        throw new Error(`unexpected table ${table}`);
+      }
+      return fakeBuilder({
+        data: {
+          enabled: true,
+          rollout_percent: 0,
+          canary_user_ids: [canaryUserId],
+        },
+        error: null,
+      }, "maybeSingle");
+    },
+  };
+  assertEquals(
+    await isHolderAirdropStageAdmitted(admin, canaryUserId, "work"),
+    true,
+  );
+  assertEquals(
+    await isHolderAirdropStageAdmitted(
+      admin,
+      "22222222-2222-4222-8222-222222222222",
+      "work",
+    ),
+    false,
+  );
 });
 
 Deno.test("stored holder-airdrop transaction proves exact persisted batch", async () => {
@@ -335,6 +491,94 @@ Deno.test("stored holder-airdrop transaction proves exact persisted batch", asyn
   );
 });
 
+Deno.test("holder-airdrop batch builder accepts the configured efficient cap", () => {
+  const authority = Keypair.generate();
+  const mint = Keypair.generate().publicKey.toBase58();
+  const sourceTokenAccount = Keypair.generate().publicKey.toBase58();
+  const recipients = Array.from(
+    { length: HOLDER_AIRDROP_MAX_RECIPIENTS_PER_BATCH },
+    (_, index) => ({
+      ordinal: index + 1,
+      owner_address: Keypair.generate().publicKey.toBase58(),
+      allocation_raw: "1",
+    }),
+  );
+  const built = buildHolderAirdropBatchTransaction({
+    mint,
+    sourceTokenAccount,
+    authority: authority.publicKey.toBase58(),
+    decimals: 6,
+    recipients,
+  });
+  assertEquals(
+    built.destinationAccounts.length,
+    HOLDER_AIRDROP_MAX_RECIPIENTS_PER_BATCH,
+  );
+  assertThrows(
+    () =>
+      buildHolderAirdropBatchTransaction({
+        mint,
+        sourceTokenAccount,
+        authority: authority.publicKey.toBase58(),
+        decimals: 6,
+        recipients: [
+          ...recipients,
+          {
+            ordinal: HOLDER_AIRDROP_MAX_RECIPIENTS_PER_BATCH + 1,
+            owner_address: Keypair.generate().publicKey.toBase58(),
+            allocation_raw: "1",
+          },
+        ],
+      }),
+    Error,
+    "holder_airdrop_batch_size_invalid",
+  );
+});
+
+Deno.test("holder-airdrop batch cap fits conservative Solana transactions", async () => {
+  const authority = Keypair.generate();
+  const mint = Keypair.generate().publicKey.toBase58();
+  const sourceTokenAccount = Keypair.generate().publicKey.toBase58();
+  const recipients = Array.from({ length: 6 }, (_, index) => ({
+    ordinal: index + 1,
+    owner_address: Keypair.generate().publicKey.toBase58(),
+    allocation_raw: "1",
+  }));
+  const built = buildHolderAirdropBatchTransaction({
+    mint,
+    sourceTokenAccount,
+    authority: authority.publicKey.toBase58(),
+    decimals: 6,
+    recipients,
+  });
+  const signed = await signHolderAirdropBatchTransaction({
+    transaction: built.transaction,
+    authority,
+    blockhash: Keypair.generate().publicKey.toBase58(),
+    lastValidBlockHeight: 123,
+  });
+  assertEquals(built.transaction.instructions.length, 12);
+  assertEquals(signed.signedBytes.byteLength < 1232, true);
+  signed.signedBytes.fill(0);
+  authority.secretKey.fill(0);
+  assertThrows(() =>
+    buildHolderAirdropBatchTransaction({
+      mint,
+      sourceTokenAccount,
+      authority: Keypair.generate().publicKey.toBase58(),
+      decimals: 6,
+      recipients: [
+        ...recipients,
+        {
+          ordinal: 7,
+          owner_address: Keypair.generate().publicKey.toBase58(),
+          allocation_raw: "1",
+        },
+      ],
+    })
+  );
+});
+
 Deno.test("worker persists signed bytes before the only broadcast path", async () => {
   const source = await Deno.readTextFile(
     new URL("../worker-holder-airdrop-solana/index.ts", import.meta.url),
@@ -382,7 +626,7 @@ Deno.test("worker prioritizes persisted signatures before pre-broadcast failures
   assertStringIncludes(source, "walletAddress: String(airdrop.wallet_address)");
 });
 
-Deno.test("worker state treats ambiguous broadcast retries as reconcile-only", () => {
+Deno.test("worker state rebroadcasts ambiguous signed submissions safely", () => {
   assertEquals(
     shouldProcessPersistedBatchBeforeRevalidation({
       airdropStatus: "failed",
@@ -400,7 +644,7 @@ Deno.test("worker state treats ambiguous broadcast retries as reconcile-only", (
   assertEquals(persistedBatchAction({ status: "signed" }), "broadcast_once");
   assertEquals(
     persistedBatchAction({ status: "broadcasting" }),
-    "reconcile_only",
+    "broadcast_once",
   );
   assertEquals(persistedBatchAction({ status: "broadcast" }), "reconcile_only");
   assertEquals(
@@ -410,7 +654,7 @@ Deno.test("worker state treats ambiguous broadcast retries as reconcile-only", (
   assertEquals(persistedBatchAction({ status: "planned" }), "ignore");
 });
 
-Deno.test("worker only sends raw transactions from signed persisted state", async () => {
+Deno.test("worker only sends persisted signed raw transactions", async () => {
   const source = await Deno.readTextFile(
     new URL("../worker-holder-airdrop-solana/index.ts", import.meta.url),
   );
@@ -420,6 +664,7 @@ Deno.test("worker only sends raw transactions from signed persisted state", asyn
   const statusRead = source.indexOf("const status = await readSignatureState");
   assertEquals(actionBranch >= 0 && actionBranch < send, true);
   assertEquals(send >= 0 && send < statusRead, true);
+  assertStringIncludes(source, 'args.batch.status !== "broadcasting"');
   assertStringIncludes(source, "holder_airdrop_broadcast_already_in_progress");
   assertStringIncludes(source, "holder_airdrop_broadcast_outcome_ambiguous");
 });
@@ -449,7 +694,7 @@ Deno.test("worker final notification follows terminal reconciliation", async () 
   assertStringIncludes(sql, "status='failed'");
 });
 
-Deno.test("docs do not advertise unsupported holder-airdrop supply modes", async () => {
+Deno.test("docs advertise supported holder-airdrop amount modes", async () => {
   const docs = await Deno.readTextFile(
     new URL(
       "../../../src/components/linkr/docs/LinkrDocsPage.tsx",
@@ -457,10 +702,11 @@ Deno.test("docs do not advertise unsupported holder-airdrop supply modes", async
     ),
   );
   assertStringIncludes(docs, "airdrop 250000 of <token address>");
-  assertEquals(docs.includes("airdrop 10% of my dev supply"), false);
+  assertStringIncludes(docs, "airdrop 100% of my supply");
   assertEquals(docs.includes("own token balance or dev supply"), false);
   assertStringIncludes(docs, "current token balance");
   assertStringIncludes(docs, "exact token amount");
+  assertStringIncludes(docs, "percentage of that wallet token balance");
 });
 
 Deno.test("migration contains immutable live-capable ledgers and safe rollout seed", async () => {
@@ -493,6 +739,28 @@ Deno.test("migration contains immutable live-capable ledgers and safe rollout se
   ) assertStringIncludes(sql.replace(/\s+/g, " "), fragment);
 });
 
+Deno.test("follow-up migration and runbook match percentage and batch behavior", async () => {
+  const migration = await Deno.readTextFile(
+    new URL(
+      "../../migrations/20260804200000_holder_airdrop_percent_batch_efficiency.sql",
+      import.meta.url,
+    ),
+  );
+  assertStringIncludes(migration, "recipient_count between 1 and 6");
+  assertStringIncludes(migration, "((ordinal - 1) / 6)");
+  assertStringIncludes(
+    migration,
+    "linkr_holder_airdrop_recipients_batch_ordinal_idx",
+  );
+
+  const runbook = await Deno.readTextFile(
+    new URL("../../../docs/HOLDER_AIRDROP_RUNBOOK.md", import.meta.url),
+  );
+  assertStringIncludes(runbook, "percentage of the recorded launch wallet");
+  assertStringIncludes(runbook, "aggregate token balance");
+  assertEquals(runbook.includes("Percentages are not implemented"), false);
+});
+
 function canonicalLaunch(id: string, symbol: string) {
   return {
     id,
@@ -508,13 +776,14 @@ function canonicalLaunch(id: string, symbol: string) {
   };
 }
 
-function fakeLaunchAdmin(rows: unknown[]) {
+function fakeLaunchAdmin(rows: unknown[], exactMintRow?: unknown) {
   const builder: any = {
     select: () => builder,
     eq: () => builder,
     not: () => builder,
     order: () => builder,
     limit: async () => ({ data: rows, error: null }),
+    maybeSingle: async () => ({ data: exactMintRow ?? null, error: null }),
   };
   return { from: () => builder };
 }

@@ -54853,6 +54853,513 @@ body .sm-app-shell :where(button, a, [role="button"]):is(:hover, :focus-visible)
   border-color: transparent !important;
 }
 
+body .app-airdrops-page {
+  align-content: start !important;
+}
+
+body .app-airdrops-hero {
+  background: linear-gradient(135deg, #ffffff 0%, #f5fff3 48%, #f7f9ff 100%) !important;
+}
+
+body[data-dashboard-theme="dark"] .app-airdrops-hero {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--app-panel) 90%, #ffffff 10%) 0%,
+    color-mix(in srgb, var(--app-panel) 84%, var(--app-lime) 16%) 100%
+  ) !important;
+}
+
+body .app-airdrops-stats {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: clamp(12px, 1.5vw, 18px) !important;
+}
+
+body .app-airdrops-layout {
+  display: grid !important;
+  grid-template-columns: minmax(280px, 0.9fr) minmax(0, 1.55fr) !important;
+  align-items: start !important;
+  gap: clamp(14px, 1.6vw, 20px) !important;
+}
+
+body .app-airdrops-list-card,
+body .app-airdrop-detail-card {
+  min-width: 0 !important;
+}
+
+body .app-airdrop-list {
+  display: grid !important;
+  gap: 8px !important;
+  margin-top: 16px !important;
+}
+
+body .app-airdrop-list-row {
+  display: grid !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 74px !important;
+  grid-template-columns: 44px minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 12px !important;
+  border: 1px solid var(--app-line) !important;
+  border-radius: 8px !important;
+  background: var(--app-bg) !important;
+  padding: 12px !important;
+  text-align: left !important;
+}
+
+body .app-airdrop-list-row:hover,
+body .app-airdrop-list-row[data-active="true"] {
+  border-color: color-mix(in srgb, var(--app-blue) 28%, var(--app-line)) !important;
+  background: color-mix(in srgb, var(--app-blue-soft) 72%, var(--app-panel)) !important;
+}
+
+body .app-airdrop-token-mark {
+  display: inline-grid !important;
+  width: 44px !important;
+  height: 44px !important;
+  place-items: center !important;
+  overflow: hidden !important;
+  border: 1px solid var(--app-line) !important;
+  border-radius: 8px !important;
+  background: color-mix(in srgb, var(--app-lime) 34%, #ffffff) !important;
+  color: #111111 !important;
+  -webkit-text-fill-color: #111111 !important;
+  font-family: var(--font-mono, monospace) !important;
+  font-size: 0.8rem !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+}
+
+body .app-airdrop-token-mark img {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+body .app-airdrop-list-main,
+body .app-airdrop-list-meta {
+  display: grid !important;
+  min-width: 0 !important;
+  gap: 5px !important;
+}
+
+body .app-airdrop-list-main b {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+body .app-airdrop-list-main small,
+body .app-airdrop-list-meta small {
+  color: var(--app-muted) !important;
+  -webkit-text-fill-color: var(--app-muted) !important;
+  font-size: 0.74rem !important;
+  font-weight: 720 !important;
+}
+
+body .app-airdrop-list-meta {
+  justify-items: end !important;
+  text-align: right !important;
+}
+
+body .app-airdrop-detail-card {
+  display: grid !important;
+  gap: clamp(16px, 1.8vw, 22px) !important;
+}
+
+body .app-airdrop-detail-head,
+body .app-airdrop-token-lockup,
+body .app-airdrop-actions,
+body .app-airdrop-batches {
+  display: flex !important;
+  min-width: 0 !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+body .app-airdrop-detail-head {
+  justify-content: space-between !important;
+}
+
+body .app-airdrop-token-lockup {
+  flex-wrap: nowrap !important;
+}
+
+body .app-airdrop-token-lockup > div {
+  display: grid !important;
+  min-width: 0 !important;
+  gap: 6px !important;
+}
+
+body .app-airdrop-token-lockup h2 {
+  display: block !important;
+  overflow: hidden !important;
+  color: var(--app-ink) !important;
+  -webkit-text-fill-color: var(--app-ink) !important;
+  font-family: var(--rayo-display, var(--font-display, sans-serif)) !important;
+  font-size: clamp(1.7rem, 3vw, 2.4rem) !important;
+  font-weight: 860 !important;
+  letter-spacing: 0 !important;
+  line-height: 1 !important;
+  text-overflow: ellipsis !important;
+  text-transform: none !important;
+  white-space: nowrap !important;
+}
+
+body .app-airdrop-progress {
+  display: grid !important;
+  gap: 8px !important;
+}
+
+body .app-airdrop-progress > div {
+  height: 10px !important;
+  overflow: hidden !important;
+  border-radius: 8px !important;
+  background: color-mix(in srgb, var(--app-ink) 8%, transparent) !important;
+}
+
+body .app-airdrop-progress span {
+  display: block !important;
+  width: var(--airdrop-progress, 0%) !important;
+  height: 100% !important;
+  border-radius: inherit !important;
+  background: var(--app-lime) !important;
+}
+
+body .app-airdrop-progress small {
+  color: var(--app-muted) !important;
+  -webkit-text-fill-color: var(--app-muted) !important;
+  font-size: 0.78rem !important;
+  font-weight: 760 !important;
+}
+
+body .app-airdrop-actions a {
+  display: inline-flex !important;
+  min-height: 38px !important;
+  align-items: center !important;
+  gap: 7px !important;
+  border: 1px solid var(--app-line) !important;
+  border-radius: 8px !important;
+  background: #ffffff !important;
+  padding: 0 12px !important;
+  color: var(--app-ink) !important;
+  -webkit-text-fill-color: var(--app-ink) !important;
+  font-size: 0.8rem !important;
+  font-weight: 820 !important;
+}
+
+body[data-dashboard-theme="dark"] .app-airdrop-actions a {
+  background: color-mix(in srgb, var(--app-panel) 86%, #ffffff 14%) !important;
+}
+
+body .app-airdrop-actions a:hover {
+  background: var(--app-blue-soft) !important;
+  color: var(--app-blue) !important;
+  -webkit-text-fill-color: var(--app-blue) !important;
+}
+
+body .app-airdrop-detail-grid {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+}
+
+body .app-airdrop-metric {
+  display: grid !important;
+  min-width: 0 !important;
+  gap: 7px !important;
+  border: 1px solid var(--app-line) !important;
+  border-radius: 8px !important;
+  background: var(--app-bg) !important;
+  padding: 12px !important;
+}
+
+body .app-airdrop-metric > span:first-child {
+  display: inline-grid !important;
+  width: 32px !important;
+  height: 32px !important;
+  place-items: center !important;
+  border-radius: 8px !important;
+  background: var(--app-blue-soft) !important;
+  color: var(--app-blue) !important;
+}
+
+body .app-airdrop-metric small,
+body .app-airdrop-fact span,
+body .app-airdrop-source-post span {
+  color: var(--app-muted) !important;
+  -webkit-text-fill-color: var(--app-muted) !important;
+  font-size: 0.72rem !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase !important;
+}
+
+body .app-airdrop-metric strong {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  color: var(--app-ink) !important;
+  -webkit-text-fill-color: var(--app-ink) !important;
+  font-family: var(--font-mono, monospace) !important;
+  font-size: clamp(0.9rem, 1.4vw, 1.05rem) !important;
+  font-weight: 900 !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+body .app-airdrop-ledger-facts {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 1px !important;
+  overflow: hidden !important;
+  border: 1px solid var(--app-line) !important;
+  border-radius: 8px !important;
+  background: var(--app-line) !important;
+}
+
+body .app-airdrop-fact {
+  display: grid !important;
+  min-width: 0 !important;
+  gap: 6px !important;
+  background: var(--app-panel) !important;
+  padding: 12px !important;
+}
+
+body .app-airdrop-fact strong {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  color: var(--app-ink) !important;
+  -webkit-text-fill-color: var(--app-ink) !important;
+  font-size: 0.86rem !important;
+  font-weight: 820 !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+body .app-airdrop-source-post {
+  display: grid !important;
+  gap: 8px !important;
+  border: 1px solid var(--app-line) !important;
+  border-radius: 8px !important;
+  background: var(--app-bg) !important;
+  padding: 14px !important;
+}
+
+body .app-airdrop-source-post p {
+  color: var(--app-ink) !important;
+  -webkit-text-fill-color: var(--app-ink) !important;
+  font-size: 0.9rem !important;
+  font-weight: 620 !important;
+  line-height: 1.4 !important;
+}
+
+body .app-airdrop-batches {
+  align-items: stretch !important;
+}
+
+body .app-airdrop-batch-pill {
+  display: inline-grid !important;
+  min-width: 112px !important;
+  gap: 5px !important;
+  border: 1px solid var(--app-line) !important;
+  border-radius: 8px !important;
+  background: var(--app-bg) !important;
+  padding: 10px !important;
+}
+
+body .app-airdrop-batch-pill b {
+  font-family: var(--font-mono, monospace) !important;
+  font-size: 0.9rem !important;
+  font-weight: 900 !important;
+}
+
+body .app-airdrop-batch-pill small {
+  color: var(--app-muted) !important;
+  -webkit-text-fill-color: var(--app-muted) !important;
+  font-size: 0.72rem !important;
+  font-weight: 760 !important;
+}
+
+body .app-airdrop-recipient-panel {
+  display: grid !important;
+  min-width: 0 !important;
+  gap: 14px !important;
+  border-top: 1px solid var(--app-line) !important;
+  padding-top: clamp(16px, 1.8vw, 22px) !important;
+}
+
+body .app-airdrop-recipient-count {
+  display: inline-grid !important;
+  min-width: 38px !important;
+  height: 38px !important;
+  place-items: center !important;
+  border-radius: 8px !important;
+  background: var(--app-blue-soft) !important;
+  color: var(--app-blue) !important;
+  -webkit-text-fill-color: var(--app-blue) !important;
+  font-family: var(--font-mono, monospace) !important;
+  font-size: 0.82rem !important;
+  font-weight: 900 !important;
+}
+
+body .app-airdrop-recipient-list {
+  display: grid !important;
+  max-height: min(62vh, 720px) !important;
+  overflow: auto !important;
+  border: 1px solid var(--app-line) !important;
+  border-radius: 8px !important;
+  background: var(--app-panel) !important;
+}
+
+body .app-airdrop-recipient-row {
+  display: grid !important;
+  min-width: 760px !important;
+  grid-template-columns: 58px minmax(180px, 1fr) minmax(190px, 0.8fr) 112px 42px !important;
+  align-items: center !important;
+  gap: 12px !important;
+  border-top: 1px solid var(--app-line) !important;
+  padding: 12px 14px !important;
+}
+
+body .app-airdrop-recipient-row:first-child {
+  border-top: 0 !important;
+}
+
+body .app-airdrop-recipient-rank,
+body .app-airdrop-signature-empty,
+body .app-airdrop-signature-link {
+  display: inline-grid !important;
+  height: 34px !important;
+  place-items: center !important;
+  border-radius: 8px !important;
+  background: var(--app-bg) !important;
+  color: var(--app-muted) !important;
+  -webkit-text-fill-color: var(--app-muted) !important;
+  font-family: var(--font-mono, monospace) !important;
+  font-size: 0.76rem !important;
+  font-weight: 850 !important;
+}
+
+body .app-airdrop-recipient-wallet,
+body .app-airdrop-recipient-allocation {
+  display: grid !important;
+  min-width: 0 !important;
+  gap: 4px !important;
+}
+
+body .app-airdrop-recipient-wallet a,
+body .app-airdrop-recipient-allocation strong {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  color: var(--app-ink) !important;
+  -webkit-text-fill-color: var(--app-ink) !important;
+  font-family: var(--font-mono, monospace) !important;
+  font-size: 0.86rem !important;
+  font-weight: 880 !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+body .app-airdrop-recipient-wallet small,
+body .app-airdrop-recipient-allocation small {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  color: var(--app-muted) !important;
+  -webkit-text-fill-color: var(--app-muted) !important;
+  font-size: 0.74rem !important;
+  font-weight: 720 !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+body .app-airdrop-signature-link {
+  color: var(--app-blue) !important;
+  -webkit-text-fill-color: var(--app-blue) !important;
+}
+
+body .app-airdrop-error {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  border: 1px solid color-mix(in srgb, var(--app-warning) 38%, var(--app-line)) !important;
+  border-radius: 8px !important;
+  background: var(--app-warning-soft) !important;
+  padding: 12px !important;
+  color: var(--app-warning-ink) !important;
+  -webkit-text-fill-color: var(--app-warning-ink) !important;
+  font-size: 0.84rem !important;
+  font-weight: 760 !important;
+}
+
+body .app-status-reconciling,
+body .app-status-executing,
+body .app-status-validating,
+body .app-status-broadcast,
+body .app-status-broadcasting,
+body .app-status-signed,
+body .app-status-claimed,
+body .app-status-batched {
+  background: var(--app-blue-soft) !important;
+  color: var(--app-blue) !important;
+  -webkit-text-fill-color: var(--app-blue) !important;
+}
+
+body .app-status-cancelled,
+body .app-status-expired,
+body .app-status-failed {
+  background: var(--app-warning-soft) !important;
+  color: var(--app-warning-ink) !important;
+  -webkit-text-fill-color: var(--app-warning-ink) !important;
+}
+
+@media (max-width: 1100px) {
+  body .app-airdrops-layout {
+    grid-template-columns: 1fr !important;
+  }
+
+  body .app-airdrop-list {
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)) !important;
+  }
+}
+
+@media (max-width: 920px) {
+  body .app-airdrops-stats,
+  body .app-airdrop-detail-grid,
+  body .app-airdrop-ledger-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 620px) {
+  body .app-airdrops-stats,
+  body .app-airdrop-detail-grid,
+  body .app-airdrop-ledger-facts,
+  body .app-airdrop-list {
+    grid-template-columns: 1fr !important;
+  }
+
+  body .app-airdrop-list-row {
+    grid-template-columns: 44px minmax(0, 1fr) !important;
+  }
+
+  body .app-airdrop-list-meta {
+    grid-column: 2 !important;
+    justify-items: start !important;
+    text-align: left !important;
+  }
+
+  body .app-airdrop-token-lockup {
+    flex-wrap: wrap !important;
+  }
+
+  body .app-airdrop-recipient-list {
+    max-height: 560px !important;
+  }
+}
+
 /* Linkr logo background guard. */
 body .sm-logo .sm-logo-mark,
 body .sm-marketing-header .sm-logo .sm-logo-mark,

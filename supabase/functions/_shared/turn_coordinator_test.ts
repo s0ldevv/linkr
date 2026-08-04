@@ -82,9 +82,18 @@ Deno.test("deterministic router ignores ambient remarks but keeps useful social 
     text: "@linkrbot are you able to schedule buys/sells?",
     ingest_source: "mention",
   });
-  assert(schedule.route === "capability_help", "schedule ability question should be capability help");
-  assert(schedule.intent === "schedule_capability", "schedule ability question should use schedule capability intent");
-  assert(schedule.allowed_tools.includes("action.prepare_schedule"), "schedule capability route should expose schedule preparation");
+  assert(
+    schedule.route === "capability_help",
+    "schedule ability question should be capability help",
+  );
+  assert(
+    schedule.intent === "schedule_capability",
+    "schedule ability question should use schedule capability intent",
+  );
+  assert(
+    schedule.allowed_tools.includes("action.prepare_schedule"),
+    "schedule capability route should expose schedule preparation",
+  );
 });
 
 Deno.test("reply composer falls back when public lint fails", () => {
@@ -154,6 +163,41 @@ Deno.test("x search request resolves pronoun follow-up from thread token focus",
     request.query.includes("0x020bfC650A365f8BB26819deAAbF3E21291018b4"),
     "query should include CA",
   );
+});
+
+Deno.test("x search request ignores LinkrCash bot handle when extracting profiles", () => {
+  const request = buildXSearchRequest({
+    admin: null,
+    tw: {
+      tweet_id: "t2",
+      text: "@linkrcash check @project's recent posts",
+    },
+    profile: {},
+    wallet: {},
+    user_context: {},
+    thread_context: null,
+  });
+  assert(
+    request.topic === "@project",
+    "should ignore the configured bot handle",
+  );
+  assert(
+    request.query === "from:project -is:retweet",
+    "profile query mismatch",
+  );
+
+  const legacy = buildXSearchRequest({
+    admin: null,
+    tw: {
+      tweet_id: "t3",
+      text: "@linkrbot check @project's recent posts",
+    },
+    profile: {},
+    wallet: {},
+    user_context: {},
+    thread_context: null,
+  });
+  assert(legacy.topic === "@project", "should ignore the legacy bot handle");
 });
 
 Deno.test("x search reply is non-empty for results and empty-result fallback", () => {

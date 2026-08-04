@@ -3,6 +3,7 @@ import {
   assertThrows,
 } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import {
+  parseAirdropAmountToRaw,
   parseTokenAmountToRaw,
   parseXAirdropIntent,
   planProRataAirdrop,
@@ -16,7 +17,7 @@ Deno.test("airdrop intent preserves ambiguity as a follow-up", () => {
       token: "$LINKR",
       amount: null,
       clarification:
-        "What total amount of that token should I distribute to holders?",
+        "What exact amount or percentage of your current token balance should I distribute to holders?",
     },
   );
 });
@@ -92,6 +93,30 @@ Deno.test("pro-rata allocation retains integer dust", () => {
 Deno.test("token amount parsing is exact", () => {
   assertEquals(parseTokenAmountToRaw("12.345 TOKEN", 6), 12_345_000n);
   assertThrows(() => parseTokenAmountToRaw("0.0000001", 6));
+});
+
+Deno.test("airdrop amount parsing supports wallet-balance percentages", () => {
+  assertEquals(parseAirdropAmountToRaw("25%", 6, 1_000n), {
+    raw: 250n,
+    mode: "balance_fraction",
+  });
+  assertEquals(parseAirdropAmountToRaw("25% of my token supply", 6, 1_000n), {
+    raw: 250n,
+    mode: "balance_fraction",
+  });
+  assertEquals(parseAirdropAmountToRaw("100% of my supply", 6, 1_000n), {
+    raw: 1_000n,
+    mode: "balance_fraction",
+  });
+  assertEquals(parseAirdropAmountToRaw("all of my wallet balance", 6, 1_000n), {
+    raw: 1_000n,
+    mode: "balance_fraction",
+  });
+  assertEquals(parseAirdropAmountToRaw("dev supply", 6, 1_000n), {
+    raw: 1_000n,
+    mode: "balance_fraction",
+  });
+  assertThrows(() => parseAirdropAmountToRaw("101%", 6, 1_000n));
 });
 
 Deno.test("zero raw allocations are dropped and retained as dust", () => {

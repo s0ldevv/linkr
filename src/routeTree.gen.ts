@@ -48,6 +48,7 @@ import { Route as AuthenticatedAppHistoryRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAppExploreRouteImport } from './routes/_authenticated.app.explore'
 import { Route as AuthenticatedAppEarningsRouteImport } from './routes/_authenticated.app.earnings'
 import { Route as AuthenticatedAppApiKeysRouteImport } from './routes/_authenticated.app.api-keys'
+import { Route as AuthenticatedAppAirdropsRouteImport } from './routes/_authenticated.app.airdrops'
 import { Route as AuthenticatedAppActionsRouteImport } from './routes/_authenticated.app.actions'
 
 const TermsOfServiceRoute = TermsOfServiceRouteImport.update({
@@ -250,6 +251,12 @@ const AuthenticatedAppApiKeysRoute = AuthenticatedAppApiKeysRouteImport.update({
   path: '/api-keys',
   getParentRoute: () => AuthenticatedAppRoute,
 } as any)
+const AuthenticatedAppAirdropsRoute =
+  AuthenticatedAppAirdropsRouteImport.update({
+    id: '/airdrops',
+    path: '/airdrops',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 const AuthenticatedAppActionsRoute = AuthenticatedAppActionsRouteImport.update({
   id: '/actions',
   path: '/actions',
@@ -283,6 +290,7 @@ export interface FileRoutesByFullPath {
   '/u/$username': typeof UUsernameRoute
   '/nfts/': typeof NftsIndexRoute
   '/app/actions': typeof AuthenticatedAppActionsRoute
+  '/app/airdrops': typeof AuthenticatedAppAirdropsRoute
   '/app/api-keys': typeof AuthenticatedAppApiKeysRoute
   '/app/earnings': typeof AuthenticatedAppEarningsRoute
   '/app/explore': typeof AuthenticatedAppExploreRoute
@@ -323,6 +331,7 @@ export interface FileRoutesByTo {
   '/u/$username': typeof UUsernameRoute
   '/nfts': typeof NftsIndexRoute
   '/app/actions': typeof AuthenticatedAppActionsRoute
+  '/app/airdrops': typeof AuthenticatedAppAirdropsRoute
   '/app/api-keys': typeof AuthenticatedAppApiKeysRoute
   '/app/earnings': typeof AuthenticatedAppEarningsRoute
   '/app/explore': typeof AuthenticatedAppExploreRoute
@@ -366,6 +375,7 @@ export interface FileRoutesById {
   '/u/$username': typeof UUsernameRoute
   '/nfts/': typeof NftsIndexRoute
   '/_authenticated/app/actions': typeof AuthenticatedAppActionsRoute
+  '/_authenticated/app/airdrops': typeof AuthenticatedAppAirdropsRoute
   '/_authenticated/app/api-keys': typeof AuthenticatedAppApiKeysRoute
   '/_authenticated/app/earnings': typeof AuthenticatedAppEarningsRoute
   '/_authenticated/app/explore': typeof AuthenticatedAppExploreRoute
@@ -409,6 +419,7 @@ export interface FileRouteTypes {
     | '/u/$username'
     | '/nfts/'
     | '/app/actions'
+    | '/app/airdrops'
     | '/app/api-keys'
     | '/app/earnings'
     | '/app/explore'
@@ -449,6 +460,7 @@ export interface FileRouteTypes {
     | '/u/$username'
     | '/nfts'
     | '/app/actions'
+    | '/app/airdrops'
     | '/app/api-keys'
     | '/app/earnings'
     | '/app/explore'
@@ -491,6 +503,7 @@ export interface FileRouteTypes {
     | '/u/$username'
     | '/nfts/'
     | '/_authenticated/app/actions'
+    | '/_authenticated/app/airdrops'
     | '/_authenticated/app/api-keys'
     | '/_authenticated/app/earnings'
     | '/_authenticated/app/explore'
@@ -806,6 +819,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppApiKeysRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/app/airdrops': {
+      id: '/_authenticated/app/airdrops'
+      path: '/airdrops'
+      fullPath: '/app/airdrops'
+      preLoaderRoute: typeof AuthenticatedAppAirdropsRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/app/actions': {
       id: '/_authenticated/app/actions'
       path: '/actions'
@@ -818,6 +838,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedAppRouteChildren {
   AuthenticatedAppActionsRoute: typeof AuthenticatedAppActionsRoute
+  AuthenticatedAppAirdropsRoute: typeof AuthenticatedAppAirdropsRoute
   AuthenticatedAppApiKeysRoute: typeof AuthenticatedAppApiKeysRoute
   AuthenticatedAppEarningsRoute: typeof AuthenticatedAppEarningsRoute
   AuthenticatedAppExploreRoute: typeof AuthenticatedAppExploreRoute
@@ -835,6 +856,7 @@ interface AuthenticatedAppRouteChildren {
 
 const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppActionsRoute: AuthenticatedAppActionsRoute,
+  AuthenticatedAppAirdropsRoute: AuthenticatedAppAirdropsRoute,
   AuthenticatedAppApiKeysRoute: AuthenticatedAppApiKeysRoute,
   AuthenticatedAppEarningsRoute: AuthenticatedAppEarningsRoute,
   AuthenticatedAppExploreRoute: AuthenticatedAppExploreRoute,

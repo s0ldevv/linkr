@@ -18,6 +18,7 @@ import { loadLinkrWorldState } from "./world_state.ts";
 import type { LinkrReplyPlan, LinkrTurnOutcome } from "./linkr_types.ts";
 import { composeReplyPlanText } from "./linkr_reply_composer.ts";
 import { searchPublicX } from "./x_search_tool.ts";
+import { isLinkrBotHandle } from "./x_bot_identity.ts";
 
 export interface ProcessLinkrTurnArgs {
   admin: any;
@@ -460,7 +461,7 @@ function extractProfileHandle(text: string): string | null {
   ) return null;
   const handles = [...String(text ?? "").matchAll(/@([A-Za-z0-9_]{1,15})/g)]
     .map((match) => match[1])
-    .filter((handle) => !/^linkrbot$/i.test(handle));
+    .filter((handle) => !isLinkrBotHandle(handle));
   return handles[0] ?? null;
 }
 
@@ -568,7 +569,9 @@ async function traceRun(args: ProcessLinkrTurnArgs, outcome: LinkrTurnOutcome) {
     completed_at: new Date().toISOString(),
   });
   if (inserted.error) throw inserted.error;
-  if (!inserted.data?.id) throw new Error("agent_run_trace_insert_returned_no_id");
+  if (!inserted.data?.id) {
+    throw new Error("agent_run_trace_insert_returned_no_id");
+  }
 }
 
 async function upsertState(

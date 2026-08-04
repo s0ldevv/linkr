@@ -256,7 +256,10 @@ async function processPersistedBatch(args: {
         },
       );
       if (broadcasting.error) throw broadcasting.error;
-      if (broadcasting.data?.duplicate === true) {
+      if (
+        broadcasting.data?.duplicate === true &&
+        args.batch.status !== "broadcasting"
+      ) {
         return {
           kind: "retry",
           errorCode: "holder_airdrop_broadcast_already_in_progress",

@@ -1,5 +1,9 @@
+// Hardcoded on. Previously the SOLANA_SWAP_ENABLED edge secret, which had been
+// set to "true" in production. Flip to false to disable Solana swaps.
+const SOLANA_SWAP_ENABLED: boolean = true;
+
 export function readSolanaSwapEnabled(): boolean {
-  return readBoolean("SOLANA_SWAP_ENABLED", false);
+  return SOLANA_SWAP_ENABLED;
 }
 
 export function readJupiterQuoteUrl(): string {
@@ -47,14 +51,6 @@ export function readHeliusSenderUrl(): string | null {
     Deno.env.get("HELIUS_SENDER_ENDPOINT")?.trim() ||
     null
   );
-}
-
-function readBoolean(name: string, fallback: boolean): boolean {
-  const raw = Deno.env.get(name);
-  if (raw == null || raw.trim() === "") return fallback;
-  if (/^(1|true|yes|on)$/i.test(raw)) return true;
-  if (/^(0|false|no|off)$/i.test(raw)) return false;
-  return fallback;
 }
 
 function readNonNegativeNumber(name: string, fallback: number): number {

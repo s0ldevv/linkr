@@ -22,6 +22,10 @@ import {
   normalizeSinceId,
   oldestSinceId,
 } from "../_shared/x_search_sources.ts";
+import {
+  DEFAULT_X_BOT_HANDLE,
+  normalizeXBotHandle,
+} from "../_shared/x_bot_identity.ts";
 import { getActiveXBan } from "../_shared/x_bans.ts";
 import { evaluateXUserGating } from "../_shared/admin_settings.ts";
 import { acceptShadowXPage } from "../_shared/shadow_queue.ts";
@@ -30,7 +34,6 @@ import {
   oldestFirstXPages,
 } from "../_shared/x_pagination.ts";
 
-const BOT_HANDLE = "linkrbot";
 const X_API = "https://api.twitter.com/2/tweets/search/recent";
 
 // Detection latency is the first term in the end-to-end budget. pg_cron cannot
@@ -144,7 +147,7 @@ async function runMentionPass(
           return jsonResponse(body);
         }
 
-        const source = buildInboxSearchSource(BOT_HANDLE, {
+        const source = buildInboxSearchSource(configuredBotHandle(), {
           replyToBotScanEnabled: readBoolean("LINKR_REPLY_TO_BOT_SCAN", true),
           replyToBotRequireKnownParent: readBoolean(
             "LINKR_REPLY_TO_BOT_REQUIRE_KNOWN_PARENT",
@@ -366,7 +369,7 @@ async function fetchAndStoreInbox(
         if (!newestId || BigInt(tweetId) > BigInt(newestId)) newestId = tweetId;
 
         const user = userById.get(tw.author_id);
-        if (user?.username?.toLowerCase() === BOT_HANDLE) {
+        if (user?.username?.toLowerCase() === source.botHandle) {
           result.skipped_bot_authored++;
           continue;
         }
@@ -690,4 +693,13 @@ function readBoolean(name: string, fallback: boolean) {
   if (/^(1|true|yes|on)$/i.test(raw)) return true;
   if (/^(0|false|no|off)$/i.test(raw)) return false;
   return fallback;
+}
+
+function configuredBotHandle(): string {
+  const configured = normalizeXBotHandle(
+    String(Deno.env.get("X_BOT_HANDLE") ?? ""),
+  );
+  return /^[a-z0-9_]{1,15}$/.test(configured)
+    ? configured
+    : DEFAULT_X_BOT_HANDLE;
 }

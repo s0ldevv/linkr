@@ -21,7 +21,8 @@ export async function classifyXAirdropIntent(
       "Classify a public X request to Linkr. Return one JSON object only.",
       'Schema: {"kind":"airdrop|confirm|cancel|none","token":"string|null","amount":"string|null","clarification":"string|null"}',
       "airdrop means: send some of a token the user launched through Linkr to that token's existing holders.",
-      "Extract the total token amount to distribute, not an amount per holder.",
+      "Extract the total token amount to distribute, not an amount per holder. Exact token amounts, all/my supply/dev supply, and percentages such as 25% or 100% of my supply are valid.",
+      "When the user says dev supply, my supply, user supply, or omits whose supply, it means the requester's current Linkr wallet token balance.",
       "Extract a mint, ticker, or token name exactly as supplied. Never invent either field.",
       "If this is an airdrop request but token or total amount is missing or genuinely ambiguous, set kind=airdrop and ask one concise clarification question.",
       "Questions about airdrops, giveaways to named wallets, and requests to send another asset are kind=none.",
@@ -46,10 +47,10 @@ export function parseXAirdropIntent(value: unknown): XAirdropIntent {
   let clarification = clean(row.clarification, 220);
   if (kind === "airdrop" && (!token || !amount) && !clarification) {
     clarification = !token && !amount
-      ? "Which Linkr token should I airdrop, and what total amount should I distribute?"
+      ? "Which Linkr token should I airdrop, and what amount or percentage should I distribute?"
       : !token
       ? "Which token you launched on Linkr should I airdrop?"
-      : "What total amount of that token should I distribute to holders?";
+      : "What exact amount or percentage of your current token balance should I distribute to holders?";
   }
   return { kind, token, amount, clarification };
 }
@@ -61,6 +62,11 @@ export interface HolderBalance {
 
 export interface AirdropAllocation extends HolderBalance {
   allocation: bigint;
+}
+
+export interface ParsedAirdropAmount {
+  raw: bigint;
+  mode: "exact" | "balance_fraction";
 }
 
 export function planProRataAirdrop(args: {
@@ -116,6 +122,79 @@ export function parseTokenAmountToRaw(value: string, decimals: number): bigint {
     BigInt((match[2] ?? "").padEnd(decimals, "0") || "0");
   if (raw <= 0n) throw new Error("airdrop_amount_must_be_positive");
   return raw;
+}
+
+export function isBalanceFractionAirdropAmount(value: string): boolean {
+  const text = normalizeAirdropAmountText(value);
+  return text === "all" || balanceFractionTargetOnlyPattern().test(text) ||
+    balanceFractionAllPattern().test(text) ||
+    new RegExp(
+      `^\\d+(?:\\.\\d{1,4})?\\s*%(?:\\s+of\\s+${balanceFractionTargetPattern()})?$`,
+    ).test(text);
+}
+
+export function parseAirdropAmountToRaw(
+  value: string,
+  decimals: number,
+  sourceBalanceRaw: bigint,
+): ParsedAirdropAmount {
+  if (isBalanceFractionAirdropAmount(value)) {
+    return {
+      raw: parseBalanceFractionAmountToRaw(value, sourceBalanceRaw),
+      mode: "balance_fraction",
+    };
+  }
+  return { raw: parseTokenAmountToRaw(value, decimals), mode: "exact" };
+}
+
+function parseBalanceFractionAmountToRaw(
+  value: string,
+  sourceBalanceRaw: bigint,
+): bigint {
+  if (sourceBalanceRaw <= 0n) {
+    throw new Error("holder_airdrop_insufficient_token_balance");
+  }
+  const text = normalizeAirdropAmountText(value);
+  if (
+    text === "all" || balanceFractionTargetOnlyPattern().test(text) ||
+    balanceFractionAllPattern().test(text)
+  ) {
+    return sourceBalanceRaw;
+  }
+  const match = text.match(
+    new RegExp(
+      `^(\\d+)(?:\\.(\\d{1,4}))?\\s*%(?:\\s+of\\s+${balanceFractionTargetPattern()})?$`,
+    ),
+  );
+  if (!match) throw new Error("airdrop_amount_invalid");
+  const whole = BigInt(match[1]);
+  const fractional = match[2] ?? "";
+  const scale = 10n ** BigInt(fractional.length);
+  const numerator = whole * scale + BigInt(fractional || "0");
+  const denominator = 100n * scale;
+  if (numerator <= 0n || numerator > denominator) {
+    throw new Error("airdrop_amount_invalid");
+  }
+  const raw = sourceBalanceRaw * numerator / denominator;
+  if (raw <= 0n) throw new Error("airdrop_amount_must_be_positive");
+  return raw;
+}
+
+function normalizeAirdropAmountText(value: string): string {
+  return String(value ?? "").trim().replace(/,/g, "").toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
+function balanceFractionAllPattern(): RegExp {
+  return new RegExp(`^all(?:\\s+of)?\\s+${balanceFractionTargetPattern()}$`);
+}
+
+function balanceFractionTargetOnlyPattern(): RegExp {
+  return new RegExp(`^${balanceFractionTargetPattern()}$`);
+}
+
+function balanceFractionTargetPattern(): string {
+  return "(?:(?:my|dev|user)(?: current)?(?: token)? supply|(?:my|dev|user)?(?: current)?(?: wallet)?(?: token)? balance|(?:token )?supply)";
 }
 
 function clean(value: unknown, max: number): string | null {
